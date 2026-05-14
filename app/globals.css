@@ -1,26 +1,47 @@
 @import "tailwindcss";
 
+/* ── Base CSS variables ───────────────────────────────────── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #faf9f6;
+  --foreground: #1a1a1a;
 }
 
+/* ── Brand design tokens (generates Tailwind utilities) ───── */
+@theme {
+  --color-forest:       #3e6b4e;
+  --color-forest-dark:  #2d5039;
+  --color-forest-light: #edf3ef;
+  --color-rose:         #c27b62;
+  --color-cream:        #faf9f6;
+  --color-ink:          #1a1a1a;
+  --color-muted:        #5e5e5e;
+  --color-faint:        #9a9a9a;
+  --color-divider:      #e5e0d8;
+
+  /* Custom animation for success checkmark */
+  --animate-pop: pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ── CSS-variable-backed tokens (resolved at runtime) ─────── */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-cormorant), Georgia, serif;
+  --font-sans:    var(--font-dm-sans), system-ui, -apple-system, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ── Global base ──────────────────────────────────────────── */
+html {
+  scroll-behavior: smooth;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* ── Keyframes ────────────────────────────────────────────── */
+@keyframes pop {
+  from { transform: scale(0); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
 }
