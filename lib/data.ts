@@ -52,14 +52,12 @@ export const BOUQUET_TYPES: BouquetType[] = [
   },
 ]
 
-export const GALLERY_IMAGES: GalleryImage[] = [
-  { src: '/images/slozeni-buketi/buket-1.jpg', alt: 'Proljetni buket s mješavinom sezonskog cvijeća' },
-  { src: '/images/slozeni-buketi/buket-2.jpg', alt: 'Romantični buket ruža za posebnu prigodu' },
-  { src: '/images/slozeni-buketi/buket-3.jpg', alt: 'Elegantni bijeli buket za svečane prigode' },
-  { src: '/images/slozeni-buketi/buket-4.jpg', alt: 'Šareni sezonski buket s tulipanima i ružama' },
-  { src: '/images/slozeni-buketi/buket-5.jpg', alt: 'Nježni pastelni buket za rođendan' },
-  { src: '/images/slozeni-buketi/buket-6.jpg', alt: 'Svježi buket s dostavom u Rijeci i na Krku' },
-]
+// Single source of truth — add more images by incrementing the length.
+// All files must exist as /public/images/slozeni-buketi/buket-N.jpg (lowercase).
+export const GALLERY_IMAGES: GalleryImage[] = Array.from({ length: 15 }, (_, i) => ({
+  src: `/images/slozeni-buketi/buket-${i + 1}.jpg`,
+  alt: `Stvarni buket ${i + 1} složen za dostavu cvijeća u Rijeci`,
+}))
 
 export const DELIVERY_AREAS = [
   'Rijeka',

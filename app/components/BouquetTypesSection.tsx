@@ -69,7 +69,7 @@ export function BouquetTypesSection() {
         </div>
 
         <p className="text-center text-sm text-faint italic">
-          Fotografije su primjeri. Konačan izgled buketa može se razlikovati ovisno o dostupnom sezonskom cvijeću.
+          Fotografije su ilustrativnog karaktera. Svaki buket slažemo ručno od svježeg sezonskog cvijeća, pa konačan izgled može blago odstupati.
         </p>
 
       </div>
