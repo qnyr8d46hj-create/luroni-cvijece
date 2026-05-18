@@ -130,7 +130,7 @@ export async function POST(request: Request): Promise<Response> {
   // Guard: require server-side env vars
   const apiKey       = process.env.RESEND_API_KEY
   const toEmail      = process.env.ORDER_NOTIFICATION_EMAIL
-  const fromEmail    = process.env.RESEND_FROM_EMAIL ?? 'onboarding@resend.dev'
+  const fromEmail    = 'Luroni cvijeće <onboarding@resend.dev>'
 
   if (!apiKey) {
     console.error('[send-order-email] RESEND_API_KEY is not set')
