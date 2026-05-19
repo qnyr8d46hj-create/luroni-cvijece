@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Cormorant_Garamond, DM_Sans } from 'next/font/google'
 import { Analytics }       from '@vercel/analytics/next'
 import { GoogleAnalytics } from '@/app/components/GoogleAnalytics'
+import { FAQS }            from '@/lib/data'
 import './globals.css'
 
 // ── Fonts ──────────────────────────────────────────────────
@@ -122,29 +123,19 @@ export const metadata: Metadata = {
   },
 }
 
-// ── JSON-LD — LocalBusiness structured data ─────────────────
-const jsonLd = {
-  '@context': 'https://schema.org',
-  '@type':    'LocalBusiness',
-  '@id':      SITE_URL,
-  name:        SITE_NAME,
-  description: DESCRIPTION,
-  url:         SITE_URL,
-  image:       `${SITE_URL}${OG_IMAGE}`,
-  email:       'info.luroni@gmail.com',
-  priceRange:  '€€',
-  address: {
-    '@type':           'PostalAddress',
-    addressLocality:   'Rijeka',
-    addressRegion:     'Primorsko-goranska županija',
-    postalCode:        '51000',
-    addressCountry:    'HR',
-  },
-  geo: {
-    '@type':    'GeoCoordinates',
-    latitude:   45.3271,
-    longitude:  14.4422,
-  },
+// ── JSON-LD — Florist / LocalBusiness structured data ────────
+const floristJsonLd = {
+  '@context':         'https://schema.org',
+  '@type':            'Florist',           // more specific than LocalBusiness
+  '@id':              SITE_URL,
+  name:               SITE_NAME,
+  description:        'Ručno složeni buketi s dostavom u Rijeci, okolici i na otoku Krku.',
+  url:                SITE_URL,
+  image:              `${SITE_URL}${OG_IMAGE}`,
+  email:              'info.luroni@gmail.com',
+  priceRange:         '€€',
+  availableLanguage:  { '@type': 'Language', name: 'Croatian' },
+  sameAs:             [],
   areaServed: [
     { '@type': 'City',  name: 'Rijeka'   },
     { '@type': 'City',  name: 'Opatija'  },
@@ -152,6 +143,8 @@ const jsonLd = {
     { '@type': 'City',  name: 'Viškovo'  },
     { '@type': 'City',  name: 'Lovran'   },
     { '@type': 'City',  name: 'Ičići'    },
+    { '@type': 'City',  name: 'Ika'      },
+    { '@type': 'City',  name: 'Šmrika'   },
     { '@type': 'City',  name: 'Malinska' },
     { '@type': 'City',  name: 'Dobrinj'  },
     { '@type': 'Place', name: 'Otok Krk' },
@@ -167,6 +160,17 @@ const jsonLd = {
   },
 }
 
+// ── JSON-LD — FAQPage structured data ────────────────────────
+const faqJsonLd = {
+  '@context':  'https://schema.org',
+  '@type':     'FAQPage',
+  mainEntity:  FAQS.map(({ question, answer }) => ({
+    '@type':        'Question',
+    name:           question,
+    acceptedAnswer: { '@type': 'Answer', text: answer },
+  })),
+}
+
 // ── Root layout ────────────────────────────────────────────
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -174,7 +178,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(floristJsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
         />
       </head>
       <body className="min-h-screen bg-cream text-ink antialiased font-sans">

@@ -59,6 +59,36 @@ export const GALLERY_IMAGES: GalleryImage[] = Array.from({ length: 15 }, (_, i) 
   alt: `Stvarni buket ${i + 1} složen za dostavu cvijeća u Rijeci`,
 }))
 
+export interface FaqItem {
+  question: string
+  answer:   string
+}
+
+// Single source of truth for FAQ — used by both the visible accordion
+// (FaqSection.tsx) and the FAQPage JSON-LD in layout.tsx.
+export const FAQS: FaqItem[] = [
+  {
+    question: 'Gdje dostavljate cvijeće?',
+    answer:   'Dostavljamo bukete na području Rijeke, okolice i otoka Krka, uključujući Opatiju, Kastav, Viškovo, Grobnik, Lovran, Ičiće, Iku, Šmriku, Malinsku, Krk i okolna mjesta.',
+  },
+  {
+    question: 'Koliko brzo dostavljate bukete?',
+    answer:   'Bukete dostavljamo u roku 24h, ovisno o dostupnosti svježeg sezonskog cvijeća i dogovorenom terminu dostave.',
+  },
+  {
+    question: 'Jesu li fotografije buketa stvarne?',
+    answer:   'Fotografije složenih buketa su stvarne. Ostale fotografije buketa su ilustrativnog karaktera. Svaki buket slažemo ručno od svježeg sezonskog cvijeća, pa konačan izgled može blago odstupati.',
+  },
+  {
+    question: 'Kako mogu platiti buket?',
+    answer:   'Plaćanje je moguće karticom online ili gotovinom prilikom dostave, ovisno o dostupnim opcijama na stranici.',
+  },
+  {
+    question: 'Mogu li dodati poruku uz buket?',
+    answer:   'Da, prilikom narudžbe možete upisati kratku poruku za karticu ili dodatnu napomenu.',
+  },
+]
+
 export const DELIVERY_AREAS = [
   'Rijeka',
   'Kastav',

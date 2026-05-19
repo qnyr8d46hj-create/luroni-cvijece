@@ -45,7 +45,7 @@ export function Footer() {
         </div>
 
         <p className="py-5 text-center text-xs text-white/[0.28]">
-          © 2024 Luroni cvijeće. Sva prava pridržana.
+          © 2026 Luroni cvijeće. Sva prava pridržana.
         </p>
 
       </div>

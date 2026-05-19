@@ -1,10 +1,11 @@
-import { Header }            from '@/app/components/Header'
-import { HeroSection }       from '@/app/components/HeroSection'
-import { GallerySection }    from '@/app/components/GallerySection'
+import { Header }             from '@/app/components/Header'
+import { HeroSection }        from '@/app/components/HeroSection'
+import { GallerySection }     from '@/app/components/GallerySection'
 import { BouquetTypesSection } from '@/app/components/BouquetTypesSection'
-import { OrderSection }      from '@/app/components/OrderSection'
-import { LocalSeoSection }   from '@/app/components/LocalSeoSection'
-import { Footer }            from '@/app/components/Footer'
+import { OrderSection }       from '@/app/components/OrderSection'
+import { LocalSeoSection }    from '@/app/components/LocalSeoSection'
+import { FaqSection }         from '@/app/components/FaqSection'
+import { Footer }             from '@/app/components/Footer'
 
 export default function Home() {
   return (
@@ -16,6 +17,7 @@ export default function Home() {
         <BouquetTypesSection />
         <OrderSection />
         <LocalSeoSection />
+        <FaqSection />
       </main>
       <Footer />
     </>
