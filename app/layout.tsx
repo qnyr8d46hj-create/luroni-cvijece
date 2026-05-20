@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Cormorant_Garamond, DM_Sans } from 'next/font/google'
 import { Analytics }       from '@vercel/analytics/next'
+import { SpeedInsights }   from '@vercel/speed-insights/next'
 import { GoogleAnalytics } from '@/app/components/GoogleAnalytics'
 import { FAQS }            from '@/lib/data'
 import './globals.css'
@@ -202,6 +203,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen bg-cream text-ink antialiased font-sans">
         {children}
         <Analytics />
+        <SpeedInsights />
         {process.env.NODE_ENV === 'production' && process.env.NEXT_PUBLIC_GA_ID && (
           <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID} />
         )}
