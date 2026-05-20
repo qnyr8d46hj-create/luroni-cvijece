@@ -75,7 +75,9 @@ export function OrderForm() {
   const [submitted, setSubmitted]   = useState(false)
   const [submitError, setSubmitError] = useState('')
 
-  const today = new Date().toISOString().split('T')[0]
+  // Use local date rather than UTC — toISOString() would return yesterday's date
+  // for any user whose local time is past midnight but UTC has not rolled over yet.
+  const today = new Date().toLocaleDateString('sv') // 'sv' locale produces YYYY-MM-DD
 
   function onBlur(e: React.FocusEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
     const { name, value } = e.target

@@ -31,7 +31,7 @@ export function Header() {
               width={200}
               height={56}
               className="h-9 w-auto"
-              priority
+              preload
             />
           </a>
 
@@ -61,7 +61,7 @@ export function Header() {
             </a>
 
             <button
-              className="lg:hidden flex flex-col justify-center gap-[5px] p-1.5 -mr-1"
+              className="lg:hidden flex flex-col items-center justify-center gap-[5px] min-w-[44px] min-h-[44px] -mr-2.5"
               onClick={() => setOpen(!open)}
               aria-label={open ? 'Zatvori izbornik' : 'Otvori izbornik'}
               aria-expanded={open}

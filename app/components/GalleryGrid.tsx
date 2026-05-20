@@ -46,7 +46,7 @@ function BouquetCard({ image, index, animateIn, stagger = 0, sizes }: CardProps)
         fill
         className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.06]"
         sizes={sizes}
-        loading={index < 4 ? 'eager' : 'lazy'}
+        loading="lazy"
       />
 
     </div>

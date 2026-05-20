@@ -45,7 +45,7 @@ export function OrderSection() {
           </div>
 
           {/* Right — form card */}
-          <div className="bg-white border-[1.5px] border-divider rounded-3xl p-8 shadow-lg lg:sticky lg:top-24">
+          <div className="bg-white border-[1.5px] border-divider rounded-3xl p-5 sm:p-8 shadow-lg lg:sticky lg:top-24">
             <OrderForm />
           </div>
 
