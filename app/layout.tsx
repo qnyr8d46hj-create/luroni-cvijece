@@ -63,6 +63,20 @@ export const metadata: Metadata = {
     'buket za godišnjicu',
   ],
 
+  // ── Icons ────────────────────────────────────────────────
+  // Explicit declarations ensure all browsers and platforms use the correct
+  // image regardless of whether Next.js auto-detects the convention file.
+  // favicon.ico   → browser tabs, Google search snippets
+  // icon.png      → high-res PNG favicon (Chrome, modern browsers)
+  // apple-icon    → iOS home-screen / Safari tab icon (180×180)
+  icons: {
+    // favicon.ico   → browser tabs, bookmarks, Google search snippets
+    // apple-icon    → iOS home screen & Safari — served by app/apple-icon.tsx
+    icon:     [{ url: '/favicon.ico', sizes: 'any', type: 'image/x-icon' }],
+    shortcut: ['/favicon.ico'],
+    apple:    [{ url: '/apple-icon.png', sizes: '180x180', type: 'image/png' }],
+  },
+
   authors:   [{ name: SITE_NAME, url: SITE_URL }],
   creator:   SITE_NAME,
   publisher: SITE_NAME,

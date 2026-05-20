@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 
 const NAV_LINKS = [
   { href: '#top',      label: 'Početna' },
@@ -21,11 +22,17 @@ export function Header() {
           {/* Logo */}
           <a
             href="#top"
-            className="flex items-center gap-2 font-display text-xl font-semibold text-forest flex-shrink-0"
+            className="flex items-center flex-shrink-0 hover:opacity-85 transition-opacity duration-200"
             aria-label="Luroni cvijeće — početna"
           >
-            <FlowerIcon />
-            <span>Luroni cvijeće</span>
+            <Image
+              src="/images/branding/logo-header.png"
+              alt="Luroni cvijeće"
+              width={200}
+              height={56}
+              className="h-9 w-auto"
+              priority
+            />
           </a>
 
           {/* Desktop nav */}
@@ -111,18 +118,5 @@ export function Header() {
         </nav>
       )}
     </header>
-  )
-}
-
-function FlowerIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M12 2C10.5 4 9 6.5 9 9c0 1.7 1.3 3 3 3s3-1.3 3-3c0-2.5-1.5-5-3-7z" opacity={0.9} />
-      <path d="M12 12C9.5 9.5 5.5 9.5 3.5 12c-1 1.2-1 3.2.5 4 1.5.8 4-.5 8-4z" opacity={0.7} />
-      <path d="M12 12c2.5-2.5 6.5-2.5 8.5 0 1 1.2 1 3.2-.5 4-1.5.8-4-.5-8-4z" opacity={0.7} />
-      <path d="M12 12c-1.5 2.5-1.5 6 0 8 .8 1 2.5 1.2 3.5 0 1-1.2 0-4-3.5-8z" opacity={0.6} />
-      <path d="M12 12c1.5 2.5 1.5 6 0 8-.8 1-2.5 1.2-3.5 0-1-1.2 0-4 3.5-8z" opacity={0.6} />
-      <circle cx="12" cy="12" r="2.2" />
-    </svg>
   )
 }

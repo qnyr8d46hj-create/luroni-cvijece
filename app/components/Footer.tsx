@@ -1,3 +1,5 @@
+import Image from 'next/image'
+
 const FOOTER_LINKS = [
   { href: '#top',      label: 'Početna' },
   { href: '#gallery',  label: 'Složeni buketi' },
@@ -17,11 +19,16 @@ export function Footer() {
           <div>
             <a
               href="#top"
-              className="flex items-center gap-2 font-display text-xl font-semibold text-white/90 mb-1.5"
+              className="inline-block mb-2 hover:opacity-80 transition-opacity duration-200"
               aria-label="Luroni cvijeće — na vrh stranice"
             >
-              <FlowerIcon />
-              Luroni cvijeće
+              <Image
+                src="/images/branding/logo-footer.png"
+                alt="Luroni cvijeće"
+                width={320}
+                height={100}
+                className="h-14 w-auto sm:h-20"
+              />
             </a>
             <p className="text-sm text-white/40">online narudžba buketa s dostavom</p>
           </div>
@@ -50,18 +57,5 @@ export function Footer() {
 
       </div>
     </footer>
-  )
-}
-
-function FlowerIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M12 2C10.5 4 9 6.5 9 9c0 1.7 1.3 3 3 3s3-1.3 3-3c0-2.5-1.5-5-3-7z" opacity={0.9} />
-      <path d="M12 12C9.5 9.5 5.5 9.5 3.5 12c-1 1.2-1 3.2.5 4 1.5.8 4-.5 8-4z" opacity={0.7} />
-      <path d="M12 12c2.5-2.5 6.5-2.5 8.5 0 1 1.2 1 3.2-.5 4-1.5.8-4-.5-8-4z" opacity={0.7} />
-      <path d="M12 12c-1.5 2.5-1.5 6 0 8 .8 1 2.5 1.2 3.5 0 1-1.2 0-4-3.5-8z" opacity={0.6} />
-      <path d="M12 12c1.5 2.5 1.5 6 0 8-.8 1-2.5 1.2-3.5 0-1-1.2 0-4 3.5-8z" opacity={0.6} />
-      <circle cx="12" cy="12" r="2.2" />
-    </svg>
   )
 }
