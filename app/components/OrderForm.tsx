@@ -69,11 +69,15 @@ function PaymentOption({ value, label, icon }: { value: string; label: string; i
 
 /* ── Main form ────────────────────────────────────────────── */
 export function OrderForm() {
-  const [errors, setErrors]         = useState<Record<string, string>>({})
-  const [paymentErr, setPaymentErr] = useState('')
-  const [loading, setLoading]       = useState(false)
-  const [submitted, setSubmitted]   = useState(false)
+  const [errors, setErrors]           = useState<Record<string, string>>({})
+  const [paymentErr, setPaymentErr]   = useState('')
+  const [loading, setLoading]         = useState(false)
+  const [submitted, setSubmitted]     = useState(false)
   const [submitError, setSubmitError] = useState('')
+  // True once Firestore write + checkout session are ready and we're about
+  // to navigate away — keeps the button in its loading state with a
+  // descriptive label until Stripe's redirect fires.
+  const [stripeRedirecting, setStripeRedirecting] = useState(false)
 
   // Use local date rather than UTC — toISOString() would return yesterday's date
   // for any user whose local time is past midnight but UTC has not rolled over yet.
@@ -121,6 +125,10 @@ export function OrderForm() {
     setLoading(true)
     setSubmitError('')
 
+    // Local flag so the finally block knows not to clear loading state when
+    // we are about to navigate away to Stripe (state update would be too late).
+    let navigatingToStripe = false
+
     try {
       const orderPayload = {
         fullName:        String(data.get('fullName')     ?? '').trim(),
@@ -136,27 +144,70 @@ export function OrderForm() {
         paymentMethod:   payment,
       }
 
-      await addDoc(collection(db, 'orders'), {
-        ...orderPayload,
-        status:    'new',
-        createdAt: serverTimestamp(),
-      })
+      if (payment === 'card') {
+        // ── Card payment: save order → create Stripe session → redirect ──
 
-      setSubmitted(true)
+        // 1. Write order with status "pending_payment" so we have an ID
+        //    before redirecting. The status will be updated to "paid" once
+        //    webhooks are wired up.
+        const docRef = await addDoc(collection(db, 'orders'), {
+          ...orderPayload,
+          status:    'pending_payment',
+          createdAt: serverTimestamp(),
+        })
 
-      // Fire-and-forget email notification — never block the success state
-      fetch('/api/send-order-email', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify(orderPayload),
-      }).catch(err => console.error('[OrderForm] Email notification failed:', err))
+        // 2. Create the hosted Checkout session server-side
+        const res = await fetch('/api/create-checkout-session', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({
+            orderId:       docRef.id,
+            bouquetSize:   orderPayload.bouquetSize,
+            customerEmail: orderPayload.email,
+            customerName:  orderPayload.fullName,
+          }),
+        })
+
+        if (!res.ok) {
+          const errBody = await res.json().catch(() => ({}))
+          throw new Error(errBody.error ?? 'Checkout session creation failed')
+        }
+
+        const { url } = await res.json()
+
+        // 3. Hand off to Stripe — keep the button in loading state until
+        //    the browser actually navigates away.
+        setStripeRedirecting(true)
+        navigatingToStripe = true
+        window.location.href = url
+
+      } else {
+        // ── Cash payment: existing Firestore + email flow ─────────────
+
+        await addDoc(collection(db, 'orders'), {
+          ...orderPayload,
+          status:    'new',
+          createdAt: serverTimestamp(),
+        })
+
+        setSubmitted(true)
+
+        // Fire-and-forget email notification — never block the success state
+        fetch('/api/send-order-email', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify(orderPayload),
+        }).catch(err => console.error('[OrderForm] Email notification failed:', err))
+      }
+
     } catch (err) {
-      console.error('Firestore write failed:', err)
+      console.error('Order submission failed:', err)
       setSubmitError(
-        'Došlo je do greške. Molimo pokušajte ponovno ili nas kontaktirajte direktno.'
+        'Došlo je do greške. Molimo pokušajte ponovno ili nas kontaktirajte na info.luroni@gmail.com.'
       )
     } finally {
-      setLoading(false)
+      // Do not clear the loading spinner while the Stripe redirect is in flight
+      if (!navigatingToStripe) setLoading(false)
     }
   }
 
@@ -307,7 +358,7 @@ export function OrderForm() {
             <svg className="animate-spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
               <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" strokeLinecap="round"/>
             </svg>
-            Slanje...
+            {stripeRedirecting ? 'Preusmjeravanje na plaćanje…' : 'Slanje narudžbe…'}
           </>
         ) : (
           'Pošalji narudžbu'
