@@ -146,7 +146,7 @@ async function handleCheckoutCompleted(event: Stripe.Event) {
 
   const orderData = orderSnap.data()!
   console.log(`[Webhook][${event.id}] Document found — status BEFORE update: "${orderData.status}"`)
-  console.log(`[Webhook][${event.id}] Existing stripeEventId: "${orderData.stripeEventId ?? '(null)'"`)
+  console.log(`[Webhook][${event.id}] Existing stripeEventId: "${orderData.stripeEventId ?? '(null)'}"`)
 
   // ── Step 6: Idempotency guard ──────────────────────────────
   if (orderData.stripeEventId === event.id) {
