@@ -1,6 +1,8 @@
 import Stripe from 'stripe'
 import { NextRequest, NextResponse } from 'next/server'
-import { adminDb, FieldValue } from '@/lib/firebaseAdmin'
+import { adminDb, FieldValue }                from '@/lib/firebaseAdmin'
+import { sendOrderNotificationEmail }         from '@/lib/sendOrderEmail'
+import type { OrderEmailPayload }             from '@/lib/sendOrderEmail'
 
 // ── Stripe client — server-side only ──────────────────────────
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -70,7 +72,7 @@ export async function POST(req: NextRequest) {
   try {
     switch (event.type) {
       case 'checkout.session.completed':
-        await handleCheckoutCompleted(event, req)
+        await handleCheckoutCompleted(event)
         break
       default:
         console.log(`[Webhook] Unhandled type "${event.type}" — acknowledged silently`)
@@ -88,7 +90,7 @@ export async function POST(req: NextRequest) {
 }
 
 // ── Handler: checkout.session.completed ───────────────────────
-async function handleCheckoutCompleted(event: Stripe.Event, req: NextRequest) {
+async function handleCheckoutCompleted(event: Stripe.Event) {
   const session = event.data.object as Stripe.Checkout.Session
 
   console.log(`[Webhook][${event.id}] checkout.session.completed`)
@@ -171,44 +173,51 @@ async function handleCheckoutCompleted(event: Stripe.Event, req: NextRequest) {
   }
 
   // ── Send notification email ────────────────────────────────
-  // Card payments: email deferred until payment is confirmed here.
-  // Cash payments: email sent immediately from OrderForm.tsx (unchanged).
-  // Re-uses /api/send-order-email so the HTML template is not duplicated.
-  console.log(`[Webhook][${event.id}] Dispatching notification email for orders/${orderId}...`)
+  // Card payments: email is sent here (after payment confirmed in Firestore).
+  // Cash payments: email is sent immediately from OrderForm.tsx — unchanged.
+  //
+  // IMPORTANT: call sendOrderNotificationEmail() directly — do NOT fetch
+  // /api/send-order-email via HTTP. On Vercel, a serverless function cannot
+  // reliably call its own routes, and any async work started after `return`
+  // is silently cut off when the function exits.
+  const toEmail = process.env.ORDER_NOTIFICATION_EMAIL ?? '(ORDER_NOTIFICATION_EMAIL not set)'
+  console.log(`[Webhook][${event.id}] Sending notification email to: ${toEmail}`)
 
-  const proto   = req.headers.get('x-forwarded-proto') ?? 'http'
-  const host    = req.headers.get('host')              ?? 'localhost:3000'
-  const baseUrl = `${proto}://${host}`
-
-  const emailPayload = {
+  const emailPayload: OrderEmailPayload = {
     fullName:        String(orderData.fullName        ?? ''),
     phone:           String(orderData.phone           ?? ''),
     email:           String(orderData.email           ?? ''),
     deliveryAddress: String(orderData.deliveryAddress ?? ''),
     deliveryCity:    String(orderData.deliveryCity    ?? ''),
     bouquetSize:     String(orderData.bouquetSize     ?? ''),
-    bouquetPrice:    orderData.bouquetPrice            ?? null,
+    bouquetPrice:    typeof orderData.bouquetPrice === 'number' ? orderData.bouquetPrice : null,
     deliveryDate:    String(orderData.deliveryDate    ?? ''),
     deliveryTime:    String(orderData.deliveryTime    ?? ''),
     cardMessage:     String(orderData.cardMessage     ?? ''),
     paymentMethod:   String(orderData.paymentMethod   ?? 'card'),
   }
 
-  // Fire-and-forget — email failure must NOT return 500 (would cause Stripe
-  // to retry and double-update the order).
-  fetch(`${baseUrl}/api/send-order-email`, {
-    method:  'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body:    JSON.stringify(emailPayload),
-  })
-    .then(r => {
-      if (r.ok) {
-        console.log(`[Webhook][${event.id}] ✓ Email sent for orders/${orderId}`)
-      } else {
-        console.error(`[Webhook][${event.id}] Email API returned HTTP ${r.status} for orders/${orderId}`)
-      }
-    })
-    .catch(err => {
-      console.error(`[Webhook][${event.id}] Email fetch failed for orders/${orderId}:`, err)
-    })
+  try {
+    const emailResult = await sendOrderNotificationEmail(emailPayload)
+
+    if (emailResult.success) {
+      console.log(
+        `[Webhook][${event.id}] ✓ Email sent — messageId: ${emailResult.messageId ?? '(no id)'} ` +
+        `for orders/${orderId}`,
+      )
+    } else {
+      // Log but do not throw — a failed email must never cause a 500 response
+      // here because that would make Stripe retry and double-process the payment.
+      console.error(
+        `[Webhook][${event.id}] Email FAILED (Resend error): ${emailResult.error} ` +
+        `for orders/${orderId}`,
+      )
+    }
+  } catch (err) {
+    // Unexpected throw from sendOrderNotificationEmail — same policy: log, don't re-throw.
+    console.error(
+      `[Webhook][${event.id}] Email threw unexpectedly for orders/${orderId}:`,
+      err,
+    )
+  }
 }
