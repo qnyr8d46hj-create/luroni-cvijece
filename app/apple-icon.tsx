@@ -7,9 +7,9 @@ export const size        = { width: 180, height: 180 }
 export const contentType = 'image/png'
 
 export default function AppleIcon() {
-  // Read icon.PNG directly from the file system at build time — no HTTP fetch
+  // Read icon.png directly from the file system at build time — no HTTP fetch
   // needed, works on both Windows (case-insensitive) and Linux (exact match).
-  const iconBuffer = readFileSync(join(process.cwd(), 'app', 'icon.PNG'))
+  const iconBuffer = readFileSync(join(process.cwd(), 'app', 'icon.png'))
   const iconSrc    = `data:image/png;base64,${iconBuffer.toString('base64')}`
 
   return new ImageResponse(

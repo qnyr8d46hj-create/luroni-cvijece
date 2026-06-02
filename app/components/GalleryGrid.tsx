@@ -4,10 +4,6 @@ import { useState } from 'react'
 import Image from 'next/image'
 import type { GalleryImage } from '@/lib/data'
 
-// ── Constants ──────────────────────────────────────────────
-const INITIAL_DESKTOP = 6
-const INITIAL_MOBILE  = 4
-
 // ── Card ───────────────────────────────────────────────────
 interface CardProps {
   image:      GalleryImage
@@ -78,33 +74,38 @@ function ExpandButton({ onClick }: { onClick: () => void }) {
 }
 
 // ── Main export ────────────────────────────────────────────
-export function GalleryGrid({ images }: { images: GalleryImage[] }) {
+interface GalleryGridProps {
+  /** Images shown before "Pogledaj više buketa" is clicked (both desktop and mobile) */
+  featuredImages: GalleryImage[]
+  /** Full image set shown after expansion */
+  allImages:      GalleryImage[]
+}
+
+export function GalleryGrid({ featuredImages, allImages }: GalleryGridProps) {
   const [expanded, setExpanded] = useState(false)
 
-  const desktopImages = expanded ? images : images.slice(0, INITIAL_DESKTOP)
-  const mobileImages  = expanded ? images : images.slice(0, INITIAL_MOBILE)
-
-  const showDesktopBtn = !expanded && images.length > INITIAL_DESKTOP
-  const showMobileBtn  = !expanded && images.length > INITIAL_MOBILE
+  const visibleImages  = expanded ? allImages : featuredImages
+  const featuredCount  = featuredImages.length
+  const showExpandBtn  = !expanded && allImages.length > featuredCount
 
   return (
     <>
       {/* ── Desktop / tablet grid — hidden on mobile ─────────── */}
       <div className="hidden sm:block">
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
-          {desktopImages.map((img, i) => (
+          {visibleImages.map((img, i) => (
             <BouquetCard
               key={img.src}
               image={img}
               index={i}
-              animateIn={expanded && i >= INITIAL_DESKTOP}
-              stagger={i - INITIAL_DESKTOP}
+              animateIn={expanded && i >= featuredCount}
+              stagger={i - featuredCount}
               sizes="(max-width: 1024px) 50vw, 33vw"
             />
           ))}
         </div>
 
-        {showDesktopBtn && <ExpandButton onClick={() => setExpanded(true)} />}
+        {showExpandBtn && <ExpandButton onClick={() => setExpanded(true)} />}
       </div>
 
       {/* ── Mobile carousel — hidden on sm+ ──────────────────── */}
@@ -118,7 +119,7 @@ export function GalleryGrid({ images }: { images: GalleryImage[] }) {
           className="flex overflow-x-auto snap-x snap-mandatory gap-3.5 -mx-5 px-5 pb-2 carousel-scroll"
           style={{ scrollPaddingLeft: '1.25rem' }}
         >
-          {mobileImages.map((img, i) => (
+          {visibleImages.map((img, i) => (
             <div
               key={img.src}
               className="shrink-0 snap-start"
@@ -127,8 +128,8 @@ export function GalleryGrid({ images }: { images: GalleryImage[] }) {
               <BouquetCard
                 image={img}
                 index={i}
-                animateIn={expanded && i >= INITIAL_MOBILE}
-                stagger={i - INITIAL_MOBILE}
+                animateIn={expanded && i >= featuredCount}
+                stagger={i - featuredCount}
                 sizes="82vw"
               />
             </div>
@@ -137,7 +138,7 @@ export function GalleryGrid({ images }: { images: GalleryImage[] }) {
           <div className="shrink-0 w-5" aria-hidden="true" />
         </div>
 
-        {showMobileBtn && (
+        {showExpandBtn && (
           <div className="mt-6 flex justify-center">
             <button
               onClick={() => setExpanded(true)}

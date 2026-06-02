@@ -52,12 +52,23 @@ export const BOUQUET_TYPES: BouquetType[] = [
   },
 ]
 
-// Single source of truth — add more images by incrementing the length.
+// ── Gallery images ─────────────────────────────────────────────────────────
+// To change which images appear first (before "Pogledaj više buketa"),
+// edit featuredBouquets only. allBouquets must include every image number.
 // All files must exist as /public/images/slozeni-buketi/buket-N.jpg (lowercase).
-export const GALLERY_IMAGES: GalleryImage[] = Array.from({ length: 15 }, (_, i) => ({
-  src: `/images/slozeni-buketi/buket-${i + 1}.jpg`,
-  alt: `Stvarni buket ${i + 1} složen za dostavu cvijeća u Rijeci`,
-}))
+
+const featuredBouquets: number[] = [1, 2, 3, 4, 5, 6]
+const allBouquets:      number[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
+
+function toGalleryImage(n: number): GalleryImage {
+  return {
+    src: `/images/slozeni-buketi/buket-${n}.jpg`,
+    alt: `Stvarni buket ${n} složen za dostavu cvijeća u Rijeci`,
+  }
+}
+
+export const GALLERY_IMAGES_FEATURED: GalleryImage[] = featuredBouquets.map(toGalleryImage)
+export const GALLERY_IMAGES_ALL:      GalleryImage[] = allBouquets.map(toGalleryImage)
 
 export interface FaqItem {
   question: string

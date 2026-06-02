@@ -1,4 +1,4 @@
-import { GALLERY_IMAGES } from '@/lib/data'
+import { GALLERY_IMAGES_FEATURED, GALLERY_IMAGES_ALL } from '@/lib/data'
 import { GalleryGrid }    from './GalleryGrid'
 
 // ── Trust badge icons ──────────────────────────────────────
@@ -85,7 +85,7 @@ export function GallerySection() {
         </div>
 
         {/* ── Interactive gallery (client) ──────────────────────── */}
-        <GalleryGrid images={GALLERY_IMAGES} />
+        <GalleryGrid featuredImages={GALLERY_IMAGES_FEATURED} allImages={GALLERY_IMAGES_ALL} />
 
       </div>
     </section>
