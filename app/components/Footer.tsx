@@ -5,7 +5,7 @@ const FOOTER_LINKS = [
   { href: '#gallery',  label: 'Složeni buketi' },
   { href: '#bouquets', label: 'Veličine buketa' },
   { href: '#order',    label: 'Narudžba' },
-  { href: '#contact',  label: 'Kontakt' },
+  { href: '#kontakt',  label: 'Kontakt' },
 ]
 
 export function Footer() {
