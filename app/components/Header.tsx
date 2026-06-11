@@ -8,7 +8,7 @@ const NAV_LINKS = [
   { href: '#gallery',  label: 'Složeni buketi' },
   { href: '#bouquets', label: 'Veličine' },
   { href: '#order',    label: 'Narudžba' },
-  { href: '#contact',  label: 'Kontakt' },
+  { href: '#kontakt',  label: 'Kontakt' },
 ]
 
 export function Header() {
