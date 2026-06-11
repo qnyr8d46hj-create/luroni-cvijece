@@ -118,7 +118,7 @@ export function ContactSection() {
     setSubmitError('')
 
     try {
-      const res  = await fetch('/api/contact', {
+      const res  = await fetch('/api/send-contact-email', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({
