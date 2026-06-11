@@ -7,6 +7,31 @@ import { db } from '@/lib/firebase'
 /* ── Price lookup ─────────────────────────────────────────── */
 const BOUQUET_PRICES: Record<string, number> = { S: 35, M: 45, L: 60 }
 
+/* ── Delivery locations ────────────────────────────────────
+   To add or remove a city: edit this array only.
+   The selected value is saved as-is to Firestore (deliveryCity).  */
+const DELIVERY_CITIES = [
+  'Rijeka',
+  'Opatija',
+  'Lovran',
+  'Ičići',
+  'Ika',
+  'Matulji',
+  'Kastav',
+  'Viškovo',
+  'Čavle',
+  'Kostrena',
+  'Kraljevica',
+  'Šmrika',
+  'Crikvenica',
+  'Selce',
+  'Novi Vinodolski',
+  'Dražice',
+  'Kukuljanovo',
+  'Klana',
+  'Otok Krk',
+] as const
+
 /* ── Validation ───────────────────────────────────────────── */
 const REQUIRED = ['fullName', 'phone', 'email', 'address', 'city', 'bouquetSize', 'deliveryDate'] as const
 
@@ -16,7 +41,7 @@ function validate(name: string, value: string): string {
     case 'phone':        return /^[\d\s+\-().]{7,}$/.test(value.trim()) ? '' : 'Unesite ispravan broj mobitela.'
     case 'email':        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim()) ? '' : 'Unesite ispravnu email adresu.'
     case 'address':      return value.trim().length >= 3 ? '' : 'Unesite adresu dostave.'
-    case 'city':         return value.trim().length >= 2 ? '' : 'Unesite mjesto dostave.'
+    case 'city':         return (DELIVERY_CITIES as readonly string[]).includes(value) ? '' : 'Molimo odaberite mjesto dostave.'
     case 'bouquetSize':  return value ? '' : 'Odaberite veličinu buketa.'
     case 'deliveryDate': {
       if (!value) return 'Odaberite datum dostave.'
@@ -272,15 +297,42 @@ export function OrderForm() {
         />
       </Field>
 
-      {/* City */}
-      <Field label="Mjesto dostave" required error={errors.city}>
-        <input
-          type="text" name="city" id="city"
-          placeholder="Rijeka, Krk, Opatija..." autoComplete="address-level2"
-          onBlur={onBlur} onChange={onChange}
-          className={inputCls(errors.city)}
-        />
-      </Field>
+      {/* City — restricted to served delivery areas */}
+      <div>
+        <Field label="Mjesto dostave" required error={errors.city}>
+          <select
+            name="city" id="city" defaultValue=""
+            onBlur={onBlur} onChange={onChange}
+            className={selectCls(errors.city)}
+          >
+            <option value="" disabled>Odaberite mjesto dostave</option>
+            {DELIVERY_CITIES.map((city) => (
+              <option key={city} value={city}>{city}</option>
+            ))}
+          </select>
+        </Field>
+        <p className="text-xs text-muted mt-2 leading-[1.55]">
+          Dostava je trenutno dostupna na odabranim lokacijama u Primorsko-goranskoj
+          županiji i na otoku Krku.
+        </p>
+        <p className="text-xs text-muted mt-1.5 leading-[1.55]">
+          Ne vidite svoje mjesto?{' '}
+          <a
+            href="#kontakt"
+            className="text-forest underline-offset-2 hover:underline"
+          >
+            Kontaktirajte nas putem obrasca za kontakt
+          </a>
+          {' '}ili na{' '}
+          <a
+            href="mailto:info@luroni.hr"
+            className="text-forest underline-offset-2 hover:underline"
+          >
+            info@luroni.hr
+          </a>
+          {' '}i provjerit ćemo mogućnost dostave.
+        </p>
+      </div>
 
       {/* Bouquet size */}
       <Field label="Veličina buketa" required error={errors.bouquetSize}>
