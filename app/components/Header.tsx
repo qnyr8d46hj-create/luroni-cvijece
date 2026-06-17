@@ -11,11 +11,30 @@ const NAV_LINKS = [
   { href: '#kontakt',  label: 'Kontakt' },
 ]
 
+/* ── Temporary notice bar — single config block ──────────────
+   To remove the notice later: set `enabled` to false below,
+   or delete this block and the <NoticeBar /> call in Header(). */
+const NOTICE_BAR = {
+  enabled: true,
+  text: '🌸 Obavijest: Od 20.6. do 27.6. privremeno ne vršimo dostavu cvijeća. Narudžbe ponovno primamo od 28.6.',
+}
+
+function NoticeBar() {
+  if (!NOTICE_BAR.enabled) return null
+  return (
+    <div className="bg-[#f3e9d2] text-forest-dark text-center text-xs sm:text-sm font-medium leading-snug px-4 py-2.5">
+      {NOTICE_BAR.text}
+    </div>
+  )
+}
+
 export function Header() {
   const [open, setOpen] = useState(false)
 
   return (
-    <header className="sticky top-0 z-50 bg-cream/95 backdrop-blur-sm border-b border-divider">
+    <>
+      <NoticeBar />
+      <header className="sticky top-0 z-50 bg-cream/95 backdrop-blur-sm border-b border-divider">
       <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-12">
         <div className="flex items-center justify-between h-16 gap-4">
 
@@ -117,6 +136,7 @@ export function Header() {
           </a>
         </nav>
       )}
-    </header>
+      </header>
+    </>
   )
 }
