@@ -32,15 +32,6 @@ const DELIVERY_CITIES = [
   'Otok Krk',
 ] as const
 
-/* ── Temporary delivery blackout window ──────────────────────
-   To remove this restriction later: delete this block and the
-   blackout check inside validate('deliveryDate').            */
-const DELIVERY_BLACKOUT = {
-  start:   '2026-06-20',
-  end:     '2026-06-27',
-  message: 'Dostava nije dostupna od 20.6. do 27.6. Molimo odaberite drugi datum.',
-}
-
 /* ── Validation ───────────────────────────────────────────── */
 const REQUIRED = ['fullName', 'phone', 'email', 'address', 'city', 'bouquetSize', 'deliveryDate'] as const
 
@@ -56,11 +47,7 @@ function validate(name: string, value: string): string {
       if (!value) return 'Odaberite datum dostave.'
       const d = new Date(value), t = new Date()
       t.setHours(0, 0, 0, 0)
-      if (d < t) return 'Datum ne može biti u prošlosti.'
-      if (value >= DELIVERY_BLACKOUT.start && value <= DELIVERY_BLACKOUT.end) {
-        return DELIVERY_BLACKOUT.message
-      }
-      return ''
+      return d >= t ? '' : 'Datum ne može biti u prošlosti.'
     }
     default: return ''
   }
