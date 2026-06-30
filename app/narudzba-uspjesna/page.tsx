@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
-import { Header } from '@/app/components/Header'
-import { Footer } from '@/app/components/Footer'
+import { Header }          from '@/app/components/Header'
+import { Footer }          from '@/app/components/Footer'
+import { PurchaseTracker } from '@/app/components/PurchaseTracker'
 
 export const metadata: Metadata = {
   title: 'Hvala na narudžbi! | Luroni Cvijeće',
@@ -8,10 +9,20 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 }
 
-export default function NarudzbaUspjesnaPage() {
+// searchParams is a Promise in Next.js 15+ App Router
+export default async function NarudzbaUspjesnaPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ session_id?: string }>
+}) {
+  const { session_id } = await searchParams
+
   return (
     <>
       <Header />
+
+      {/* Fires GA4 purchase event client-side; no-op if session_id is absent */}
+      <PurchaseTracker sessionId={session_id} />
 
       <main
         className="min-h-[75vh] flex items-center justify-center bg-cream px-5 py-20"
