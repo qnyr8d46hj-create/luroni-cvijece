@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import Link from 'next/link'
 
 const FOOTER_LINKS = [
   { href: '#top',      label: 'Početna' },
@@ -8,15 +9,26 @@ const FOOTER_LINKS = [
   { href: '#kontakt',  label: 'Kontakt' },
 ]
 
+const LEGAL_LINKS = [
+  { href: '/opci-uvjeti',            label: 'Opći uvjeti' },
+  { href: '/politika-privatnosti',   label: 'Politika privatnosti' },
+  { href: '/politika-kolacica',      label: 'Politika kolačića' },
+  { href: '/dostava-i-placanje',     label: 'Dostava i plaćanje' },
+  { href: '/reklamacije-i-povrati',  label: 'Reklamacije i povrati' },
+]
+
+const navLinkCls =
+  'block py-1.5 text-sm text-white/55 hover:text-white transition-colors'
+
 export function Footer() {
   return (
     <footer className="bg-[#17271d] text-white/60" aria-label="Footer">
       <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-12">
 
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-8 py-12 border-b border-white/[0.08]">
+        <div className="flex flex-col sm:flex-row items-start justify-between gap-10 py-12 border-b border-white/[0.08]">
 
           {/* Brand */}
-          <div>
+          <div className="shrink-0">
             <a
               href="#top"
               className="inline-block mb-2 hover:opacity-80 transition-opacity duration-200"
@@ -33,22 +45,42 @@ export function Footer() {
             <p className="text-sm text-white/40">online narudžba buketa s dostavom</p>
           </div>
 
-          {/* Nav */}
-          <nav aria-label="Footer navigacija">
-            <ul className="flex flex-wrap gap-1">
-              {FOOTER_LINKS.map((link) => (
-                <li key={link.href}>
-                  <a
-                    href={link.href}
-                    className="px-3 py-2.5 text-sm text-white/55 rounded-lg hover:text-white hover:bg-white/[0.07] transition-colors"
-                  >
-                    {link.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </nav>
+          {/* Nav columns */}
+          <div className="flex flex-col sm:flex-row gap-10 sm:gap-14">
 
+            {/* Navigacija */}
+            <nav aria-label="Footer navigacija">
+              <p className="text-[0.6875rem] font-semibold tracking-[0.12em] uppercase text-white/30 mb-3">
+                Navigacija
+              </p>
+              <ul className="space-y-0.5">
+                {FOOTER_LINKS.map((link) => (
+                  <li key={link.href}>
+                    <a href={link.href} className={navLinkCls}>
+                      {link.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+
+            {/* Pravno */}
+            <nav aria-label="Pravno">
+              <p className="text-[0.6875rem] font-semibold tracking-[0.12em] uppercase text-white/30 mb-3">
+                Pravno
+              </p>
+              <ul className="space-y-0.5">
+                {LEGAL_LINKS.map((link) => (
+                  <li key={link.href}>
+                    <Link href={link.href} className={navLinkCls}>
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+
+          </div>
         </div>
 
         <p className="py-5 text-center text-xs text-white/[0.28]">
