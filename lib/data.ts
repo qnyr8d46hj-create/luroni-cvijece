@@ -58,7 +58,7 @@ export const BOUQUET_TYPES: BouquetType[] = [
 // All files must exist as /public/images/slozeni-buketi/buket-N.jpg (lowercase).
 
 const featuredBouquets: number[] = [1, 2, 3, 4, 5, 6]
-const allBouquets:      number[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
+const allBouquets:      number[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]
 
 function toGalleryImage(n: number): GalleryImage {
   return {
