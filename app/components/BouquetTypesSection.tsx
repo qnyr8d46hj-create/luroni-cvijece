@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import { BOUQUET_TYPES } from '@/lib/data'
+import { CustomBouquetCard } from './CustomBouquetCard'
 
 export function BouquetTypesSection() {
   return (
@@ -19,7 +20,8 @@ export function BouquetTypesSection() {
           </p>
         </header>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-7">
+        {/* Standard bouquet cards — S, M, L */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
           {BOUQUET_TYPES.map((bouquet) => (
             <article
               key={bouquet.id}
@@ -66,6 +68,11 @@ export function BouquetTypesSection() {
               </div>
             </article>
           ))}
+        </div>
+
+        {/* Custom bouquet card — full-width premium option */}
+        <div className="mb-7">
+          <CustomBouquetCard />
         </div>
 
         <p className="text-center text-sm text-faint italic">

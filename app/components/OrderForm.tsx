@@ -1,13 +1,19 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 
-/* ── Price lookup ─────────────────────────────────────────── */
+/* ── Standard bouquet prices ──────────────────────────────────── */
 const BOUQUET_PRICES: Record<string, number> = { S: 35, M: 45, L: 60 }
 
-/* ── Delivery locations ────────────────────────────────────
+/* ── Custom bouquet price range ───────────────────────────────────
+   Keep in sync with CUSTOM_BUDGET_* in create-checkout-session/route.ts */
+const CUSTOM_PRICE_MIN  = 70
+const CUSTOM_PRICE_MAX  = 200
+const CUSTOM_PRICE_STEP = 10
+
+/* ── Delivery locations ────────────────────────────────────────
    To add or remove a city: edit this array only.
    The selected value is saved as-is to Firestore (deliveryCity).  */
 const DELIVERY_CITIES = [
@@ -35,7 +41,7 @@ const DELIVERY_CITIES = [
   'Viškovo',
 ] as const
 
-/* ── Validation ───────────────────────────────────────────── */
+/* ── Validation ───────────────────────────────────────────────── */
 const REQUIRED = ['fullName', 'phone', 'email', 'address', 'city', 'bouquetSize', 'deliveryDate'] as const
 
 function validate(name: string, value: string): string {
@@ -56,7 +62,7 @@ function validate(name: string, value: string): string {
   }
 }
 
-/* ── Shared input class helpers ───────────────────────────── */
+/* ── Shared input class helpers ───────────────────────────────── */
 const base =
   'w-full px-3.5 py-3 text-[0.9375rem] bg-cream border-[1.5px] rounded-lg outline-none transition-all placeholder:text-faint focus:bg-white focus:shadow-[0_0_0_3px_rgba(62,107,78,0.13)]'
 
@@ -67,7 +73,7 @@ function selectCls(err?: string) {
   return `${inputCls(err)} bg-[image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23777' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")] bg-no-repeat bg-[position:right_12px_center] pr-10 appearance-none`
 }
 
-/* ── Sub-components ───────────────────────────────────────── */
+/* ── Sub-components ───────────────────────────────────────────── */
 function Field({
   label, required, error, children,
 }: {
@@ -95,6 +101,57 @@ function PaymentOption({ value, label, icon }: { value: string; label: string; i
   )
 }
 
+/* ── Stepper used inside the form for Buket po želji ─────────── */
+function BudgetStepper({
+  value, onChange,
+}: {
+  value: number
+  onChange: (next: number) => void
+}) {
+  const canDec = value > CUSTOM_PRICE_MIN
+  const canInc = value < CUSTOM_PRICE_MAX
+
+  const btnCls =
+    'w-10 h-10 flex items-center justify-center border-[1.5px] border-divider bg-cream text-ink text-lg font-medium ' +
+    'transition-colors hover:bg-forest-light hover:border-forest ' +
+    'disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-cream disabled:hover:border-divider'
+
+  return (
+    <div>
+      <div className="flex items-stretch" role="group" aria-label="Odabir budžeta">
+        <button
+          type="button"
+          onClick={() => canDec && onChange(value - CUSTOM_PRICE_STEP)}
+          disabled={!canDec}
+          aria-label={`Smanji budžet za ${CUSTOM_PRICE_STEP} €`}
+          className={`${btnCls} rounded-l-lg border-r-0`}
+        >
+          −
+        </button>
+        <div
+          className="flex items-center justify-center min-w-[6rem] px-3 border-y-[1.5px] border-divider bg-white"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          <span className="text-[1.1rem] font-bold text-forest tabular-nums">{value}&nbsp;€</span>
+        </div>
+        <button
+          type="button"
+          onClick={() => canInc && onChange(value + CUSTOM_PRICE_STEP)}
+          disabled={!canInc}
+          aria-label={`Povećaj budžet za ${CUSTOM_PRICE_STEP} €`}
+          className={`${btnCls} rounded-r-lg border-l-0`}
+        >
+          +
+        </button>
+      </div>
+      <p className="text-[0.6875rem] text-faint mt-1.5">
+        {CUSTOM_PRICE_MIN}–{CUSTOM_PRICE_MAX}&nbsp;€, korak {CUSTOM_PRICE_STEP}&nbsp;€
+      </p>
+    </div>
+  )
+}
+
 /* ── Main form ────────────────────────────────────────────── */
 export function OrderForm() {
   const [errors, setErrors]           = useState<Record<string, string>>({})
@@ -102,14 +159,27 @@ export function OrderForm() {
   const [loading, setLoading]         = useState(false)
   const [submitted, setSubmitted]     = useState(false)
   const [submitError, setSubmitError] = useState('')
-  // True once Firestore write + checkout session are ready and we're about
-  // to navigate away — keeps the button in its loading state with a
-  // descriptive label until Stripe's redirect fires.
   const [stripeRedirecting, setStripeRedirecting] = useState(false)
 
-  // Use local date rather than UTC — toISOString() would return yesterday's date
-  // for any user whose local time is past midnight but UTC has not rolled over yet.
-  const today = new Date().toLocaleDateString('sv') // 'sv' locale produces YYYY-MM-DD
+  // Controlled bouquet selection state — driven by the select or by the
+  // external 'luroni:selectBouquet' event fired by CustomBouquetCard.
+  const [selectedBouquet, setSelectedBouquet] = useState('')
+  const [customBudget, setCustomBudget]       = useState(CUSTOM_PRICE_MIN)
+
+  // Listen for CTA clicks from the CustomBouquetCard section above the form.
+  useEffect(() => {
+    function onSelect(e: Event) {
+      const { size, customBudget: budget } =
+        (e as CustomEvent<{ size: string; customBudget: number }>).detail
+      setSelectedBouquet(size)
+      if (typeof budget === 'number') setCustomBudget(budget)
+      setErrors(prev => ({ ...prev, bouquetSize: '' }))
+    }
+    window.addEventListener('luroni:selectBouquet', onSelect)
+    return () => window.removeEventListener('luroni:selectBouquet', onSelect)
+  }, [])
+
+  const today = new Date().toLocaleDateString('sv')
 
   function onBlur(e: React.FocusEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
     const { name, value } = e.target
@@ -121,22 +191,35 @@ export function OrderForm() {
     if (errors[name]) setErrors(prev => ({ ...prev, [name]: validate(name, value) }))
   }
 
+  const isCustom = selectedBouquet === 'Buket po želji'
+
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const form = e.currentTarget
     const data = new FormData(form)
     let ok = true
 
-    // Run all field validation
     const newErrors: Record<string, string> = {}
     for (const field of REQUIRED) {
       const msg = validate(field, String(data.get(field) ?? ''))
       newErrors[field] = msg
       if (msg) ok = false
     }
+
+    // Extra validation for custom budget
+    if (isCustom) {
+      const valid =
+        customBudget >= CUSTOM_PRICE_MIN &&
+        customBudget <= CUSTOM_PRICE_MAX &&
+        customBudget % CUSTOM_PRICE_STEP === 0
+      if (!valid) {
+        newErrors.bouquetSize = 'Odaberite valjani iznos.'
+        ok = false
+      }
+    }
+
     setErrors(newErrors)
 
-    // Validate payment radio
     const payment = (form.querySelector('[name="payment"]:checked') as HTMLInputElement | null)?.value
     if (!payment) { setPaymentErr('Odaberite način plaćanja.'); ok = false }
     else            { setPaymentErr('') }
@@ -146,15 +229,14 @@ export function OrderForm() {
       return
     }
 
-    // ── Save to Firestore ───────────────────────────────────
-    const bouquetSize  = String(data.get('bouquetSize') ?? '')
-    const bouquetPrice = BOUQUET_PRICES[bouquetSize] ?? null
+    const bouquetSizeValue = String(data.get('bouquetSize') ?? '')
+    const bouquetPrice = isCustom
+      ? customBudget
+      : (BOUQUET_PRICES[bouquetSizeValue] ?? null)
 
     setLoading(true)
     setSubmitError('')
 
-    // Local flag so the finally block knows not to clear loading state when
-    // we are about to navigate away to Stripe (state update would be too late).
     let navigatingToStripe = false
 
     try {
@@ -164,33 +246,29 @@ export function OrderForm() {
         email:           String(data.get('email')        ?? '').trim(),
         deliveryAddress: String(data.get('address')      ?? '').trim(),
         deliveryCity:    String(data.get('city')         ?? '').trim(),
-        bouquetSize,
+        bouquetSize:     bouquetSizeValue,
         bouquetPrice,
         deliveryDate:    String(data.get('deliveryDate') ?? ''),
         deliveryTime:    String(data.get('deliveryTime') ?? ''),
         cardMessage:     String(data.get('message')      ?? '').trim(),
         paymentMethod:   payment,
+        ...(isCustom ? { customBudget } : {}),
       }
 
       if (payment === 'card') {
-        // ── Card payment: save order → create Stripe session → redirect ──
-
-        // 1. Write order with status "pending_payment" so we have an ID
-        //    before redirecting. The status will be updated to "paid" once
-        //    webhooks are wired up.
         const docRef = await addDoc(collection(db, 'orders'), {
           ...orderPayload,
           status:    'pending_payment',
           createdAt: serverTimestamp(),
         })
 
-        // 2. Create the hosted Checkout session server-side
         const res = await fetch('/api/create-checkout-session', {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },
           body:    JSON.stringify({
             orderId:       docRef.id,
-            bouquetSize:   orderPayload.bouquetSize,
+            bouquetSize:   bouquetSizeValue,
+            customBudget:  isCustom ? customBudget : undefined,
             customerEmail: orderPayload.email,
             customerName:  orderPayload.fullName,
           }),
@@ -202,16 +280,11 @@ export function OrderForm() {
         }
 
         const { url } = await res.json()
-
-        // 3. Hand off to Stripe — keep the button in loading state until
-        //    the browser actually navigates away.
         setStripeRedirecting(true)
         navigatingToStripe = true
         window.location.href = url
 
       } else {
-        // ── Cash payment: existing Firestore + email flow ─────────────
-
         await addDoc(collection(db, 'orders'), {
           ...orderPayload,
           status:    'new',
@@ -220,7 +293,6 @@ export function OrderForm() {
 
         setSubmitted(true)
 
-        // Fire-and-forget email notification — never block the success state
         fetch('/api/send-order-email', {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -234,7 +306,6 @@ export function OrderForm() {
         'Došlo je do greške. Molimo pokušajte ponovno ili nas kontaktirajte na info.luroni@gmail.com.'
       )
     } finally {
-      // Do not clear the loading spinner while the Stripe redirect is in flight
       if (!navigatingToStripe) setLoading(false)
     }
   }
@@ -300,7 +371,7 @@ export function OrderForm() {
         />
       </Field>
 
-      {/* City — restricted to served delivery areas */}
+      {/* City */}
       <div>
         <Field label="Mjesto dostave" required error={errors.city}>
           <select
@@ -320,35 +391,50 @@ export function OrderForm() {
         </p>
         <p className="text-xs text-muted mt-1.5 leading-[1.55]">
           Ne vidite svoje mjesto?{' '}
-          <a
-            href="#kontakt"
-            className="text-forest underline-offset-2 hover:underline"
-          >
+          <a href="#kontakt" className="text-forest underline-offset-2 hover:underline">
             Kontaktirajte nas putem obrasca za kontakt
           </a>
           {' '}ili na{' '}
-          <a
-            href="mailto:info@luroni.hr"
-            className="text-forest underline-offset-2 hover:underline"
-          >
+          <a href="mailto:info@luroni.hr" className="text-forest underline-offset-2 hover:underline">
             info@luroni.hr
           </a>
           {' '}i provjerit ćemo mogućnost dostave.
         </p>
       </div>
 
-      {/* Bouquet size */}
+      {/* Bouquet size — controlled so the card CTA can pre-select */}
       <Field label="Veličina buketa" required error={errors.bouquetSize}>
         <select
-          name="bouquetSize" id="bouquetSize" defaultValue=""
-          onBlur={onBlur} onChange={onChange}
+          name="bouquetSize" id="bouquetSize"
+          value={selectedBouquet}
+          onChange={(e) => {
+            setSelectedBouquet(e.target.value)
+            if (errors.bouquetSize) {
+              setErrors(prev => ({ ...prev, bouquetSize: validate('bouquetSize', e.target.value) }))
+            }
+          }}
+          onBlur={(e) => {
+            setErrors(prev => ({ ...prev, bouquetSize: validate('bouquetSize', e.target.value) }))
+          }}
           className={selectCls(errors.bouquetSize)}
         >
           <option value="" disabled>Odaberite veličinu</option>
           <option value="S">Buket S — 35 €</option>
           <option value="M">Buket M — 45 €</option>
           <option value="L">Buket L — 60 €</option>
+          <option value="Buket po želji">Buket po želji — od 70 €</option>
         </select>
+
+        {/* Budget stepper — visible only when Buket po želji is selected */}
+        {isCustom && (
+          <div className="mt-3">
+            <p className="text-xs font-semibold text-ink mb-2">Odabrani budžet</p>
+            <BudgetStepper
+              value={customBudget}
+              onChange={setCustomBudget}
+            />
+          </div>
+        )}
       </Field>
 
       {/* Date + Time */}

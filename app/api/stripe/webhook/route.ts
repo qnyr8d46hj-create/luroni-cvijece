@@ -234,6 +234,7 @@ async function handleCheckoutCompleted(event: Stripe.Event) {
     deliveryCity:    String(orderData.deliveryCity    ?? ''),
     bouquetSize:     String(orderData.bouquetSize     ?? ''),
     bouquetPrice:    typeof orderData.bouquetPrice === 'number' ? orderData.bouquetPrice : null,
+    customBudget:    typeof orderData.customBudget  === 'number' ? orderData.customBudget  : null,
     deliveryDate:    String(orderData.deliveryDate    ?? ''),
     deliveryTime:    String(orderData.deliveryTime    ?? ''),
     cardMessage:     String(orderData.cardMessage     ?? ''),

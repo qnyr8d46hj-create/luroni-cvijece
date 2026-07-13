@@ -2,12 +2,8 @@
 //
 // Single source of truth for order notification emails.
 // Imported by:
-//   - app/api/send-order-email/route.ts  (cash payments, called from OrderForm)
-//   - app/api/stripe/webhook/route.ts    (card payments, called after Firestore "paid" update)
-//
-// Required env vars (never expose to client):
-//   RESEND_API_KEY            — Resend API key
-//   ORDER_NOTIFICATION_EMAIL  — recipient address (shop owner)
+//   - app/api/send-order-email/route.ts  (cash payments)
+//   - app/api/stripe/webhook/route.ts    (card payments after Firestore "paid" update)
 
 import { Resend } from 'resend'
 
@@ -20,6 +16,7 @@ export interface OrderEmailPayload {
   deliveryCity:    string
   bouquetSize:     string
   bouquetPrice:    number | null
+  customBudget?:   number | null   // set only for "Buket po želji" orders
   deliveryDate:    string
   deliveryTime:    string
   cardMessage:     string
@@ -70,8 +67,19 @@ function row(label: string, value: string, shaded = false): string {
 function buildEmailHtml(o: OrderEmailPayload): string {
   const paymentLabel = PAYMENT_LABELS[o.paymentMethod] ?? o.paymentMethod
   const timeLabel    = TIME_LABELS[o.deliveryTime]     ?? (o.deliveryTime || 'Bilo kada')
-  const priceLabel   = o.bouquetPrice != null ? `${o.bouquetPrice} €` : '—'
   const dateLabel    = formatDate(o.deliveryDate)
+
+  const isCustom = o.bouquetSize === 'Buket po želji'
+
+  // "Buket S" / "Buket M" / "Buket L" / "Buket po želji"
+  const bouquetLabel = isCustom ? 'Buket po želji' : `Buket ${o.bouquetSize}`
+
+  // Price row — custom orders show "Odabrani budžet", others show "Cijena"
+  const priceValue = isCustom
+    ? (o.customBudget ?? o.bouquetPrice)
+    : o.bouquetPrice
+  const priceLabel  = priceValue != null ? `${priceValue} €` : '—'
+  const priceRowLabel = isCustom ? 'Odabrani budžet' : 'Cijena'
 
   const messageBlock = o.cardMessage
     ? `<tr>
@@ -120,9 +128,9 @@ function buildEmailHtml(o: OrderEmailPayload): string {
       <!-- Order -->
       <h2 style="margin:0 0 12px 0;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#9a9a9a;">Narudžba</h2>
       <table style="width:100%;border-collapse:collapse;border-radius:10px;overflow:hidden;margin-bottom:24px;">
-        ${row('Veličina buketa', `Buket ${o.bouquetSize}`)}
-        ${row('Cijena',          priceLabel, true)}
-        ${row('Plaćanje',        paymentLabel)}
+        ${row('Vrsta buketa',   bouquetLabel)}
+        ${row(priceRowLabel,    priceLabel,  true)}
+        ${row('Plaćanje',       paymentLabel)}
         ${messageBlock}
       </table>
 
@@ -142,11 +150,6 @@ function buildEmailHtml(o: OrderEmailPayload): string {
 }
 
 // ── sendOrderNotificationEmail ────────────────────────────────
-//
-// Call this function directly — do NOT call /api/send-order-email via fetch
-// from server-side code. On Vercel a serverless function cannot reliably make
-// HTTP requests back to its own routes; async work started after `return` is
-// silently cut off when the function exits.
 export async function sendOrderNotificationEmail(
   order: OrderEmailPayload,
 ): Promise<EmailResult> {
