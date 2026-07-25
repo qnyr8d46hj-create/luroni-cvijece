@@ -161,10 +161,29 @@ export function OrderForm() {
   const [submitError, setSubmitError] = useState('')
   const [stripeRedirecting, setStripeRedirecting] = useState(false)
 
+  // Temporary ordering restriction — fetched from server on mount so the
+  // result is based on Europe/Zagreb server time, not the browser clock.
+  // Remove this block (and the notice JSX below) once the restriction is lifted.
+  const [orderingBlocked, setOrderingBlocked] = useState(false)
+  const [blockNotice, setBlockNotice]         = useState<string | null>(null)
+
   // Controlled bouquet selection state — driven by the select or by the
   // external 'luroni:selectBouquet' event fired by CustomBouquetCard.
   const [selectedBouquet, setSelectedBouquet] = useState('')
   const [customBudget, setCustomBudget]       = useState(CUSTOM_PRICE_MIN)
+
+  // Fetch ordering availability from the server (Europe/Zagreb timezone).
+  useEffect(() => {
+    fetch('/api/order-status')
+      .then(r => r.json())
+      .then(({ available, notice }: { available: boolean; notice: string | null }) => {
+        if (!available) {
+          setOrderingBlocked(true)
+          setBlockNotice(notice)
+        }
+      })
+      .catch(() => {}) // fail open — don't block users if the check itself fails
+  }, [])
 
   // Listen for CTA clicks from the CustomBouquetCard section above the form.
   useEffect(() => {
@@ -195,6 +214,13 @@ export function OrderForm() {
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
+
+    // Hard stop if the server confirmed ordering is blocked today
+    if (orderingBlocked) {
+      setSubmitError(blockNotice ?? 'Naručivanje trenutno nije dostupno.')
+      return
+    }
+
     const form = e.currentTarget
     const data = new FormData(form)
     let ok = true
@@ -478,6 +504,16 @@ export function OrderForm() {
         {paymentErr && <p className="text-xs text-red-600 mt-1.5" role="alert">{paymentErr}</p>}
       </fieldset>
 
+      {/* Ordering restriction notice */}
+      {blockNotice && (
+        <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-forest-light border border-forest/20 text-sm text-ink" role="alert">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="flex-shrink-0 mt-0.5 text-forest" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          {blockNotice}
+        </div>
+      )}
+
       {/* Submit error */}
       {submitError && (
         <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-sm text-red-700" role="alert">
@@ -491,7 +527,7 @@ export function OrderForm() {
       {/* Submit button */}
       <button
         type="submit"
-        disabled={loading}
+        disabled={loading || orderingBlocked}
         className="w-full flex items-center justify-center gap-2.5 py-4 px-8 rounded-full bg-forest text-white font-medium text-[1.0625rem] transition-all hover:bg-forest-dark hover:-translate-y-px hover:shadow-lg disabled:opacity-60 disabled:cursor-not-allowed disabled:translate-y-0 disabled:shadow-none"
       >
         {loading ? (

@@ -1,5 +1,6 @@
 import Stripe from 'stripe'
 import { NextRequest, NextResponse } from 'next/server'
+import { isOrderingBlocked, ORDER_BLOCK_NOTICE } from '@/lib/orderAvailability'
 
 // ── Stripe client — server-side only ──────────────────────────
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -38,6 +39,10 @@ function isValidCustomBudget(v: unknown): v is number {
 
 // ── POST /api/create-checkout-session ─────────────────────────
 export async function POST(req: NextRequest) {
+  if (isOrderingBlocked()) {
+    return NextResponse.json({ error: ORDER_BLOCK_NOTICE }, { status: 503 })
+  }
+
   if (!process.env.STRIPE_SECRET_KEY) {
     console.error('[Stripe] STRIPE_SECRET_KEY is not set')
     return NextResponse.json(
