@@ -1,5 +1,6 @@
 import Stripe from 'stripe'
 import { NextRequest, NextResponse } from 'next/server'
+import { OCCASION_PRODUCT_ID, getOccasionById } from '@/lib/occasions'
 
 // ── GET /api/get-checkout-session?session_id=cs_xxx ───────────
 //
@@ -14,12 +15,18 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 // Fallback amounts if amount_total is missing (edge case only)
 const BOUQUET_AMOUNTS: Record<string, number> = { S: 35, M: 45, L: 60 }
 
-function bouquetDisplayName(size: string): string {
+function bouquetDisplayName(size: string, occasionId?: string): string {
+  if (size === OCCASION_PRODUCT_ID) {
+    return getOccasionById(occasionId ?? '')?.title ?? 'Prigoda'
+  }
   if (size === 'Buket po želji') return 'Buket po želji'
   return `Buket ${size}`
 }
 
-function bouquetItemId(size: string): string {
+function bouquetItemId(size: string, occasionId?: string): string {
+  if (size === OCCASION_PRODUCT_ID) {
+    return occasionId ? `prigoda-${occasionId}` : 'prigoda'
+  }
   if (size === 'Buket po želji') return 'buket-po-zelji'
   return `buket-${size.toLowerCase()}`
 }
@@ -39,9 +46,12 @@ export async function GET(req: NextRequest) {
     }
 
     const bouquetSize = session.metadata?.bouquetSize ?? ''
+    const occasionId  = session.metadata?.occasion ?? ''
+    const occasionBudgetFallback = Number(session.metadata?.occasion_budget)
     const value = session.amount_total != null
       ? session.amount_total / 100
-      : (BOUQUET_AMOUNTS[bouquetSize] ?? 0)
+      : (BOUQUET_AMOUNTS[bouquetSize]
+        ?? (Number.isInteger(occasionBudgetFallback) ? occasionBudgetFallback : 0))
 
     console.log(
       `[get-checkout-session] ✓ session ${sessionId} — ` +
@@ -53,8 +63,8 @@ export async function GET(req: NextRequest) {
       value,
       currency:    'EUR',
       bouquetSize,
-      itemName:    bouquetDisplayName(bouquetSize),
-      itemId:      bouquetItemId(bouquetSize),
+      itemName:    bouquetDisplayName(bouquetSize, occasionId),
+      itemId:      bouquetItemId(bouquetSize, occasionId),
     })
 
   } catch (err) {

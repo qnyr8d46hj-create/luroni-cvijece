@@ -1,6 +1,11 @@
 import Stripe from 'stripe'
 import { NextRequest, NextResponse } from 'next/server'
 import { isOrderingBlocked, ORDER_BLOCK_NOTICE } from '@/lib/orderAvailability'
+import {
+  OCCASION_PRODUCT_ID,
+  getOccasionById,
+  getValidOccasionBudget,
+} from '@/lib/occasions'
 
 // ── Stripe client — server-side only ──────────────────────────
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -52,11 +57,13 @@ export async function POST(req: NextRequest) {
   }
 
   let body: {
-    orderId:       string
-    bouquetSize:   string
-    customBudget?: unknown
-    customerEmail: string
-    customerName:  string
+    orderId:          string
+    bouquetSize:      string
+    customBudget?:    unknown
+    occasion?:        unknown
+    occasionBudget?:  unknown
+    customerEmail:    string
+    customerName:     string
   }
 
   try {
@@ -65,7 +72,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
   }
 
-  const { orderId, bouquetSize, customBudget, customerEmail, customerName } = body
+  const { orderId, bouquetSize, customBudget, occasion, occasionBudget, customerEmail, customerName } = body
 
   if (!orderId || !bouquetSize) {
     return NextResponse.json(
@@ -77,8 +84,24 @@ export async function POST(req: NextRequest) {
   // ── Resolve unit amount and product name ───────────────────
   let unitAmount: number
   let productName: string
+  let validatedOccasionId: string | null = null
+  let validatedOccasionBudget: number | null = null
 
-  if (bouquetSize === 'Buket po želji') {
+  if (bouquetSize === OCCASION_PRODUCT_ID) {
+    // Server-side validation: never trust a client-provided occasion price.
+    const validBudget = getValidOccasionBudget(occasion, occasionBudget)
+    const occasionRecord = typeof occasion === 'string' ? getOccasionById(occasion) : undefined
+    if (validBudget == null || !occasionRecord) {
+      return NextResponse.json(
+        { error: 'Invalid occasion budget' },
+        { status: 400 },
+      )
+    }
+    validatedOccasionId     = occasionRecord.id
+    validatedOccasionBudget = validBudget
+    unitAmount  = validBudget * 100
+    productName = `${occasionRecord.title} (${validBudget} €) — Luroni Cvijeće`
+  } else if (bouquetSize === 'Buket po želji') {
     // Server-side validation: never trust the frontend price
     if (!isValidCustomBudget(customBudget)) {
       return NextResponse.json(
@@ -130,6 +153,12 @@ export async function POST(req: NextRequest) {
         bouquetSize,
         customerName:  customerName || '',
         ...(bouquetSize === 'Buket po želji' ? { customBudget: String(customBudget) } : {}),
+        ...(validatedOccasionId && validatedOccasionBudget != null
+          ? {
+              occasion:        validatedOccasionId,
+              occasion_budget: String(validatedOccasionBudget),
+            }
+          : {}),
       },
       success_url: `${origin}/narudzba-uspjesna?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url:  `${origin}/narudzba-otkazana`,

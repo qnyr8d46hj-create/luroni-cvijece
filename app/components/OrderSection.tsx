@@ -3,11 +3,11 @@ import { OrderForm } from '@/app/components/OrderForm'
 const COPY = {
   occasion: {
     title: 'Još samo nekoliko detalja',
-    body: 'Recite nam kome šaljete cvijeće, kada ga želite dostaviti i odaberite željeni buket.',
+    body: 'Recite nam kome šaljete cvijeće, kada ga želite dostaviti i koliki budžet želite.',
     steps: [
       'Odaberite prigodu',
-      'Upišite adresu i željeni termin dostave',
-      'Odaberite buket i dodajte poruku, ako želite',
+      'Odaberite budžet',
+      'Upišite adresu, termin i poruku',
       'Plaćanje karticom online ili gotovinom prilikom dostave',
     ],
   },

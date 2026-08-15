@@ -2,9 +2,14 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
-import { getOccasionById } from '@/lib/occasions'
+import {
+  OCCASION_PRODUCT_ID,
+  getOccasionById,
+  getValidOccasionBudget,
+} from '@/lib/occasions'
 
 /* ── Standard bouquet prices ──────────────────────────────────── */
 const BOUQUET_PRICES: Record<string, number> = { S: 35, M: 45, L: 60 }
@@ -174,6 +179,8 @@ export function OrderForm() {
   const [selectedBouquet, setSelectedBouquet] = useState('')
   const [customBudget, setCustomBudget]       = useState(CUSTOM_PRICE_MIN)
   const [selectedOccasionId, setSelectedOccasionId] = useState('')
+  const [occasionBudget, setOccasionBudget]   = useState<number | null>(null)
+  const pathname = usePathname() ?? ''
 
   // Fetch ordering availability from the server (Europe/Zagreb timezone).
   useEffect(() => {
@@ -201,13 +208,21 @@ export function OrderForm() {
     return () => window.removeEventListener('luroni:selectBouquet', onSelect)
   }, [])
 
-  // Listen for occasion-card clicks (`luroni:selectOccasion`). Does not
-  // change bouquet size, price, or checkout behaviour.
+  // Listen for occasion-card clicks (`luroni:selectOccasion`).
+  // Switches the form into occasion mode and drops incompatible budgets.
   useEffect(() => {
     function onSelectOccasion(e: Event) {
       const { id } = (e as CustomEvent<{ id: string }>).detail
       if (typeof id !== 'string' || !getOccasionById(id)) return
       setSelectedOccasionId(id)
+      setSelectedBouquet('')
+      setOccasionBudget((prev) => getValidOccasionBudget(id, prev))
+      setErrors((prev) => {
+        const next = { ...prev }
+        delete next.bouquetSize
+        delete next.occasionBudget
+        return next
+      })
     }
     window.addEventListener('luroni:selectOccasion', onSelectOccasion)
     return () => window.removeEventListener('luroni:selectOccasion', onSelectOccasion)
@@ -237,9 +252,34 @@ export function OrderForm() {
   const selectedOccasion = selectedOccasionId
     ? getOccasionById(selectedOccasionId)
     : undefined
+  const isOccasionFlow = !!selectedOccasion
+  const showOccasionPrompt = !isOccasionFlow && pathname !== '/buketi'
+
+  function selectOccasionBudget(amount: number) {
+    setOccasionBudget(amount)
+    setErrors((prev) => {
+      if (!prev.occasionBudget) return prev
+      const next = { ...prev }
+      delete next.occasionBudget
+      return next
+    })
+    if (typeof window.gtag === 'function' && selectedOccasionId) {
+      window.gtag('event', 'select_occasion_budget', {
+        occasion_id: selectedOccasionId,
+        value: amount,
+      })
+    }
+  }
 
   function changeOccasion() {
     setSelectedOccasionId('')
+    setOccasionBudget(null)
+    setSelectedBouquet('')
+    setErrors((prev) => {
+      const next = { ...prev }
+      delete next.occasionBudget
+      return next
+    })
     const section = document.getElementById('prigode')
     if (section) {
       section.scrollIntoView({ behavior: 'smooth' })
@@ -264,14 +304,22 @@ export function OrderForm() {
     let ok = true
 
     const newErrors: Record<string, string> = {}
-    for (const field of REQUIRED) {
+    const requiredFields = isOccasionFlow
+      ? REQUIRED.filter((field) => field !== 'bouquetSize')
+      : REQUIRED
+
+    for (const field of requiredFields) {
       const msg = validate(field, String(data.get(field) ?? ''))
       newErrors[field] = msg
       if (msg) ok = false
     }
 
-    // Extra validation for custom budget
-    if (isCustom) {
+    if (isOccasionFlow) {
+      if (getValidOccasionBudget(selectedOccasionId, occasionBudget) == null) {
+        newErrors.occasionBudget = 'Odaberite budžet.'
+        ok = false
+      }
+    } else if (isCustom) {
       const valid =
         customBudget >= CUSTOM_PRICE_MIN &&
         customBudget <= CUSTOM_PRICE_MAX &&
@@ -293,10 +341,17 @@ export function OrderForm() {
       return
     }
 
-    const bouquetSizeValue = String(data.get('bouquetSize') ?? '')
-    const bouquetPrice = isCustom
-      ? customBudget
-      : (BOUQUET_PRICES[bouquetSizeValue] ?? null)
+    const bouquetSizeValue = isOccasionFlow
+      ? OCCASION_PRODUCT_ID
+      : String(data.get('bouquetSize') ?? '')
+    const validatedOccasionBudget = isOccasionFlow
+      ? getValidOccasionBudget(selectedOccasionId, occasionBudget)
+      : null
+    const bouquetPrice = isOccasionFlow
+      ? validatedOccasionBudget
+      : isCustom
+        ? customBudget
+        : (BOUQUET_PRICES[bouquetSizeValue] ?? null)
 
     setLoading(true)
     setSubmitError('')
@@ -316,8 +371,10 @@ export function OrderForm() {
         deliveryTime:    String(data.get('deliveryTime') ?? ''),
         cardMessage:     String(data.get('message')      ?? '').trim(),
         paymentMethod:   payment,
-        ...(isCustom ? { customBudget } : {}),
-        ...(selectedOccasionId ? { occasion: selectedOccasionId } : {}),
+        ...(isCustom && !isOccasionFlow ? { customBudget } : {}),
+        ...(isOccasionFlow && selectedOccasionId && validatedOccasionBudget != null
+          ? { occasion: selectedOccasionId, occasionBudget: validatedOccasionBudget }
+          : {}),
       }
 
       if (payment === 'card') {
@@ -331,11 +388,13 @@ export function OrderForm() {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },
           body:    JSON.stringify({
-            orderId:       docRef.id,
-            bouquetSize:   bouquetSizeValue,
-            customBudget:  isCustom ? customBudget : undefined,
-            customerEmail: orderPayload.email,
-            customerName:  orderPayload.fullName,
+            orderId:         docRef.id,
+            bouquetSize:     bouquetSizeValue,
+            customBudget:    isCustom && !isOccasionFlow ? customBudget : undefined,
+            occasion:        isOccasionFlow ? selectedOccasionId : undefined,
+            occasionBudget:  isOccasionFlow ? validatedOccasionBudget : undefined,
+            customerEmail:   orderPayload.email,
+            customerName:    orderPayload.fullName,
           }),
         })
 
@@ -428,6 +487,60 @@ export function OrderForm() {
         </div>
       )}
 
+      {isOccasionFlow && selectedOccasion && (
+        <fieldset>
+          <legend className="block text-sm font-semibold text-ink mb-1.5">
+            Odaberite budžet <span className="text-rose">*</span>
+          </legend>
+          <p className="text-sm text-muted leading-snug mb-3">
+            Naš florist složit će buket prema prigodi i odabranom budžetu.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            {selectedOccasion.budgets.map((option) => {
+              const selected = occasionBudget === option.amount
+              return (
+                <label
+                  key={option.amount}
+                  className={
+                    'relative flex flex-col items-center justify-center text-center gap-1 px-3 py-4 rounded-xl border-[1.5px] cursor-pointer select-none transition-colors ' +
+                    (selected
+                      ? 'border-forest bg-forest-light'
+                      : errors.occasionBudget
+                        ? 'border-red-400 bg-white'
+                        : 'border-divider bg-white hover:border-forest/40')
+                  }
+                >
+                  <input
+                    type="radio"
+                    name="occasionBudget"
+                    value={option.amount}
+                    checked={selected}
+                    onChange={() => selectOccasionBudget(option.amount)}
+                    className="sr-only"
+                  />
+                  {option.label && (
+                    <span className="font-display text-[1.05rem] font-semibold text-ink leading-tight">
+                      {option.label}
+                    </span>
+                  )}
+                  <span className="font-display text-2xl font-semibold text-ink tabular-nums leading-none">
+                    {option.amount}&nbsp;€
+                  </span>
+                  {option.recommended && (
+                    <span className="text-[0.625rem] font-semibold tracking-[0.08em] uppercase text-forest mt-1">
+                      Preporučujemo
+                    </span>
+                  )}
+                </label>
+              )
+            })}
+          </div>
+          {errors.occasionBudget && (
+            <p className="text-xs text-red-600 mt-1.5" role="alert">{errors.occasionBudget}</p>
+          )}
+        </fieldset>
+      )}
+
       {/* Full name */}
       <Field label="Ime i prezime" required error={errors.fullName}>
         <input
@@ -499,40 +612,52 @@ export function OrderForm() {
         </p>
       </div>
 
-      {/* Bouquet size — controlled so the card CTA can pre-select */}
-      <Field label="Veličina buketa" required error={errors.bouquetSize}>
-        <select
-          name="bouquetSize" id="bouquetSize"
-          value={selectedBouquet}
-          onChange={(e) => {
-            setSelectedBouquet(e.target.value)
-            if (errors.bouquetSize) {
-              setErrors(prev => ({ ...prev, bouquetSize: validate('bouquetSize', e.target.value) }))
-            }
-          }}
-          onBlur={(e) => {
-            setErrors(prev => ({ ...prev, bouquetSize: validate('bouquetSize', e.target.value) }))
-          }}
-          className={selectCls(errors.bouquetSize)}
-        >
-          <option value="" disabled>Odaberite veličinu</option>
-          <option value="S">Buket S — 35 €</option>
-          <option value="M">Buket M — 45 €</option>
-          <option value="L">Buket L — 60 €</option>
-          <option value="Buket po želji">Buket po želji — od 70 €</option>
-        </select>
+      {/* Bouquet size — traditional mode only */}
+      {!isOccasionFlow && (
+        <>
+          {showOccasionPrompt && (
+            <p className="text-sm text-muted leading-snug">
+              Želite da vam pomognemo odabrati?{' '}
+              <Link href="/#prigode" className="text-forest underline-offset-2 hover:underline">
+                Odaberite prigodu
+              </Link>
+              .
+            </p>
+          )}
+          <Field label="Veličina buketa" required error={errors.bouquetSize}>
+            <select
+              name="bouquetSize" id="bouquetSize"
+              value={selectedBouquet}
+              onChange={(e) => {
+                setSelectedBouquet(e.target.value)
+                if (errors.bouquetSize) {
+                  setErrors(prev => ({ ...prev, bouquetSize: validate('bouquetSize', e.target.value) }))
+                }
+              }}
+              onBlur={(e) => {
+                setErrors(prev => ({ ...prev, bouquetSize: validate('bouquetSize', e.target.value) }))
+              }}
+              className={selectCls(errors.bouquetSize)}
+            >
+              <option value="" disabled>Odaberite veličinu</option>
+              <option value="S">Buket S — 35 €</option>
+              <option value="M">Buket M — 45 €</option>
+              <option value="L">Buket L — 60 €</option>
+              <option value="Buket po želji">Buket po želji — od 70 €</option>
+            </select>
 
-        {/* Budget stepper — visible only when Buket po želji is selected */}
-        {isCustom && (
-          <div className="mt-3">
-            <p className="text-xs font-semibold text-ink mb-2">Odabrani budžet</p>
-            <BudgetStepper
-              value={customBudget}
-              onChange={setCustomBudget}
-            />
-          </div>
-        )}
-      </Field>
+            {isCustom && (
+              <div className="mt-3">
+                <p className="text-xs font-semibold text-ink mb-2">Odabrani budžet</p>
+                <BudgetStepper
+                  value={customBudget}
+                  onChange={setCustomBudget}
+                />
+              </div>
+            )}
+          </Field>
+        </>
+      )}
 
       {/* Date + Time */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
