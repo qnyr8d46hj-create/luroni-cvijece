@@ -1,10 +1,30 @@
+'use client'
+
 import Image from 'next/image'
 import type { Occasion } from '@/lib/occasions'
+
+function fireSelectOccasion(id: string) {
+  window.dispatchEvent(
+    new CustomEvent('luroni:selectOccasion', { detail: { id } }),
+  )
+
+  if (typeof window.gtag === 'function') {
+    window.gtag('event', 'select_occasion', { occasion_id: id })
+  }
+}
 
 export function OccasionCard({ occasion }: { occasion: Occasion }) {
   return (
     <a
       href="#order"
+      onClick={(e) => {
+        e.preventDefault()
+        fireSelectOccasion(occasion.id)
+        document.getElementById('order')?.scrollIntoView({ behavior: 'smooth' })
+        if (window.history.replaceState) {
+          window.history.replaceState(null, '', '#order')
+        }
+      }}
       className="group flex flex-col h-full rounded-3xl overflow-hidden bg-white border border-divider
         shadow-[0_1px_4px_rgba(0,0,0,0.07)]
         transition-all duration-300

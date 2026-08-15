@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
+import { getOccasionById } from '@/lib/occasions'
 
 /* ── Standard bouquet prices ──────────────────────────────────── */
 const BOUQUET_PRICES: Record<string, number> = { S: 35, M: 45, L: 60 }
@@ -172,6 +173,7 @@ export function OrderForm() {
   // external 'luroni:selectBouquet' event fired by CustomBouquetCard.
   const [selectedBouquet, setSelectedBouquet] = useState('')
   const [customBudget, setCustomBudget]       = useState(CUSTOM_PRICE_MIN)
+  const [selectedOccasionId, setSelectedOccasionId] = useState('')
 
   // Fetch ordering availability from the server (Europe/Zagreb timezone).
   useEffect(() => {
@@ -199,6 +201,26 @@ export function OrderForm() {
     return () => window.removeEventListener('luroni:selectBouquet', onSelect)
   }, [])
 
+  // Listen for occasion-card clicks (`luroni:selectOccasion`). Does not
+  // change bouquet size, price, or checkout behaviour.
+  useEffect(() => {
+    function onSelectOccasion(e: Event) {
+      const { id } = (e as CustomEvent<{ id: string }>).detail
+      if (typeof id !== 'string' || !getOccasionById(id)) return
+      setSelectedOccasionId(id)
+    }
+    window.addEventListener('luroni:selectOccasion', onSelectOccasion)
+    return () => window.removeEventListener('luroni:selectOccasion', onSelectOccasion)
+  }, [])
+
+  useEffect(() => {
+    if (!selectedOccasionId) return
+    const frame = window.requestAnimationFrame(() => {
+      document.getElementById('odabrana-prigoda')?.focus()
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [selectedOccasionId])
+
   const today = new Date().toLocaleDateString('sv')
 
   function onBlur(e: React.FocusEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
@@ -212,6 +234,21 @@ export function OrderForm() {
   }
 
   const isCustom = selectedBouquet === 'Buket po želji'
+  const selectedOccasion = selectedOccasionId
+    ? getOccasionById(selectedOccasionId)
+    : undefined
+
+  function changeOccasion() {
+    setSelectedOccasionId('')
+    const section = document.getElementById('prigode')
+    if (section) {
+      section.scrollIntoView({ behavior: 'smooth' })
+      document.getElementById('prigode-title')?.focus()
+    }
+    if (window.history.replaceState) {
+      window.history.replaceState(null, '', '#prigode')
+    }
+  }
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -280,6 +317,7 @@ export function OrderForm() {
         cardMessage:     String(data.get('message')      ?? '').trim(),
         paymentMethod:   payment,
         ...(isCustom ? { customBudget } : {}),
+        ...(selectedOccasionId ? { occasion: selectedOccasionId } : {}),
       }
 
       if (payment === 'card') {
@@ -357,6 +395,38 @@ export function OrderForm() {
   /* ── Form ──────────────────────────────────────────────── */
   return (
     <form onSubmit={onSubmit} noValidate className="space-y-5">
+
+      {selectedOccasion && (
+        <div
+          id="odabrana-prigoda"
+          tabIndex={-1}
+          role="region"
+          aria-labelledby="selected-occasion-heading"
+          className="flex items-start justify-between gap-4 px-4 py-3.5 rounded-xl bg-forest-light border border-forest/20 outline-none focus-visible:ring-2 focus-visible:ring-forest focus-visible:ring-offset-2"
+        >
+          <div>
+            <p
+              id="selected-occasion-heading"
+              className="text-[0.6875rem] font-semibold tracking-[0.1em] uppercase text-forest mb-1"
+            >
+              Odabrana prigoda
+            </p>
+            <p className="font-display text-xl font-semibold text-ink leading-tight">
+              {selectedOccasion.title}
+            </p>
+            <p className="text-sm text-muted mt-1 leading-snug">
+              {selectedOccasion.description}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={changeOccasion}
+            className="shrink-0 text-sm font-medium text-forest underline-offset-2 hover:underline mt-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest focus-visible:ring-offset-2 rounded"
+          >
+            Promijeni
+          </button>
+        </div>
+      )}
 
       {/* Full name */}
       <Field label="Ime i prezime" required error={errors.fullName}>

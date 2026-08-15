@@ -6,6 +6,7 @@
 //   - app/api/stripe/webhook/route.ts    (card payments after Firestore "paid" update)
 
 import { Resend } from 'resend'
+import { getOccasionById } from '@/lib/occasions'
 
 // ── Shared types ───────────────────────────────────────────────
 export interface OrderEmailPayload {
@@ -21,6 +22,7 @@ export interface OrderEmailPayload {
   deliveryTime:    string
   cardMessage:     string
   paymentMethod:   string
+  occasion?:       string          // optional occasion id, e.g. "oprosti-mi"
 }
 
 export interface EmailResult {
@@ -81,6 +83,11 @@ function buildEmailHtml(o: OrderEmailPayload): string {
   const priceLabel  = priceValue != null ? `${priceValue} €` : '—'
   const priceRowLabel = isCustom ? 'Odabrani budžet' : 'Cijena'
 
+  const occasionTitle = o.occasion
+    ? (getOccasionById(o.occasion)?.title ?? o.occasion)
+    : ''
+  const occasionRow = occasionTitle ? row('Prigoda', occasionTitle) : ''
+
   const messageBlock = o.cardMessage
     ? `<tr>
         <td style="padding:10px 16px;background:#f3f8f4;color:#5e5e5e;font-size:13px;font-weight:600;white-space:nowrap;width:40%;">Poruka / napomena</td>
@@ -128,6 +135,7 @@ function buildEmailHtml(o: OrderEmailPayload): string {
       <!-- Order -->
       <h2 style="margin:0 0 12px 0;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#9a9a9a;">Narudžba</h2>
       <table style="width:100%;border-collapse:collapse;border-radius:10px;overflow:hidden;margin-bottom:24px;">
+        ${occasionRow}
         ${row('Vrsta buketa',   bouquetLabel)}
         ${row(priceRowLabel,    priceLabel,  true)}
         ${row('Plaćanje',       paymentLabel)}

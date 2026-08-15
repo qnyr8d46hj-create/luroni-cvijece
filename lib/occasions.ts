@@ -54,3 +54,7 @@ export const OCCASIONS: Occasion[] = [
     order: 5,
   },
 ]
+
+export function getOccasionById(id: string): Occasion | undefined {
+  return OCCASIONS.find((occasion) => occasion.id === id)
+}

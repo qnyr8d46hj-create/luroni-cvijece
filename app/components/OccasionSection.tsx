@@ -24,7 +24,8 @@ export function OccasionSection() {
           </p>
           <h2
             id="prigode-title"
-            className="font-display text-4xl sm:text-[2.75rem] font-semibold text-ink mb-4 leading-[1.2]"
+            tabIndex={-1}
+            className="font-display text-4xl sm:text-[2.75rem] font-semibold text-ink mb-4 leading-[1.2] outline-none"
           >
             Što želite reći cvijećem?
           </h2>
