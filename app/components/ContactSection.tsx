@@ -228,7 +228,7 @@ export function ContactSection() {
                   <textarea
                     value={message}
                     onChange={e => { setMessage(e.target.value); clearFieldError('message') }}
-                    placeholder="Opišite što trebate — veličina buketa, prigoda, željeni termin…"
+                    placeholder="Opišite što trebate — prigoda, željeni termin, poruka…"
                     rows={5}
                     className={`${inputCls(errors.message)} resize-none`}
                   />

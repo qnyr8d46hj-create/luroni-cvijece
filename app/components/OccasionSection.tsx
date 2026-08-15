@@ -13,24 +13,21 @@ export function OccasionSection() {
   return (
     <section
       id="prigode"
-      className="py-20 md:py-28 bg-cream"
+      className="py-14 sm:py-16 md:py-24 bg-cream scroll-mt-20"
       aria-labelledby="prigode-title"
     >
       <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-12">
 
-        <header className="text-center max-w-2xl mx-auto mb-12 md:mb-14">
-          <p className="text-[0.6875rem] font-semibold tracking-[0.14em] uppercase text-forest mb-3">
-            Prigode
-          </p>
+        <header className="text-center max-w-2xl mx-auto mb-10 md:mb-14">
           <h2
             id="prigode-title"
             tabIndex={-1}
             className="font-display text-4xl sm:text-[2.75rem] font-semibold text-ink mb-4 leading-[1.2] outline-none"
           >
-            Što želite reći cvijećem?
+            Odaberite prigodu
           </h2>
           <p className="text-base sm:text-[1.0625rem] text-muted leading-[1.75]">
-            Odaberite prigodu, a mi ćemo se pobrinuti za ostalo.
+            Svaki trenutak traži drugačiju gestu.
           </p>
         </header>
 

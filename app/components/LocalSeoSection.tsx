@@ -16,9 +16,9 @@ export function LocalSeoSection() {
             </h2>
             <p className="text-base sm:text-[1.0625rem] text-white/80 leading-[1.75] mb-8">
               Luroni cvijeće omogućuje jednostavnu online narudžbu buketa s dostavom na
-              području Rijeke, okolice i otoka Krka. Bukete dostavljamo u roku 24h, ovisno
-              o dostupnosti cvijeća i dogovorenom terminu. U ponudi su buketi različitih
-              veličina, od manjih pažnji do raskošnijih buketa za posebne prigode.
+              području Rijeke, okolice i otoka Krka. Recite nam prigodu, a naš florist
+              složit će buket od svježeg sezonskog cvijeća. Bukete dostavljamo u roku 24h,
+              ovisno o dostupnosti cvijeća i dogovorenom terminu.
             </p>
             <a
               href="#order"
