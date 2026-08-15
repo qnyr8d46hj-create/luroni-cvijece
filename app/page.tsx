@@ -1,5 +1,6 @@
 import { Header }             from '@/app/components/Header'
 import { HeroSection }        from '@/app/components/HeroSection'
+import { OccasionSection }    from '@/app/components/OccasionSection'
 import { GallerySection }     from '@/app/components/GallerySection'
 import { BouquetTypesSection } from '@/app/components/BouquetTypesSection'
 import { OrderSection }       from '@/app/components/OrderSection'
@@ -14,6 +15,7 @@ export default function Home() {
       <Header />
       <main>
         <HeroSection />
+        <OccasionSection />
         <GallerySection />
         <BouquetTypesSection />
         <OrderSection />

@@ -38,7 +38,7 @@ function NavItem({
 function navLinks(pathname: string) {
   return [
     { href: '/',              label: 'Početna' },
-    { href: '/#gallery',      label: 'Složeni buketi' },
+    { href: '/#prigode',      label: 'Prigode' },
     { href: '/buketi',        label: 'Buketi' },
     { href: orderHref(pathname), label: 'Narudžba' },
     { href: '/#kontakt',      label: 'Kontakt' },
