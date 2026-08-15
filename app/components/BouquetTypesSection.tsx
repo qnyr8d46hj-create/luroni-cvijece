@@ -1,8 +1,17 @@
 import Image from 'next/image'
 import { BOUQUET_TYPES } from '@/lib/data'
 import { CustomBouquetCard } from './CustomBouquetCard'
+import { SelectBouquetCta } from './SelectBouquetCta'
 
-export function BouquetTypesSection() {
+const CTA_CLASS =
+  'inline-flex items-center justify-center px-6 py-3 rounded-full bg-forest text-white text-sm font-medium transition-all hover:bg-forest-dark hover:-translate-y-px hover:shadow-md'
+
+export function BouquetTypesSection({
+  preselectSizeOnCta = false,
+}: {
+  /** When true, S/M/L CTAs pre-select the matching option in OrderForm. Homepage keeps the original scroll-only behaviour. */
+  preselectSizeOnCta?: boolean
+} = {}) {
   return (
     <section id="bouquets" className="py-20 md:py-28 bg-white" aria-labelledby="bouquets-title">
       <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-12">
@@ -59,12 +68,15 @@ export function BouquetTypesSection() {
                 <p className="text-sm sm:text-[0.9375rem] text-muted leading-[1.68] flex-1 mb-5">
                   {bouquet.description}
                 </p>
-                <a
-                  href="#order"
-                  className="inline-flex items-center justify-center px-6 py-3 rounded-full bg-forest text-white text-sm font-medium transition-all hover:bg-forest-dark hover:-translate-y-px hover:shadow-md"
-                >
-                  {bouquet.cta}
-                </a>
+                {preselectSizeOnCta ? (
+                  <SelectBouquetCta size={bouquet.id} className={CTA_CLASS}>
+                    {bouquet.cta}
+                  </SelectBouquetCta>
+                ) : (
+                  <a href="#order" className={CTA_CLASS}>
+                    {bouquet.cta}
+                  </a>
+                )}
               </div>
             </article>
           ))}

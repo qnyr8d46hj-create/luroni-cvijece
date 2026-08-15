@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 
@@ -185,11 +186,11 @@ export function OrderForm() {
       .catch(() => {}) // fail open — don't block users if the check itself fails
   }, [])
 
-  // Listen for CTA clicks from the CustomBouquetCard section above the form.
+  // Listen for CTA clicks from bouquet cards (`luroni:selectBouquet`).
   useEffect(() => {
     function onSelect(e: Event) {
       const { size, customBudget: budget } =
-        (e as CustomEvent<{ size: string; customBudget: number }>).detail
+        (e as CustomEvent<{ size: string; customBudget?: number }>).detail
       setSelectedBouquet(size)
       if (typeof budget === 'number') setCustomBudget(budget)
       setErrors(prev => ({ ...prev, bouquetSize: '' }))
@@ -417,9 +418,9 @@ export function OrderForm() {
         </p>
         <p className="text-xs text-muted mt-1.5 leading-[1.55]">
           Ne vidite svoje mjesto?{' '}
-          <a href="#kontakt" className="text-forest underline-offset-2 hover:underline">
+          <Link href="/#kontakt" className="text-forest underline-offset-2 hover:underline">
             Kontaktirajte nas putem obrasca za kontakt
-          </a>
+          </Link>
           {' '}ili na{' '}
           <a href="mailto:info@luroni.hr" className="text-forest underline-offset-2 hover:underline">
             info@luroni.hr

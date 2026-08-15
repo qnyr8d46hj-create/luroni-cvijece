@@ -1,13 +1,22 @@
+'use client'
+
 import Image from 'next/image'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 
-const FOOTER_LINKS = [
-  { href: '#top',      label: 'Početna' },
-  { href: '#gallery',  label: 'Složeni buketi' },
-  { href: '#bouquets', label: 'Veličine buketa' },
-  { href: '#order',    label: 'Narudžba' },
-  { href: '#kontakt',  label: 'Kontakt' },
-]
+function orderHref(pathname: string): string {
+  return pathname === '/buketi' ? '/buketi#order' : '/#order'
+}
+
+function footerLinks(pathname: string) {
+  return [
+    { href: '/',         label: 'Početna' },
+    { href: '/#gallery', label: 'Složeni buketi' },
+    { href: '/buketi',   label: 'Buketi' },
+    { href: orderHref(pathname), label: 'Narudžba' },
+    { href: '/#kontakt', label: 'Kontakt' },
+  ]
+}
 
 const LEGAL_LINKS = [
   { href: '/opci-uvjeti',            label: 'Opći uvjeti' },
@@ -21,6 +30,9 @@ const navLinkCls =
   'block py-1.5 text-sm text-white/55 hover:text-white transition-colors'
 
 export function Footer() {
+  const pathname = usePathname() ?? ''
+  const links = footerLinks(pathname)
+
   return (
     <footer className="bg-[#17271d] text-white/60" aria-label="Footer">
       <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-12">
@@ -29,10 +41,10 @@ export function Footer() {
 
           {/* Brand */}
           <div className="shrink-0">
-            <a
-              href="#top"
+            <Link
+              href="/"
               className="inline-block mb-2 hover:opacity-80 transition-opacity duration-200"
-              aria-label="Luroni cvijeće — na vrh stranice"
+              aria-label="Luroni cvijeće — početna"
             >
               <Image
                 src="/images/branding/logo-footer.png"
@@ -41,7 +53,7 @@ export function Footer() {
                 height={100}
                 className="h-14 w-auto sm:h-20"
               />
-            </a>
+            </Link>
             <p className="text-sm text-white/40">online narudžba buketa s dostavom</p>
           </div>
 
@@ -54,11 +66,17 @@ export function Footer() {
                 Navigacija
               </p>
               <ul className="space-y-0.5">
-                {FOOTER_LINKS.map((link) => (
-                  <li key={link.href}>
-                    <a href={link.href} className={navLinkCls}>
-                      {link.label}
-                    </a>
+                {links.map((link) => (
+                  <li key={link.label}>
+                    {link.href.includes('#') ? (
+                      <a href={link.href} className={navLinkCls}>
+                        {link.label}
+                      </a>
+                    ) : (
+                      <Link href={link.href} className={navLinkCls}>
+                        {link.label}
+                      </Link>
+                    )}
                   </li>
                 ))}
               </ul>
