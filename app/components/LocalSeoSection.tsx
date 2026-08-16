@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { DELIVERY_AREAS } from '@/lib/data'
 
 export function LocalSeoSection() {
@@ -19,6 +20,16 @@ export function LocalSeoSection() {
               području Rijeke, okolice i otoka Krka. Bukete dostavljamo u roku 24h, ovisno
               o dostupnosti cvijeća i dogovorenom terminu. U ponudi su buketi različitih
               veličina, od manjih pažnji do raskošnijih buketa za posebne prigode.
+            </p>
+            <p className="text-base sm:text-[1.0625rem] text-white/80 leading-[1.75] mb-8">
+              Za više informacija o buketima i dostavi na otoku Krku pogledajte našu stranicu{' '}
+              <Link
+                href="/cvjecarna-krk"
+                className="underline underline-offset-2 decoration-white/70 hover:decoration-white"
+              >
+                Cvjećarna Krk
+              </Link>
+              .
             </p>
             <a
               href="#order"
