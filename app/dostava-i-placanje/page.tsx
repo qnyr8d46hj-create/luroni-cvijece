@@ -5,6 +5,24 @@ export const metadata: Metadata = {
   title: 'Dostava i plaćanje | Luroni Cvijeće',
   description:
     'Sve o dostavi buketa u Rijeci, okolici i na otoku Krku – rokovi, uvjeti, cijene i načini plaćanja.',
+  alternates: {
+    canonical: 'https://www.luroni-cvijece.com/dostava-i-placanje',
+  },
+  openGraph: {
+    type:        'website',
+    locale:      'hr_HR',
+    url:         'https://www.luroni-cvijece.com/dostava-i-placanje',
+    siteName:    'Luroni Cvijeće',
+    title:       'Dostava i plaćanje | Luroni Cvijeće',
+    description:
+      'Sve o dostavi buketa u Rijeci, okolici i na otoku Krku – rokovi, uvjeti, cijene i načini plaćanja.',
+  },
+  twitter: {
+    card:        'summary_large_image',
+    title:       'Dostava i plaćanje | Luroni Cvijeće',
+    description:
+      'Sve o dostavi buketa u Rijeci, okolici i na otoku Krku – rokovi, uvjeti, cijene i načini plaćanja.',
+  },
 }
 
 export default function DostavaIPlacanjePage() {

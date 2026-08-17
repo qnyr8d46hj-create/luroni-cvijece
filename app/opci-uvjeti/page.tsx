@@ -4,14 +4,32 @@ import { LegalPage, LegalSection, LegalP, LegalUl } from '@/app/components/Legal
 export const metadata: Metadata = {
   title: 'Opći uvjeti poslovanja | Luroni Cvijeće',
   description:
-    'Opći uvjeti poslovanja web-mjesta luroni.hr – narudžba, dostava, plaćanje i prava potrošača pri kupnji svježeg cvijeća.',
+    'Opći uvjeti poslovanja web-mjesta luroni-cvijece.com – narudžba, dostava, plaćanje i prava potrošača pri kupnji svježeg cvijeća.',
+  alternates: {
+    canonical: 'https://www.luroni-cvijece.com/opci-uvjeti',
+  },
+  openGraph: {
+    type:        'website',
+    locale:      'hr_HR',
+    url:         'https://www.luroni-cvijece.com/opci-uvjeti',
+    siteName:    'Luroni Cvijeće',
+    title:       'Opći uvjeti poslovanja | Luroni Cvijeće',
+    description:
+      'Opći uvjeti poslovanja web-mjesta luroni-cvijece.com – narudžba, dostava, plaćanje i prava potrošača pri kupnji svježeg cvijeća.',
+  },
+  twitter: {
+    card:        'summary_large_image',
+    title:       'Opći uvjeti poslovanja | Luroni Cvijeće',
+    description:
+      'Opći uvjeti poslovanja web-mjesta luroni-cvijece.com – narudžba, dostava, plaćanje i prava potrošača pri kupnji svježeg cvijeća.',
+  },
 }
 
 export default function OpciUvjetiPage() {
   return (
     <LegalPage
       title="Opći uvjeti poslovanja"
-      subtitle="Uvjeti uređuju naručivanje, dostavu i plaćanje buketa putem luroni.hr."
+      subtitle="Uvjeti uređuju naručivanje, dostavu i plaćanje buketa putem luroni-cvijece.com."
     >
 
       <LegalSection id="prodavatelj" title="1. Podaci o prodavatelju">
@@ -24,7 +42,7 @@ export default function OpciUvjetiPage() {
 
       <LegalSection id="predmet" title="2. Predmet i primjena uvjeta">
         <LegalP>
-          Ovi Opći uvjeti poslovanja (dalje: Uvjeti) uređuju međusobna prava i obveze između Prodavatelja i kupca (dalje: Kupac ili Potrošač) koji putem web-mjesta luroni.hr naručuje svježe bukete cvijeća s dostavom.
+          Ovi Opći uvjeti poslovanja (dalje: Uvjeti) uređuju međusobna prava i obveze između Prodavatelja i kupca (dalje: Kupac ili Potrošač) koji putem web-mjesta luroni-cvijece.com naručuje svježe bukete cvijeća s dostavom.
         </LegalP>
         <LegalP>
           Smatra se da je Kupac upoznat s Uvjetima i da ih prihvaća u trenutku podnošenja narudžbe. Prodavatelj zadržava pravo izmjene Uvjeta bez prethodne obavijesti, a na svaku narudžbu primjenjuju se Uvjeti važeći u trenutku njezina podnošenja.

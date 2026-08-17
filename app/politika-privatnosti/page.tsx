@@ -5,6 +5,24 @@ export const metadata: Metadata = {
   title: 'Politika privatnosti | Luroni Cvijeće',
   description:
     'Saznajte kako Luroni Gaja d.o.o. prikuplja, obrađuje i štiti vaše osobne podatke u skladu s GDPR-om.',
+  alternates: {
+    canonical: 'https://www.luroni-cvijece.com/politika-privatnosti',
+  },
+  openGraph: {
+    type:        'website',
+    locale:      'hr_HR',
+    url:         'https://www.luroni-cvijece.com/politika-privatnosti',
+    siteName:    'Luroni Cvijeće',
+    title:       'Politika privatnosti | Luroni Cvijeće',
+    description:
+      'Saznajte kako Luroni Gaja d.o.o. prikuplja, obrađuje i štiti vaše osobne podatke u skladu s GDPR-om.',
+  },
+  twitter: {
+    card:        'summary_large_image',
+    title:       'Politika privatnosti | Luroni Cvijeće',
+    description:
+      'Saznajte kako Luroni Gaja d.o.o. prikuplja, obrađuje i štiti vaše osobne podatke u skladu s GDPR-om.',
+  },
 }
 
 export default function PolitikaPrivatnostiPage() {
