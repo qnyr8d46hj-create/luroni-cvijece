@@ -22,6 +22,16 @@ export function LocalSeoSection() {
               veličina, od manjih pažnji do raskošnijih buketa za posebne prigode.
             </p>
             <p className="text-base sm:text-[1.0625rem] text-white/80 leading-[1.75] mb-8">
+              Više informacija o narudžbi i dostavi pronađite na stranici{' '}
+              <Link
+                href="/dostava-cvijeca-rijeka"
+                className="underline underline-offset-2 decoration-white/70 hover:decoration-white"
+              >
+                Dostava cvijeća Rijeka
+              </Link>
+              .
+            </p>
+            <p className="text-base sm:text-[1.0625rem] text-white/80 leading-[1.75] mb-8">
               Za više informacija o buketima i dostavi na otoku Krku pogledajte našu stranicu{' '}
               <Link
                 href="/cvjecarna-krk"
