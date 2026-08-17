@@ -98,6 +98,11 @@ export const FAQS: FaqItem[] = [
     question: 'Mogu li dodati poruku uz buket?',
     answer:   'Da, prilikom narudžbe možete upisati kratku poruku za karticu ili dodatnu napomenu.',
   },
+  {
+    question: 'Mogu li i dalje odabrati veličinu buketa?',
+    answer:
+      'Da. Ako želite sami odabrati veličinu, na stranici Buketi možete odabrati buket S, M ili L. Ako odaberete prigodu, naš florist može vam pomoći složiti buket koji odgovara trenutku.',
+  },
 ]
 
 export const DELIVERY_AREAS = [

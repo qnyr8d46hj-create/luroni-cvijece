@@ -1,18 +1,19 @@
 import Image from 'next/image'
+import Link from 'next/link'
 
 const TRUST_BADGES = [
   { icon: <TruckIcon />,   text: 'Besplatna dostava' },
   { icon: <ClockIcon />,   text: 'Dostava u roku 24h' },
-  { icon: <MapPinIcon />,  text: 'Rijeka, okolica i otok Krk' },
-  { icon: <CardIcon />,    text: 'Plaćanje karticom ili gotovinom' },
+  { icon: <MapPinIcon />,  text: 'Rijeka, okolica i Krk' },
+  { icon: <CardIcon />,    text: 'Kartica ili gotovina' },
 ]
 
 export function HeroSection() {
   return (
     <section
       id="hero"
-      className="relative min-h-[92vh] flex items-center overflow-hidden bg-[#1d3326]"
-      aria-label="Naslovna"
+      className="relative flex items-center overflow-hidden bg-[#1d3326] py-16 sm:py-20 md:min-h-[85vh] md:py-14"
+      aria-labelledby="hero-title"
     >
       {/* Background image — decorative, hence alt="" */}
       <Image
@@ -31,35 +32,40 @@ export function HeroSection() {
       />
 
       {/* Content */}
-      <div className="relative z-10 w-full max-w-7xl mx-auto px-5 sm:px-8 lg:px-12 py-14 sm:py-20">
-        <div className="max-w-[620px]">
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-5 sm:px-8 lg:px-12">
+        <div className="max-w-[640px]">
 
-          <h1 className="font-display text-[2.1rem] sm:text-5xl lg:text-[3.75rem] font-semibold leading-[1.14] text-white mb-5 [text-wrap:balance]">
-            Dostava svježih buketa u Rijeci, okolici i na otoku Krku
-          </h1>
-
-          <p className="text-base sm:text-[1.125rem] text-white/85 leading-[1.7] mb-9 max-w-[540px]">
-            Naručite pažljivo složen buket za poklon, iznenađenje ili posebnu prigodu.
-            Dostavljamo u roku 24h, uz besplatnu dostavu.
+          <p className="text-[0.6875rem] font-semibold tracking-[0.14em] uppercase text-white/80 mb-4">
+            Dostava cvijeća u Rijeci, okolici i na otoku Krku
           </p>
 
-          {/* CTAs */}
-          <div className="flex flex-wrap gap-3 mb-11">
+          <h1
+            id="hero-title"
+            className="font-display text-[2.15rem] sm:text-5xl lg:text-[3.75rem] font-semibold leading-[1.14] text-white mb-5 [text-wrap:balance]"
+          >
+            Što želite reći cvijećem?
+          </h1>
+
+          <p className="text-base sm:text-[1.125rem] text-white/85 leading-[1.7] mb-8 sm:mb-9 max-w-[540px]">
+            Recite nam prigodu. Naš florist složit će buket koji govori umjesto vas —
+            od svježeg sezonskog cvijeća, s dostavom u Rijeci, okolici i na otoku Krku.
+          </p>
+
+          <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 mb-9 sm:mb-11">
             <a
-              href="#order"
+              href="#prigode"
               className="inline-flex items-center justify-center px-9 py-4 rounded-full bg-forest text-white font-medium text-[1.0625rem] transition-all hover:bg-forest-dark hover:-translate-y-px hover:shadow-lg"
             >
-              Naruči buket
+              Odaberite prigodu
             </a>
-            <a
-              href="#bouquets"
+            <Link
+              href="/buketi"
               className="inline-flex items-center justify-center px-9 py-4 rounded-full border-2 border-white/65 text-white font-medium text-[1.0625rem] transition-all hover:bg-white/[0.14] hover:border-white"
             >
-              Pogledaj bukete
-            </a>
+              Odaberite buket
+            </Link>
           </div>
 
-          {/* Trust badges */}
           <div className="flex flex-wrap gap-2.5">
             {TRUST_BADGES.map((badge) => (
               <div

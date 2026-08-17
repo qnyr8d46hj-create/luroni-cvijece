@@ -6,6 +6,11 @@
 //   - app/api/stripe/webhook/route.ts    (card payments after Firestore "paid" update)
 
 import { Resend } from 'resend'
+import {
+  OCCASION_PRODUCT_ID,
+  getOccasionById,
+  getOccasionBudgetOption,
+} from '@/lib/occasions'
 
 // ── Shared types ───────────────────────────────────────────────
 export interface OrderEmailPayload {
@@ -21,6 +26,8 @@ export interface OrderEmailPayload {
   deliveryTime:    string
   cardMessage:     string
   paymentMethod:   string
+  occasion?:         string          // optional occasion id, e.g. "oprosti-mi"
+  occasionBudget?:   number | null   // selected occasion budget in EUR
 }
 
 export interface EmailResult {
@@ -70,6 +77,27 @@ function buildEmailHtml(o: OrderEmailPayload): string {
   const dateLabel    = formatDate(o.deliveryDate)
 
   const isCustom = o.bouquetSize === 'Buket po želji'
+  const isOccasionOrder = o.bouquetSize === OCCASION_PRODUCT_ID && !!o.occasion
+
+  const occasionTitle = o.occasion
+    ? (getOccasionById(o.occasion)?.title ?? o.occasion)
+    : ''
+  const occasionOption = isOccasionOrder && o.occasion && typeof o.occasionBudget === 'number'
+    ? getOccasionBudgetOption(o.occasion, o.occasionBudget)
+    : undefined
+
+  const occasionBudgetValue = o.occasionBudget ?? o.bouquetPrice
+  const occasionRows = isOccasionOrder
+    ? (
+        row('Prigoda', occasionTitle) +
+        (occasionOption?.label ? row('Odabir', occasionOption.label, true) : '') +
+        row(
+          'Budžet',
+          occasionBudgetValue != null ? `${occasionBudgetValue} €` : '—',
+          !occasionOption?.label,
+        )
+      )
+    : (occasionTitle ? row('Prigoda', occasionTitle) : '')
 
   // "Buket S" / "Buket M" / "Buket L" / "Buket po želji"
   const bouquetLabel = isCustom ? 'Buket po želji' : `Buket ${o.bouquetSize}`
@@ -80,6 +108,13 @@ function buildEmailHtml(o: OrderEmailPayload): string {
     : o.bouquetPrice
   const priceLabel  = priceValue != null ? `${priceValue} €` : '—'
   const priceRowLabel = isCustom ? 'Odabrani budžet' : 'Cijena'
+
+  const traditionalProductRows = isOccasionOrder
+    ? ''
+    : (
+        row('Vrsta buketa', bouquetLabel) +
+        row(priceRowLabel, priceLabel, true)
+      )
 
   const messageBlock = o.cardMessage
     ? `<tr>
@@ -128,8 +163,8 @@ function buildEmailHtml(o: OrderEmailPayload): string {
       <!-- Order -->
       <h2 style="margin:0 0 12px 0;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#9a9a9a;">Narudžba</h2>
       <table style="width:100%;border-collapse:collapse;border-radius:10px;overflow:hidden;margin-bottom:24px;">
-        ${row('Vrsta buketa',   bouquetLabel)}
-        ${row(priceRowLabel,    priceLabel,  true)}
+        ${occasionRows}
+        ${traditionalProductRows}
         ${row('Plaćanje',       paymentLabel)}
         ${messageBlock}
       </table>

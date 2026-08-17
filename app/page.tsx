@@ -1,12 +1,15 @@
-import { Header }             from '@/app/components/Header'
-import { HeroSection }        from '@/app/components/HeroSection'
-import { GallerySection }     from '@/app/components/GallerySection'
-import { BouquetTypesSection } from '@/app/components/BouquetTypesSection'
-import { OrderSection }       from '@/app/components/OrderSection'
-import { LocalSeoSection }    from '@/app/components/LocalSeoSection'
-import { FaqSection }         from '@/app/components/FaqSection'
-import { ContactSection }     from '@/app/components/ContactSection'
-import { Footer }             from '@/app/components/Footer'
+import { Header } from '@/app/components/Header'
+import { HeroSection } from '@/app/components/HeroSection'
+import { OccasionSection } from '@/app/components/OccasionSection'
+import { OrderSection } from '@/app/components/OrderSection'
+import { ValuePropositionSection } from '@/app/components/ValuePropositionSection'
+import { HowItWorksSection } from '@/app/components/HowItWorksSection'
+import { GallerySection } from '@/app/components/GallerySection'
+import { BuketiTeaserSection } from '@/app/components/BuketiTeaserSection'
+import { LocalSeoSection } from '@/app/components/LocalSeoSection'
+import { FaqSection } from '@/app/components/FaqSection'
+import { ContactSection } from '@/app/components/ContactSection'
+import { Footer } from '@/app/components/Footer'
 
 export default function Home() {
   return (
@@ -14,9 +17,12 @@ export default function Home() {
       <Header />
       <main>
         <HeroSection />
+        <OccasionSection />
+        <OrderSection variant="occasion" />
+        <ValuePropositionSection />
+        <HowItWorksSection />
         <GallerySection />
-        <BouquetTypesSection />
-        <OrderSection />
+        <BuketiTeaserSection />
         <LocalSeoSection />
         <FaqSection />
         <ContactSection />

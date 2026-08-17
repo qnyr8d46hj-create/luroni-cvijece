@@ -239,6 +239,12 @@ async function handleCheckoutCompleted(event: Stripe.Event) {
     deliveryTime:    String(orderData.deliveryTime    ?? ''),
     cardMessage:     String(orderData.cardMessage     ?? ''),
     paymentMethod:   String(orderData.paymentMethod   ?? 'card'),
+    ...(typeof orderData.occasion === 'string' && orderData.occasion
+      ? { occasion: orderData.occasion }
+      : {}),
+    ...(typeof orderData.occasionBudget === 'number'
+      ? { occasionBudget: orderData.occasionBudget }
+      : {}),
   }
 
   try {
