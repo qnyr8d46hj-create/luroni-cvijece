@@ -52,7 +52,7 @@ export function HeroSection() {
               Naruči buket
             </a>
             <a
-              href="#bouquets"
+              href="#sizes"
               className="inline-flex items-center justify-center px-9 py-4 rounded-full border-2 border-white/65 text-white font-medium text-[1.0625rem] transition-all hover:bg-white/[0.14] hover:border-white"
             >
               Pogledaj bukete

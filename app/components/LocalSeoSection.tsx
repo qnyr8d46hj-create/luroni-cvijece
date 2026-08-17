@@ -3,7 +3,7 @@ import { DELIVERY_AREAS } from '@/lib/data'
 
 export function LocalSeoSection() {
   return (
-    <section id="contact" className="py-20 md:py-28 bg-forest" aria-labelledby="seo-title">
+    <section id="delivery-areas" className="py-20 md:py-28 bg-forest" aria-labelledby="seo-title">
       <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-12">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 lg:gap-20 items-start">
 

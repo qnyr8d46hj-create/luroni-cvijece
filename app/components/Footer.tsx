@@ -2,11 +2,11 @@ import Image from 'next/image'
 import Link from 'next/link'
 
 const FOOTER_LINKS = [
-  { href: '#top',      label: 'Početna' },
-  { href: '#gallery',  label: 'Složeni buketi' },
-  { href: '#bouquets', label: 'Veličine buketa' },
-  { href: '#order',    label: 'Narudžba' },
-  { href: '#kontakt',  label: 'Kontakt' },
+  { href: '/',           label: 'Početna' },
+  { href: '/#bouquets',  label: 'Složeni buketi' },
+  { href: '/#sizes',     label: 'Veličine buketa' },
+  { href: '/#order',     label: 'Narudžba' },
+  { href: '/#contact',   label: 'Kontakt' },
 ]
 
 const LEGAL_LINKS = [
@@ -29,8 +29,8 @@ export function Footer() {
 
           {/* Brand */}
           <div className="shrink-0">
-            <a
-              href="#top"
+            <Link
+              href="/"
               className="inline-block mb-2 hover:opacity-80 transition-opacity duration-200"
               aria-label="Luroni cvijeće — na vrh stranice"
             >
@@ -41,7 +41,7 @@ export function Footer() {
                 height={100}
                 className="h-14 w-auto sm:h-20"
               />
-            </a>
+            </Link>
             <p className="text-sm text-white/40">online narudžba buketa s dostavom</p>
           </div>
 

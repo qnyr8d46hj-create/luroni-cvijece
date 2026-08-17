@@ -145,7 +145,7 @@ export function ContactSection() {
 
   return (
     <section
-      id="kontakt"
+      id="contact"
       className="py-20 md:py-28 bg-cream"
       aria-labelledby="kontakt-title"
     >

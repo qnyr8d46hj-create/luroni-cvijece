@@ -2,17 +2,46 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 
 const NAV_LINKS = [
-  { href: '#top',      label: 'Početna' },
-  { href: '#gallery',  label: 'Složeni buketi' },
-  { href: '#bouquets', label: 'Veličine' },
-  { href: '#order',    label: 'Narudžba' },
-  { href: '#kontakt',  label: 'Kontakt' },
+  { href: '/',           label: 'Početna' },
+  { href: '/#bouquets',  label: 'Složeni buketi' },
+  { href: '/#sizes',     label: 'Veličine' },
+  { href: '/#order',     label: 'Narudžba' },
+  { href: '/#contact',   label: 'Kontakt' },
 ]
+
+function goToHomeSection(
+  event: React.MouseEvent<HTMLAnchorElement>,
+  href: string,
+) {
+  if (typeof window === 'undefined' || window.location.pathname !== '/') {
+    return
+  }
+
+  event.preventDefault()
+
+  const hash = href.includes('#') ? href.slice(href.indexOf('#') + 1) : ''
+  window.history.replaceState(null, '', hash ? `/#${hash}` : '/')
+
+  if (hash) {
+    document.getElementById(hash)?.scrollIntoView({ behavior: 'smooth' })
+  } else {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+}
 
 export function Header() {
   const [open, setOpen] = useState(false)
+
+  function onNavClick(
+    event: React.MouseEvent<HTMLAnchorElement>,
+    href: string,
+  ) {
+    setOpen(false)
+    goToHomeSection(event, href)
+  }
 
   return (
     <header className="sticky top-0 z-50 bg-cream/95 backdrop-blur-sm border-b border-divider">
@@ -20,8 +49,9 @@ export function Header() {
         <div className="flex items-center justify-between h-16 gap-4">
 
           {/* Logo */}
-          <a
-            href="#top"
+          <Link
+            href="/"
+            onClick={(event) => onNavClick(event, '/')}
             className="flex items-center flex-shrink-0 hover:opacity-85 transition-opacity duration-200"
             aria-label="Luroni cvijeće — početna"
           >
@@ -33,19 +63,20 @@ export function Header() {
               className="h-9 w-auto"
               preload
             />
-          </a>
+          </Link>
 
           {/* Desktop nav */}
           <nav className="hidden lg:block" aria-label="Navigacija">
             <ul className="flex items-center gap-1">
               {NAV_LINKS.map((link) => (
                 <li key={link.href}>
-                  <a
+                  <Link
                     href={link.href}
+                    onClick={(event) => onNavClick(event, link.href)}
                     className="px-4 py-1.5 text-sm font-medium text-muted rounded-full hover:text-forest hover:bg-forest-light transition-colors"
                   >
                     {link.label}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -53,12 +84,13 @@ export function Header() {
 
           {/* CTA + hamburger */}
           <div className="flex items-center gap-3">
-            <a
-              href="#order"
+            <Link
+              href="/#order"
+              onClick={(event) => onNavClick(event, '/#order')}
               className="hidden sm:inline-flex items-center justify-center px-5 py-2 rounded-full bg-forest text-white text-sm font-medium hover:bg-forest-dark transition-colors"
             >
               Naruči buket
-            </a>
+            </Link>
 
             <button
               className="lg:hidden flex flex-col items-center justify-center gap-[5px] min-w-[44px] min-h-[44px] -mr-2.5"
@@ -98,23 +130,23 @@ export function Header() {
           <ul className="flex flex-col gap-1 mb-4">
             {NAV_LINKS.map((link) => (
               <li key={link.href}>
-                <a
+                <Link
                   href={link.href}
-                  onClick={() => setOpen(false)}
+                  onClick={(event) => onNavClick(event, link.href)}
                   className="block px-4 py-3 text-base font-medium text-ink rounded-xl hover:text-forest hover:bg-forest-light transition-colors"
                 >
                   {link.label}
-                </a>
+                </Link>
               </li>
             ))}
           </ul>
-          <a
-            href="#order"
-            onClick={() => setOpen(false)}
+          <Link
+            href="/#order"
+            onClick={(event) => onNavClick(event, '/#order')}
             className="flex items-center justify-center w-full py-3.5 rounded-full bg-forest text-white font-medium hover:bg-forest-dark transition-colors"
           >
             Naruči buket
-          </a>
+          </Link>
         </nav>
       )}
     </header>

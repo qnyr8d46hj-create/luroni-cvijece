@@ -417,7 +417,7 @@ export function OrderForm() {
         </p>
         <p className="text-xs text-muted mt-1.5 leading-[1.55]">
           Ne vidite svoje mjesto?{' '}
-          <a href="#kontakt" className="text-forest underline-offset-2 hover:underline">
+          <a href="#contact" className="text-forest underline-offset-2 hover:underline">
             Kontaktirajte nas putem obrasca za kontakt
           </a>
           {' '}ili na{' '}

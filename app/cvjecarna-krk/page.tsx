@@ -323,7 +323,7 @@ function OccasionsSection() {
         <p className="text-center text-sm text-muted leading-[1.75]">
           Pogledajte{' '}
           <Link
-            href="/#gallery"
+            href="/#bouquets"
             className="text-forest font-medium hover:underline underline-offset-2"
           >
             stvarne bukete

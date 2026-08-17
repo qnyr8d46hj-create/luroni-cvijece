@@ -4,7 +4,7 @@ import { CustomBouquetCard } from './CustomBouquetCard'
 
 export function BouquetTypesSection() {
   return (
-    <section id="bouquets" className="py-20 md:py-28 bg-white" aria-labelledby="bouquets-title">
+    <section id="sizes" className="py-20 md:py-28 bg-white" aria-labelledby="bouquets-title">
       <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-12">
 
         <header className="text-center max-w-2xl mx-auto mb-14">

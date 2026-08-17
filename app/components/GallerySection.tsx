@@ -48,7 +48,7 @@ function TrustBadge({ icon, label }: { icon: React.ReactNode; label: string }) {
 export function GallerySection() {
   return (
     <section
-      id="gallery"
+      id="bouquets"
       className="py-20 md:py-28 bg-cream overflow-hidden"
       aria-labelledby="gallery-title"
     >
