@@ -260,6 +260,16 @@ export function OrderForm() {
       ? customBudget
       : (BOUQUET_PRICES[bouquetSizeValue] ?? null)
 
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('event', 'begin_checkout', {
+        currency:        'EUR',
+        value:           bouquetPrice ?? undefined,
+        payment_method:  payment,
+        delivery_city:   String(data.get('city') ?? ''),
+        bouquet_size:    bouquetSizeValue,
+      })
+    }
+
     setLoading(true)
     setSubmitError('')
 
