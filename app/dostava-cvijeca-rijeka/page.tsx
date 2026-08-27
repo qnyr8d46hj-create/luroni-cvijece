@@ -4,7 +4,10 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Header } from '@/app/components/Header'
 import { Footer } from '@/app/components/Footer'
+import { JsonLd } from '@/app/components/JsonLd'
+import { BouquetTypesSection } from '@/app/components/BouquetTypesSection'
 import { DELIVERY_AREAS } from '@/lib/data'
+import { cityLandingJsonLd } from '@/lib/seo'
 
 const SITE_URL  = 'https://www.luroni-cvijece.com'
 const PAGE_PATH = '/dostava-cvijeca-rijeka'
@@ -70,39 +73,6 @@ export const metadata: Metadata = {
     language:           'Croatian',
     'content-language': 'hr',
   },
-}
-
-const jsonLd = {
-  '@context': 'https://schema.org',
-  '@graph': [
-    {
-      '@type':      'WebPage',
-      '@id':        PAGE_URL,
-      url:          PAGE_URL,
-      name:         TITLE,
-      description:  DESCRIPTION,
-      inLanguage:   'hr-HR',
-      isPartOf:     { '@type': 'WebSite', name: SITE_NAME, url: SITE_URL },
-      about:        'Dostava cvijeća u Rijeci i okolici',
-    },
-    {
-      '@type': 'BreadcrumbList',
-      itemListElement: [
-        {
-          '@type':   'ListItem',
-          position:  1,
-          name:      'Početna',
-          item:      SITE_URL,
-        },
-        {
-          '@type':   'ListItem',
-          position:  2,
-          name:      'Dostava cvijeća Rijeka',
-          item:      PAGE_URL,
-        },
-      ],
-    },
-  ],
 }
 
 const HERO_BADGES = [
@@ -181,18 +151,32 @@ const FAQS = [
   },
 ]
 
+const jsonLd = cityLandingJsonLd({
+  pageUrl:         PAGE_URL,
+  name:            TITLE,
+  description:     DESCRIPTION,
+  breadcrumbName:  'Dostava cvijeća Rijeka',
+  serviceName:     'Dostava cvijeća u Rijeci i okolici',
+  areaServed:      RIJEKA_AREAS.map((name) => ({ '@type': 'City' as const, name })),
+  faqs:            FAQS,
+})
+
 export default function DostavaCvijecaRijekaPage() {
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+      <JsonLd data={jsonLd} />
       <Header />
       <main id="top">
         <Hero />
         <IntroSection />
         <OccasionsSection />
+        <BouquetTypesSection
+          id="velicine"
+          titleId="rijeka-velicine-title"
+          orderHref="/#order"
+          showCustom={false}
+          backgroundClassName="bg-cream"
+        />
         <OrderingSection />
         <DeliverySection />
         <TrustSection />
@@ -250,7 +234,7 @@ function Hero() {
               Naruči buket
             </Link>
             <Link
-              href="/#bouquets"
+              href="#velicine"
               className="inline-flex items-center justify-center px-9 py-4 rounded-full border-2 border-white/65 text-white font-medium text-[1.0625rem] transition-all hover:bg-white/[0.14] hover:border-white"
             >
               Pogledaj bukete
@@ -445,7 +429,14 @@ function DeliverySection() {
               >
                 Dostava i plaćanje
               </Link>
-              .
+              . Ako trebate{' '}
+              <Link
+                href="/cvjecarna-krk"
+                className="text-forest font-medium hover:underline underline-offset-2"
+              >
+                dostavu cvijeća na Krku
+              </Link>
+              , otvorite stranicu za otok Krk.
             </p>
           </div>
 

@@ -2,12 +2,14 @@ import type { Metadata } from 'next'
 import { Header }          from '@/app/components/Header'
 import { Footer }          from '@/app/components/Footer'
 import { PurchaseTracker } from '@/app/components/PurchaseTracker'
+import { pageSeo }         from '@/lib/seo'
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageSeo({
   title: 'Hvala na narudžbi! | Luroni Cvijeće',
   description: 'Vaša narudžba buketa je zaprimljena. Javit ćemo vam se uskoro.',
-  robots: { index: false, follow: false },
-}
+  path: '/narudzba-uspjesna',
+  index: false,
+})
 
 // searchParams is a Promise in Next.js 15+ App Router
 export default async function NarudzbaUspjesnaPage({

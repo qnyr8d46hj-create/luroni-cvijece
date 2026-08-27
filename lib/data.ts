@@ -75,8 +75,7 @@ export interface FaqItem {
   answer:   string
 }
 
-// Single source of truth for FAQ — used by both the visible accordion
-// (FaqSection.tsx) and the FAQPage JSON-LD in layout.tsx.
+// Single source of truth for homepage FAQ — used by FaqSection and homepage FAQPage JSON-LD.
 export const FAQS: FaqItem[] = [
   {
     question: 'Gdje dostavljate cvijeće?',

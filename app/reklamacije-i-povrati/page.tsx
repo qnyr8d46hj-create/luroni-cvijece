@@ -1,11 +1,13 @@
 import type { Metadata } from 'next'
 import { LegalPage, LegalSection, LegalP, LegalUl } from '@/app/components/LegalPage'
+import { pageSeo } from '@/lib/seo'
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageSeo({
   title: 'Reklamacije i povrati | Luroni Cvijeće',
   description:
     'Postupak reklamacije za bukete Luroni cvijeće – kako podnijeti prigovor, rokovi rješavanja i vaša prava kao potrošača.',
-}
+  path: '/reklamacije-i-povrati',
+})
 
 export default function ReklamacijeIPovrati() {
   return (

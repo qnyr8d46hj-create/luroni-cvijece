@@ -9,6 +9,11 @@ const FOOTER_LINKS = [
   { href: '/#contact',   label: 'Kontakt' },
 ]
 
+const CITY_LINKS = [
+  { href: '/dostava-cvijeca-rijeka', label: 'Dostava cvijeća Rijeka' },
+  { href: '/cvjecarna-krk',          label: 'Dostava cvijeća Krk' },
+]
+
 const LEGAL_LINKS = [
   { href: '/opci-uvjeti',            label: 'Opći uvjeti' },
   { href: '/politika-privatnosti',   label: 'Politika privatnosti' },
@@ -59,6 +64,22 @@ export function Footer() {
                     <a href={link.href} className={navLinkCls}>
                       {link.label}
                     </a>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+
+            {/* Dostava */}
+            <nav aria-label="Dostava">
+              <p className="text-[0.6875rem] font-semibold tracking-[0.12em] uppercase text-white/30 mb-3">
+                Dostava
+              </p>
+              <ul className="space-y-0.5">
+                {CITY_LINKS.map((link) => (
+                  <li key={link.href}>
+                    <Link href={link.href} className={navLinkCls}>
+                      {link.label}
+                    </Link>
                   </li>
                 ))}
               </ul>

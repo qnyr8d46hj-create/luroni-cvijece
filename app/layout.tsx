@@ -3,7 +3,6 @@ import { Cormorant_Garamond, DM_Sans } from 'next/font/google'
 import { Analytics }       from '@vercel/analytics/next'
 import { SpeedInsights }   from '@vercel/speed-insights/next'
 import { GoogleAnalytics } from '@/app/components/GoogleAnalytics'
-import { FAQS }            from '@/lib/data'
 import './globals.css'
 
 // ── Fonts ──────────────────────────────────────────────────
@@ -138,68 +137,10 @@ export const metadata: Metadata = {
   },
 }
 
-// ── JSON-LD — Florist / LocalBusiness structured data ────────
-const floristJsonLd = {
-  '@context':         'https://schema.org',
-  '@type':            'Florist',           // more specific than LocalBusiness
-  '@id':              SITE_URL,
-  name:               SITE_NAME,
-  description:        'Ručno složeni buketi s dostavom u Rijeci, okolici i na otoku Krku.',
-  url:                SITE_URL,
-  image:              `${SITE_URL}${OG_IMAGE}`,
-  email:              'info.luroni@gmail.com',
-  priceRange:         '€€',
-  availableLanguage:  { '@type': 'Language', name: 'Croatian' },
-  sameAs:             [],
-  areaServed: [
-    { '@type': 'City',  name: 'Rijeka'   },
-    { '@type': 'City',  name: 'Opatija'  },
-    { '@type': 'City',  name: 'Kastav'   },
-    { '@type': 'City',  name: 'Viškovo'  },
-    { '@type': 'City',  name: 'Lovran'   },
-    { '@type': 'City',  name: 'Ičići'    },
-    { '@type': 'City',  name: 'Ika'      },
-    { '@type': 'City',  name: 'Šmrika'   },
-    { '@type': 'City',  name: 'Malinska' },
-    { '@type': 'City',  name: 'Dobrinj'  },
-    { '@type': 'Place', name: 'Otok Krk' },
-  ],
-  hasOfferCatalog: {
-    '@type': 'OfferCatalog',
-    name: 'Buketi s dostavom',
-    itemListElement: [
-      { '@type': 'Offer', name: 'Buket S', price: '35', priceCurrency: 'EUR' },
-      { '@type': 'Offer', name: 'Buket M', price: '45', priceCurrency: 'EUR' },
-      { '@type': 'Offer', name: 'Buket L', price: '60', priceCurrency: 'EUR' },
-    ],
-  },
-}
-
-// ── JSON-LD — FAQPage structured data ────────────────────────
-const faqJsonLd = {
-  '@context':  'https://schema.org',
-  '@type':     'FAQPage',
-  mainEntity:  FAQS.map(({ question, answer }) => ({
-    '@type':        'Question',
-    name:           question,
-    acceptedAnswer: { '@type': 'Answer', text: answer },
-  })),
-}
-
 // ── Root layout ────────────────────────────────────────────
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="hr" className={`${cormorant.variable} ${dmSans.variable}`}>
-      <head>
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(floristJsonLd) }}
-        />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
-        />
-      </head>
       <body className="min-h-screen bg-cream text-ink antialiased font-sans">
         {children}
         <Analytics />

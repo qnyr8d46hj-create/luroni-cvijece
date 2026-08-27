@@ -12,11 +12,24 @@ const NAV_LINKS = [
   { href: '/#contact',   label: 'Kontakt' },
 ]
 
+const CITY_LINKS = [
+  { href: '/dostava-cvijeca-rijeka', label: 'Dostava cvijeća Rijeka' },
+  { href: '/cvjecarna-krk',          label: 'Dostava cvijeća Krk' },
+]
+
+function isHomeSectionHref(href: string) {
+  return href === '/' || href.startsWith('/#')
+}
+
 function goToHomeSection(
   event: React.MouseEvent<HTMLAnchorElement>,
   href: string,
 ) {
   if (typeof window === 'undefined' || window.location.pathname !== '/') {
+    return
+  }
+
+  if (!isHomeSectionHref(href)) {
     return
   }
 
@@ -66,14 +79,26 @@ export function Header() {
           </Link>
 
           {/* Desktop nav */}
-          <nav className="hidden lg:block" aria-label="Navigacija">
-            <ul className="flex items-center gap-1">
+          <nav className="hidden lg:block min-w-0" aria-label="Navigacija">
+            <ul className="flex items-center justify-end gap-0.5 xl:gap-1 flex-wrap">
               {NAV_LINKS.map((link) => (
                 <li key={link.href}>
                   <Link
                     href={link.href}
                     onClick={(event) => onNavClick(event, link.href)}
-                    className="px-4 py-1.5 text-sm font-medium text-muted rounded-full hover:text-forest hover:bg-forest-light transition-colors"
+                    className="px-2.5 xl:px-4 py-1.5 text-[0.8125rem] xl:text-sm font-medium text-muted rounded-full hover:text-forest hover:bg-forest-light transition-colors"
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+              <li aria-hidden="true" className="mx-1.5 h-4 w-px bg-divider" />
+              {CITY_LINKS.map((link) => (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    onClick={(event) => onNavClick(event, link.href)}
+                    className="px-2.5 xl:px-4 py-1.5 text-[0.8125rem] xl:text-sm font-medium text-muted rounded-full hover:text-forest hover:bg-forest-light transition-colors"
                   >
                     {link.label}
                   </Link>
@@ -127,8 +152,24 @@ export function Header() {
           className="lg:hidden border-t border-divider bg-cream/98 px-4 pt-3 pb-5"
           aria-label="Mobilna navigacija"
         >
-          <ul className="flex flex-col gap-1 mb-4">
+          <ul className="flex flex-col gap-1 mb-2">
             {NAV_LINKS.map((link) => (
+              <li key={link.href}>
+                <Link
+                  href={link.href}
+                  onClick={(event) => onNavClick(event, link.href)}
+                  className="block px-4 py-3 text-base font-medium text-ink rounded-xl hover:text-forest hover:bg-forest-light transition-colors"
+                >
+                  {link.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <p className="px-4 pt-2 pb-1 text-[0.6875rem] font-semibold tracking-[0.12em] uppercase text-muted">
+            Dostava
+          </p>
+          <ul className="flex flex-col gap-1 mb-4">
+            {CITY_LINKS.map((link) => (
               <li key={link.href}>
                 <Link
                   href={link.href}

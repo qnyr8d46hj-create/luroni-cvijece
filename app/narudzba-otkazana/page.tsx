@@ -1,12 +1,14 @@
 import type { Metadata } from 'next'
 import { Header } from '@/app/components/Header'
 import { Footer } from '@/app/components/Footer'
+import { pageSeo } from '@/lib/seo'
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageSeo({
   title: 'Plaćanje otkazano | Luroni Cvijeće',
   description: 'Plaćanje je otkazano. Narudžba nije dovršena.',
-  robots: { index: false, follow: false },
-}
+  path: '/narudzba-otkazana',
+  index: false,
+})
 
 export default function NarudzbaOtkazanaPage() {
   return (

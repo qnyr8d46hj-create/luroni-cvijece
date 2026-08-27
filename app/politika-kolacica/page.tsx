@@ -1,11 +1,13 @@
 import type { Metadata } from 'next'
 import { LegalPage, LegalSection, LegalP, LegalUl } from '@/app/components/LegalPage'
+import { pageSeo } from '@/lib/seo'
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageSeo({
   title: 'Politika kolačića | Luroni Cvijeće',
   description:
     'Saznajte koje kolačiće koristi luroni.hr, zašto ih koristimo i kako ih možete kontrolirati.',
-}
+  path: '/politika-kolacica',
+})
 
 export default function PolitikaKolacicaPage() {
   return (

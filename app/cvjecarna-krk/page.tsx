@@ -4,7 +4,10 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Header } from '@/app/components/Header'
 import { Footer } from '@/app/components/Footer'
+import { JsonLd } from '@/app/components/JsonLd'
+import { BouquetTypesSection } from '@/app/components/BouquetTypesSection'
 import { GALLERY_IMAGES_FEATURED } from '@/lib/data'
+import { cityLandingJsonLd } from '@/lib/seo'
 
 const SITE_URL  = 'https://www.luroni-cvijece.com'
 const PAGE_PATH = '/cvjecarna-krk'
@@ -15,7 +18,7 @@ const OG_IMAGE  = '/images/hero/hero-buket.jpg'
 const TITLE =
   'Cvjećarna Krk – buketi i dostava cvijeća | Luroni Cvijeće'
 const DESCRIPTION =
-  'Tražite cvjećarnu na Krku? Luroni izrađuje svježe bukete za rođendane, godišnjice i posebne prigode uz dostavu na otoku Krku.'
+  'Svježi, ručno složeni buketi s dostavom diljem otoka Krka. Naručite online za Grad Krk, Malinsku, Punat, Bašku, Omišalj i okolna naselja.'
 
 export const metadata: Metadata = {
   title:       TITLE,
@@ -72,39 +75,6 @@ export const metadata: Metadata = {
   },
 }
 
-const jsonLd = {
-  '@context': 'https://schema.org',
-  '@graph': [
-    {
-      '@type':      'WebPage',
-      '@id':        PAGE_URL,
-      url:          PAGE_URL,
-      name:         TITLE,
-      description:  DESCRIPTION,
-      inLanguage:   'hr-HR',
-      isPartOf:     { '@type': 'WebSite', name: SITE_NAME, url: SITE_URL },
-      about:        'Cvjećarna i dostava cvijeća na otoku Krku',
-    },
-    {
-      '@type': 'BreadcrumbList',
-      itemListElement: [
-        {
-          '@type':   'ListItem',
-          position:  1,
-          name:      'Početna',
-          item:      SITE_URL,
-        },
-        {
-          '@type':   'ListItem',
-          position:  2,
-          name:      'Cvjećarna Krk',
-          item:      PAGE_URL,
-        },
-      ],
-    },
-  ],
-}
-
 const HERO_BADGES = [
   { icon: <TruckIcon />,  text: 'Besplatna dostava' },
   { icon: <ClockIcon />,  text: 'Dostava u roku 24h' },
@@ -147,6 +117,15 @@ const OCCASIONS = [
 
 const KRK_AREAS = ['Grad Krk', 'Malinska', 'Punat', 'Baška', 'Omišalj', 'Okolna naselja na otoku'] as const
 
+const KRK_SCHEMA_AREAS = [
+  { '@type': 'Place' as const, name: 'Otok Krk' },
+  { '@type': 'City' as const,  name: 'Krk' },
+  { '@type': 'City' as const,  name: 'Malinska' },
+  { '@type': 'City' as const,  name: 'Punat' },
+  { '@type': 'City' as const,  name: 'Baška' },
+  { '@type': 'City' as const,  name: 'Omišalj' },
+]
+
 const TRUST_ITEMS = [
   {
     title: 'Svježe sezonsko cvijeće',
@@ -165,21 +144,74 @@ const TRUST_ITEMS = [
   },
 ]
 
-const GALLERY_PREVIEW = GALLERY_IMAGES_FEATURED.slice(0, 4)
+const GALLERY_PREVIEW = GALLERY_IMAGES_FEATURED.slice(0, 4).map((image, index) => ({
+  ...image,
+  alt: [
+    'Buket pripremljen za dostavu cvijeća na Krku',
+    'Svježi buket za dostavu na otoku Krku',
+    'Ručno složeni sezonski buket za dostavu na Krku',
+    'Cvjetni aranžman spreman za dostavu na otoku Krku',
+  ][index] ?? image.alt,
+}))
+
+const FAQS = [
+  {
+    question: 'Dostavljate li cvijeće diljem otoka Krka?',
+    answer:
+      'Da. Dostavljamo svježe bukete na otoku Krku, uključujući Grad Krk, Malinsku, Punat, Bašku, Omišalj i okolna naselja. U obrascu za narudžbu odaberite opciju Otok Krk.',
+  },
+  {
+    question: 'U koja mjesta na Krku dostavljate?',
+    answer:
+      'Dostavljamo u Grad Krk, Malinsku, Punat, Bašku, Omišalj i okolna naselja na otoku. Ako niste sigurni je li vaša adresa u području dostave, navedite je u narudžbi ili nas kontaktirajte.',
+  },
+  {
+    question: 'Može li buket stići isti dan ili u roku 24 sata?',
+    answer:
+      'Uobičajeno nastojimo dostaviti u roku od 24 sata od potvrđene narudžbe. Dostava istog dana nije uvijek moguća — konačni rok ovisi o dostupnosti svježeg cvijeća i dogovorenom terminu.',
+  },
+  {
+    question: 'Kako naručiti buket za Krk?',
+    answer:
+      'Naručivanje je online. Odaberite veličinu buketa, upišite adresu na otoku Krku i željeni termin. Plaćanje je moguće karticom online ili gotovinom prilikom dostave, ovisno o dostupnim opcijama na stranici.',
+  },
+]
+
+const jsonLd = cityLandingJsonLd({
+  pageUrl:         PAGE_URL,
+  name:            TITLE,
+  description:     DESCRIPTION,
+  breadcrumbName:  'Dostava cvijeća Krk',
+  serviceName:     'Dostava cvijeća na otoku Krku',
+  areaServed:      KRK_SCHEMA_AREAS,
+  faqs:            FAQS,
+})
 
 export default function CvjecarnaKrkPage() {
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+      <JsonLd data={jsonLd} />
       <Header />
       <main id="top">
         <Hero />
         <OccasionsSection />
+        <BouquetTypesSection
+          id="velicine"
+          titleId="krk-velicine-title"
+          orderHref="/#order"
+          showCustom={false}
+          backgroundClassName="bg-white"
+          imageAlt={(bouquet) =>
+            bouquet.id === 'S'
+              ? 'Buket S pripremljen za dostavu cvijeća na Krku'
+              : bouquet.id === 'M'
+                ? 'Svježi buket M za dostavu na otoku Krku'
+                : 'Buket L složen za dostavu cvijeća na Krku'
+          }
+        />
         <DeliverySection />
         <TrustSection />
+        <FaqSection />
         <FinalCta />
       </main>
       <Footer />
@@ -222,7 +254,7 @@ function Hero() {
 
           <p className="text-base sm:text-[1.125rem] text-white/85 leading-[1.7] mb-9 max-w-[540px]">
             Luroni izrađuje svježe, ručno složene bukete za rođendane, godišnjice,
-            poklone i druge posebne prigode, uz dostavu na otoku Krku.
+            poklone i druge posebne prigode, uz dostavu diljem otoka Krka.
           </p>
 
           <div className="flex flex-wrap gap-3 mb-11">
@@ -233,7 +265,7 @@ function Hero() {
               Naruči buket
             </Link>
             <Link
-              href="/#bouquets"
+              href="#velicine"
               className="inline-flex items-center justify-center px-9 py-4 rounded-full border-2 border-white/65 text-white font-medium text-[1.0625rem] transition-all hover:bg-white/[0.14] hover:border-white"
             >
               Pogledaj bukete
@@ -277,7 +309,7 @@ function OccasionsSection() {
           <p className="text-base sm:text-[1.0625rem] text-muted leading-[1.75]">
             Na Krku dostavljamo ručno složene bukete za rođendane, godišnjice, poklone,
             iznenađenja i druge posebne trenutke. Odaberite veličinu, a mi ćemo buket
-            složiti od svježeg sezonskog cvijeća.
+            složiti od svježeg sezonskog cvijeća i dostaviti ga diljem otoka.
           </p>
         </header>
 
@@ -321,7 +353,7 @@ function OccasionsSection() {
         </div>
 
         <p className="text-center text-sm text-muted leading-[1.75]">
-          Pogledajte{' '}
+          Pogledajte veličine i cijene buketa na ovoj stranici ili{' '}
           <Link
             href="/#bouquets"
             className="text-forest font-medium hover:underline underline-offset-2"
@@ -354,9 +386,9 @@ function DeliverySection() {
               Dostava buketa na otoku Krku
             </h2>
             <p className="text-base sm:text-[1.0625rem] text-muted leading-[1.75] mb-5">
-              Dostavljamo bukete na otoku Krku, uključujući grad Krk, Malinsku i
-              okolna naselja. Dostava je besplatna i obavlja se od ponedjeljka do
-              subote, uz prethodni dogovor o terminu.
+              Dostavljamo bukete diljem otoka Krka, uključujući Grad Krk, Malinsku,
+              Punat, Bašku, Omišalj i okolna naselja. Dostava je besplatna i obavlja
+              se od ponedjeljka do subote, uz prethodni dogovor o terminu.
             </p>
             <p className="text-base sm:text-[1.0625rem] text-muted leading-[1.75] mb-8">
               Uobičajeno nastojimo dostaviti u roku od 24 sata od potvrđene
@@ -369,7 +401,14 @@ function DeliverySection() {
               >
                 Dostava i plaćanje
               </Link>
-              .
+              . Ako trebate{' '}
+              <Link
+                href="/dostava-cvijeca-rijeka"
+                className="text-forest font-medium hover:underline underline-offset-2"
+              >
+                dostavu cvijeća u Rijeci
+              </Link>
+              , otvorite stranicu za Rijeku i okolicu.
             </p>
           </div>
 
@@ -437,6 +476,42 @@ function TrustSection() {
             </li>
           ))}
         </ul>
+      </div>
+    </section>
+  )
+}
+
+function FaqSection() {
+  return (
+    <section
+      className="py-20 md:py-24 bg-white"
+      aria-labelledby="faq-title"
+    >
+      <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-12">
+        <div className="max-w-2xl mx-auto lg:mx-0 mb-12">
+          <p className="text-[0.6875rem] font-semibold tracking-[0.14em] uppercase text-forest mb-3">
+            Česta pitanja
+          </p>
+          <h2
+            id="faq-title"
+            className="font-display text-4xl sm:text-[2.75rem] font-semibold text-ink leading-[1.2]"
+          >
+            Dostava cvijeća na Krku
+          </h2>
+        </div>
+
+        <div className="max-w-2xl lg:max-w-none mx-auto grid grid-cols-1 lg:grid-cols-2 lg:gap-x-20">
+          {FAQS.map(({ question, answer }) => (
+            <div key={question} className="border-b border-divider">
+              <h3 className="text-[0.9375rem] font-semibold text-ink leading-snug pt-5 pb-2">
+                {question}
+              </h3>
+              <p className="pb-5 text-[0.9rem] text-muted leading-[1.75]">
+                {answer}
+              </p>
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   )

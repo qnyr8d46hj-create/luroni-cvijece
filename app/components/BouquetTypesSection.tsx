@@ -1,15 +1,34 @@
 import Image from 'next/image'
-import { BOUQUET_TYPES } from '@/lib/data'
+import Link from 'next/link'
+import { BOUQUET_TYPES, type BouquetType } from '@/lib/data'
 import { CustomBouquetCard } from './CustomBouquetCard'
 
-export function BouquetTypesSection() {
+export function BouquetTypesSection({
+  id = 'sizes',
+  titleId = 'bouquets-title',
+  orderHref = '#order',
+  showCustom = true,
+  backgroundClassName = 'bg-white',
+  imageAlt,
+}: {
+  id?: string
+  titleId?: string
+  orderHref?: string
+  showCustom?: boolean
+  backgroundClassName?: string
+  imageAlt?: (bouquet: BouquetType) => string
+} = {}) {
   return (
-    <section id="sizes" className="py-20 md:py-28 bg-white" aria-labelledby="bouquets-title">
+    <section
+      id={id}
+      className={`py-20 md:py-28 overflow-hidden ${backgroundClassName}`}
+      aria-labelledby={titleId}
+    >
       <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-12">
 
         <header className="text-center max-w-2xl mx-auto mb-14">
           <h2
-            id="bouquets-title"
+            id={titleId}
             className="font-display text-4xl sm:text-[2.75rem] font-semibold text-ink mb-4 leading-[1.2]"
           >
             Odaberite veličinu buketa
@@ -42,7 +61,7 @@ export function BouquetTypesSection() {
               <div className="relative aspect-[3/2] overflow-hidden bg-[linear-gradient(135deg,#ede7df,#d9d1c7)]">
                 <Image
                   src={bouquet.image}
-                  alt={bouquet.alt}
+                  alt={imageAlt ? imageAlt(bouquet) : bouquet.alt}
                   fill
                   className="object-cover transition-transform duration-500 group-hover:scale-[1.06]"
                   sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
@@ -59,23 +78,24 @@ export function BouquetTypesSection() {
                 <p className="text-sm sm:text-[0.9375rem] text-muted leading-[1.68] flex-1 mb-5">
                   {bouquet.description}
                 </p>
-                <a
-                  href="#order"
+                <Link
+                  href={orderHref}
                   className="inline-flex items-center justify-center px-6 py-3 rounded-full bg-forest text-white text-sm font-medium transition-all hover:bg-forest-dark hover:-translate-y-px hover:shadow-md"
                 >
                   {bouquet.cta}
-                </a>
+                </Link>
               </div>
             </article>
           ))}
         </div>
 
-        {/* Custom bouquet card — full-width premium option */}
-        <div className="mb-7">
-          <CustomBouquetCard />
-        </div>
+        {showCustom && (
+          <div className="mb-7">
+            <CustomBouquetCard />
+          </div>
+        )}
 
-        <p className="text-center text-sm text-faint italic">
+        <p className={`text-center text-sm text-faint italic ${showCustom ? '' : 'mt-1'}`}>
           Fotografije su ilustrativnog karaktera. Svaki buket slažemo ručno od svježeg sezonskog cvijeća, pa konačan izgled može blago odstupati.
         </p>
 
