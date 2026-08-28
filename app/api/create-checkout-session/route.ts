@@ -1,6 +1,6 @@
 import Stripe from 'stripe'
 import { NextRequest, NextResponse } from 'next/server'
-import { isOrderingBlocked, ORDER_BLOCK_NOTICE } from '@/lib/orderAvailability'
+import { isOrderingBlocked, ORDER_BLOCK_NOTICE, getUnavailableDeliveryMessage } from '@/lib/orderAvailability'
 
 // ── Stripe client — server-side only ──────────────────────────
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -57,6 +57,8 @@ export async function POST(req: NextRequest) {
     customBudget?: unknown
     customerEmail: string
     customerName:  string
+    deliveryDate?: string
+    deliveryTime?: string
   }
 
   try {
@@ -65,7 +67,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
   }
 
-  const { orderId, bouquetSize, customBudget, customerEmail, customerName } = body
+  const {
+    orderId, bouquetSize, customBudget, customerEmail, customerName,
+    deliveryDate, deliveryTime,
+  } = body
+
+  const slotError = getUnavailableDeliveryMessage(
+    String(deliveryDate ?? ''),
+    String(deliveryTime ?? ''),
+  )
+  if (slotError) {
+    return NextResponse.json({ error: slotError }, { status: 400 })
+  }
 
   if (!orderId || !bouquetSize) {
     return NextResponse.json(

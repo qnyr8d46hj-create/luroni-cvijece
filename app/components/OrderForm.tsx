@@ -3,6 +3,12 @@
 import { useState, useEffect } from 'react'
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
+import {
+  getUnavailableDeliveryMessage,
+  isSaturdayAfternoonUnavailable,
+  isSundayUnavailable,
+  WEEKEND_DELIVERY_NOTICE,
+} from '@/lib/orderAvailability'
 
 /* ── Standard bouquet prices ──────────────────────────────────── */
 const BOUQUET_PRICES: Record<string, number> = { S: 35, M: 45, L: 60 }
@@ -56,7 +62,9 @@ function validate(name: string, value: string): string {
       if (!value) return 'Odaberite datum dostave.'
       const d = new Date(value), t = new Date()
       t.setHours(0, 0, 0, 0)
-      return d >= t ? '' : 'Datum ne može biti u prošlosti.'
+      if (d < t) return 'Datum ne može biti u prošlosti.'
+      if (isSundayUnavailable(value)) return WEEKEND_DELIVERY_NOTICE
+      return ''
     }
     default: return ''
   }
@@ -171,6 +179,8 @@ export function OrderForm() {
   // external 'luroni:selectBouquet' event fired by CustomBouquetCard.
   const [selectedBouquet, setSelectedBouquet] = useState('')
   const [customBudget, setCustomBudget]       = useState(CUSTOM_PRICE_MIN)
+  const [deliveryDate, setDeliveryDate]       = useState('')
+  const [deliveryTime, setDeliveryTime]       = useState('')
 
   // Fetch ordering availability from the server (Europe/Zagreb timezone).
   useEffect(() => {
@@ -244,6 +254,18 @@ export function OrderForm() {
       }
     }
 
+    const dateVal = String(data.get('deliveryDate') ?? '')
+    const timeVal = String(data.get('deliveryTime') ?? '')
+    const slotMsg = getUnavailableDeliveryMessage(dateVal, timeVal)
+    if (slotMsg) {
+      if (isSundayUnavailable(dateVal)) {
+        newErrors.deliveryDate = slotMsg
+      } else {
+        newErrors.deliveryTime = slotMsg
+      }
+      ok = false
+    }
+
     setErrors(newErrors)
 
     const payment = (form.querySelector('[name="payment"]:checked') as HTMLInputElement | null)?.value
@@ -307,6 +329,8 @@ export function OrderForm() {
             customBudget:  isCustom ? customBudget : undefined,
             customerEmail: orderPayload.email,
             customerName:  orderPayload.fullName,
+            deliveryDate:  orderPayload.deliveryDate,
+            deliveryTime:  orderPayload.deliveryTime,
           }),
         })
 
@@ -479,16 +503,62 @@ export function OrderForm() {
           <input
             type="date" name="deliveryDate" id="deliveryDate"
             min={today}
-            onBlur={onBlur} onChange={onChange}
+            value={deliveryDate}
+            onBlur={onBlur}
+            onChange={(e) => {
+              const value = e.target.value
+              setDeliveryDate(value)
+              const dateErr = validate('deliveryDate', value)
+              const timeErr = isSaturdayAfternoonUnavailable(value, deliveryTime)
+                ? WEEKEND_DELIVERY_NOTICE
+                : ''
+              setErrors(prev => ({
+                ...prev,
+                deliveryDate: dateErr,
+                deliveryTime: timeErr,
+              }))
+            }}
             className={inputCls(errors.deliveryDate)}
           />
         </Field>
-        <Field label="Željeno vrijeme">
-          <select name="deliveryTime" id="deliveryTime" className={selectCls()}>
-            <option value="">Bilo kada</option>
-            <option value="08-12">08:00 – 12:00</option>
-            <option value="12-16">12:00 – 16:00</option>
-            <option value="16-20">16:00 – 20:00</option>
+        <Field label="Željeno vrijeme" error={errors.deliveryTime}>
+          <select
+            name="deliveryTime"
+            id="deliveryTime"
+            value={deliveryTime}
+            onChange={(e) => {
+              const value = e.target.value
+              setDeliveryTime(value)
+              setErrors(prev => ({
+                ...prev,
+                deliveryTime: isSaturdayAfternoonUnavailable(deliveryDate, value)
+                  ? WEEKEND_DELIVERY_NOTICE
+                  : '',
+              }))
+            }}
+            className={selectCls(errors.deliveryTime)}
+          >
+            <option
+              value=""
+              disabled={isSaturdayAfternoonUnavailable(deliveryDate, '') || isSundayUnavailable(deliveryDate)}
+            >
+              Bilo kada
+            </option>
+            <option value="08-12" disabled={isSundayUnavailable(deliveryDate)}>
+              08:00 – 12:00
+            </option>
+            <option
+              value="12-16"
+              disabled={isSaturdayAfternoonUnavailable(deliveryDate, '12-16') || isSundayUnavailable(deliveryDate)}
+            >
+              12:00 – 16:00
+            </option>
+            <option
+              value="16-20"
+              disabled={isSaturdayAfternoonUnavailable(deliveryDate, '16-20') || isSundayUnavailable(deliveryDate)}
+            >
+              16:00 – 20:00
+            </option>
           </select>
         </Field>
       </div>

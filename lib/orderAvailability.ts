@@ -17,6 +17,37 @@ const BLOCKED_DATE = '2026-07-26'
 export const ORDER_BLOCK_NOTICE =
   'U nedjelju 26.7. ne vršimo dostavu. Naručivanje je ponovno dostupno od ponedjeljka 27.7.'
 
+// Temporary delivery-slot restriction for 29–30 Aug 2026.
+// Saturday 2026-08-29: only 08:00–12:00 (value "08-12") is available.
+// Sunday 2026-08-30: no delivery. Next slot is Monday 2026-08-31.
+const SATURDAY_LIMITED     = '2026-08-29'
+const SUNDAY_UNAVAILABLE   = '2026-08-30'
+const SATURDAY_ALLOWED_SLOT = '08-12'
+
+export const WEEKEND_DELIVERY_NOTICE =
+  'Prvi idući termin dostave dostupan je od ponedjeljka ujutro.'
+
+export function isSundayUnavailable(date: string): boolean {
+  return date === SUNDAY_UNAVAILABLE
+}
+
+export function isSaturdayAfternoonUnavailable(date: string, time: string): boolean {
+  return date === SATURDAY_LIMITED && time !== SATURDAY_ALLOWED_SLOT
+}
+
+/** Returns the weekend notice if the chosen delivery date/time is unavailable. */
+export function getUnavailableDeliveryMessage(
+  deliveryDate: string,
+  deliveryTime: string,
+): string | null {
+  if (!deliveryDate) return null
+  if (isSundayUnavailable(deliveryDate)) return WEEKEND_DELIVERY_NOTICE
+  if (isSaturdayAfternoonUnavailable(deliveryDate, deliveryTime)) {
+    return WEEKEND_DELIVERY_NOTICE
+  }
+  return null
+}
+
 // Returns true only when the current wall-clock date in Europe/Zagreb
 // matches BLOCKED_DATE exactly. Uses Intl (Node 18+, available on Vercel).
 export function isOrderingBlocked(): boolean {

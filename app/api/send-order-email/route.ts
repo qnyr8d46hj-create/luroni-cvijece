@@ -1,7 +1,7 @@
 import { NextResponse }                          from 'next/server'
 import { sendOrderNotificationEmail }           from '@/lib/sendOrderEmail'
 import type { OrderEmailPayload }               from '@/lib/sendOrderEmail'
-import { isOrderingBlocked, ORDER_BLOCK_NOTICE } from '@/lib/orderAvailability'
+import { isOrderingBlocked, ORDER_BLOCK_NOTICE, getUnavailableDeliveryMessage } from '@/lib/orderAvailability'
 
 // ── POST /api/send-order-email ─────────────────────────────────
 // Called by OrderForm.tsx for cash payments immediately on form submit.
@@ -17,6 +17,14 @@ export async function POST(request: Request): Promise<Response> {
     order = await request.json() as OrderEmailPayload
   } catch {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
+  }
+
+  const slotError = getUnavailableDeliveryMessage(
+    String(order.deliveryDate ?? ''),
+    String(order.deliveryTime ?? ''),
+  )
+  if (slotError) {
+    return NextResponse.json({ error: slotError }, { status: 400 })
   }
 
   const result = await sendOrderNotificationEmail(order)
