@@ -77,7 +77,7 @@ export const metadata: Metadata = {
 
 const HERO_BADGES = [
   { icon: <TruckIcon />,  text: 'Besplatna dostava' },
-  { icon: <ClockIcon />,  text: 'Dostava u roku 24h' },
+  { icon: <ClockIcon />,  text: 'Isti dan za narudžbe do 14h' },
   { icon: <MapPinIcon />, text: 'Otok Krk' },
   { icon: <CardIcon />,   text: 'Plaćanje karticom ili gotovinom' },
 ]
@@ -168,7 +168,7 @@ const FAQS = [
   {
     question: 'Može li buket stići isti dan ili u roku 24 sata?',
     answer:
-      'Uobičajeno nastojimo dostaviti u roku od 24 sata od potvrđene narudžbe. Dostava istog dana nije uvijek moguća — konačni rok ovisi o dostupnosti svježeg cvijeća i dogovorenom terminu.',
+      'Ako naručite do 14:00, buket možemo dostaviti isti dan, ovisno o dostupnosti svježeg cvijeća i slobodnom terminu. Inače uobičajeno dostavljamo u roku 24 sata.',
   },
   {
     question: 'Kako naručiti buket za Krk?',
@@ -252,9 +252,12 @@ function Hero() {
             Cvjećarna Krk – svježi buketi s dostavom
           </h1>
 
-          <p className="text-base sm:text-[1.125rem] text-white/85 leading-[1.7] mb-9 max-w-[540px]">
+          <p className="text-base sm:text-[1.125rem] text-white/85 leading-[1.7] mb-4 max-w-[540px]">
             Luroni izrađuje svježe, ručno složene bukete za rođendane, godišnjice,
             poklone i druge posebne prigode, uz dostavu diljem otoka Krka.
+          </p>
+          <p className="text-base sm:text-[1.125rem] text-white/85 leading-[1.7] mb-9 max-w-[540px]">
+            Naručite do 14:00 za dostavu isti dan, ovisno o dostupnosti.
           </p>
 
           <div className="flex flex-wrap gap-3 mb-11">

@@ -498,7 +498,11 @@ export function OrderForm() {
       </Field>
 
       {/* Date + Time */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div>
+        <p className="text-sm text-muted leading-[1.55] mb-3">
+          Naručite do 14:00 za dostavu isti dan, ovisno o dostupnosti.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Field label="Datum dostave" required error={errors.deliveryDate}>
           <input
             type="date" name="deliveryDate" id="deliveryDate"
@@ -561,6 +565,7 @@ export function OrderForm() {
             </option>
           </select>
         </Field>
+        </div>
       </div>
 
       {/* Message */}
