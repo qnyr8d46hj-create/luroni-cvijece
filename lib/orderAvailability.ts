@@ -17,35 +17,68 @@ const BLOCKED_DATE = '2026-07-26'
 export const ORDER_BLOCK_NOTICE =
   'U nedjelju 26.7. ne vršimo dostavu. Naručivanje je ponovno dostupno od ponedjeljka 27.7.'
 
-// Temporary delivery-slot restriction for 29–30 Aug 2026.
-// Saturday 2026-08-29: only 08:00–12:00 (value "08-12") is available.
-// Sunday 2026-08-30: no delivery. Next slot is Monday 2026-08-31.
-const SATURDAY_LIMITED     = '2026-08-29'
-const SUNDAY_UNAVAILABLE   = '2026-08-30'
-const SATURDAY_ALLOWED_SLOT = '08-12'
+// ── Temporary delivery-date restrictions (Sep 2026) ────────────
+//
+// Exact calendar dates only — not day-of-week logic.
+// Delivery dates are YYYY-MM-DD strings from the date picker (Zagreb local calendar).
+// After these dates pass, scheduling returns to normal with no further change.
+//
+// HOW TO REMOVE: delete this section and switch OrderForm back to unrestricted
+// date/time handling (imports of getUnavailableDeliveryMessage, notices, and
+// slot disabling). Server routes already call getUnavailableDeliveryMessage.
 
-export const WEEKEND_DELIVERY_NOTICE =
-  'Prvi idući termin dostave dostupan je od ponedjeljka ujutro.'
-
-export function isSundayUnavailable(date: string): boolean {
-  return date === SUNDAY_UNAVAILABLE
+const BLOCKED_DELIVERY_DATES: Record<string, string> = {
+  '2026-09-07':
+    'Za ponedjeljak 7.9. ne primamo narudžbe. Dostava je ponovno moguća u utorak 8.9. od 16 h.',
+  '2026-09-12':
+    'Za subotu 12.9. ne primamo narudžbe. Dostava je ponovno moguća od ponedjeljka 14.9.',
 }
 
-export function isSaturdayAfternoonUnavailable(date: string, time: string): boolean {
-  return date === SATURDAY_LIMITED && time !== SATURDAY_ALLOWED_SLOT
+const LIMITED_DELIVERY_DATES: Record<string, { allowedSlot: string; notice: string }> = {
+  '2026-09-08': {
+    allowedSlot: '16-20',
+    notice:      'U utorak 8.9. dostava je moguća od 16 do 20 h.',
+  },
 }
 
-/** Returns the weekend notice if the chosen delivery date/time is unavailable. */
+export function isDeliveryDateBlocked(date: string): boolean {
+  return Boolean(BLOCKED_DELIVERY_DATES[date])
+}
+
+/** Informational notice for the selected delivery date, if restricted. */
+export function getDeliveryRestrictionNotice(date: string): string | null {
+  if (!date) return null
+  if (BLOCKED_DELIVERY_DATES[date]) return BLOCKED_DELIVERY_DATES[date]
+  if (LIMITED_DELIVERY_DATES[date]) return LIMITED_DELIVERY_DATES[date].notice
+  return null
+}
+
+/** Returns a validation message if the chosen delivery date/time is unavailable. */
 export function getUnavailableDeliveryMessage(
   deliveryDate: string,
   deliveryTime: string,
 ): string | null {
   if (!deliveryDate) return null
-  if (isSundayUnavailable(deliveryDate)) return WEEKEND_DELIVERY_NOTICE
-  if (isSaturdayAfternoonUnavailable(deliveryDate, deliveryTime)) {
-    return WEEKEND_DELIVERY_NOTICE
+  if (BLOCKED_DELIVERY_DATES[deliveryDate]) {
+    return BLOCKED_DELIVERY_DATES[deliveryDate]
+  }
+  const limited = LIMITED_DELIVERY_DATES[deliveryDate]
+  if (limited && deliveryTime !== limited.allowedSlot) {
+    return limited.notice
   }
   return null
+}
+
+/** True when this time-slot option must be hidden/disabled for the given date. */
+export function isDeliveryTimeOptionDisabled(date: string, slot: string): boolean {
+  return getUnavailableDeliveryMessage(date, slot) !== null
+}
+
+/** Clear a time that is invalid for the newly selected (still-orderable) date. */
+export function coerceDeliveryTime(date: string, time: string): string {
+  if (!date || isDeliveryDateBlocked(date)) return time
+  if (getUnavailableDeliveryMessage(date, time)) return ''
+  return time
 }
 
 // Returns true only when the current wall-clock date in Europe/Zagreb

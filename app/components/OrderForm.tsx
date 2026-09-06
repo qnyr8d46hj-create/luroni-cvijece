@@ -4,10 +4,11 @@ import { useState, useEffect } from 'react'
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import {
+  coerceDeliveryTime,
+  getDeliveryRestrictionNotice,
   getUnavailableDeliveryMessage,
-  isSaturdayAfternoonUnavailable,
-  isSundayUnavailable,
-  WEEKEND_DELIVERY_NOTICE,
+  isDeliveryDateBlocked,
+  isDeliveryTimeOptionDisabled,
 } from '@/lib/orderAvailability'
 
 /* ── Standard bouquet prices ──────────────────────────────────── */
@@ -63,7 +64,9 @@ function validate(name: string, value: string): string {
       const d = new Date(value), t = new Date()
       t.setHours(0, 0, 0, 0)
       if (d < t) return 'Datum ne može biti u prošlosti.'
-      if (isSundayUnavailable(value)) return WEEKEND_DELIVERY_NOTICE
+      if (isDeliveryDateBlocked(value)) {
+        return getUnavailableDeliveryMessage(value, '') ?? ''
+      }
       return ''
     }
     default: return ''
@@ -209,6 +212,7 @@ export function OrderForm() {
   }, [])
 
   const today = new Date().toLocaleDateString('sv')
+  const restrictionNotice = getDeliveryRestrictionNotice(deliveryDate)
 
   function onBlur(e: React.FocusEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
     const { name, value } = e.target
@@ -258,7 +262,7 @@ export function OrderForm() {
     const timeVal = String(data.get('deliveryTime') ?? '')
     const slotMsg = getUnavailableDeliveryMessage(dateVal, timeVal)
     if (slotMsg) {
-      if (isSundayUnavailable(dateVal)) {
+      if (isDeliveryDateBlocked(dateVal)) {
         newErrors.deliveryDate = slotMsg
       } else {
         newErrors.deliveryTime = slotMsg
@@ -511,15 +515,15 @@ export function OrderForm() {
             onBlur={onBlur}
             onChange={(e) => {
               const value = e.target.value
+              const nextTime = coerceDeliveryTime(value, deliveryTime)
               setDeliveryDate(value)
+              if (nextTime !== deliveryTime) setDeliveryTime(nextTime)
               const dateErr = validate('deliveryDate', value)
-              const timeErr = isSaturdayAfternoonUnavailable(value, deliveryTime)
-                ? WEEKEND_DELIVERY_NOTICE
-                : ''
+              const timeMsg = getUnavailableDeliveryMessage(value, nextTime)
               setErrors(prev => ({
                 ...prev,
                 deliveryDate: dateErr,
-                deliveryTime: timeErr,
+                deliveryTime: timeMsg && !isDeliveryDateBlocked(value) ? timeMsg : '',
               }))
             }}
             className={inputCls(errors.deliveryDate)}
@@ -535,37 +539,40 @@ export function OrderForm() {
               setDeliveryTime(value)
               setErrors(prev => ({
                 ...prev,
-                deliveryTime: isSaturdayAfternoonUnavailable(deliveryDate, value)
-                  ? WEEKEND_DELIVERY_NOTICE
-                  : '',
+                deliveryTime: getUnavailableDeliveryMessage(deliveryDate, value) ?? '',
               }))
             }}
             className={selectCls(errors.deliveryTime)}
           >
             <option
               value=""
-              disabled={isSaturdayAfternoonUnavailable(deliveryDate, '') || isSundayUnavailable(deliveryDate)}
+              disabled={isDeliveryTimeOptionDisabled(deliveryDate, '')}
             >
               Bilo kada
             </option>
-            <option value="08-12" disabled={isSundayUnavailable(deliveryDate)}>
+            <option value="08-12" disabled={isDeliveryTimeOptionDisabled(deliveryDate, '08-12')}>
               08:00 – 12:00
             </option>
             <option
               value="12-16"
-              disabled={isSaturdayAfternoonUnavailable(deliveryDate, '12-16') || isSundayUnavailable(deliveryDate)}
+              disabled={isDeliveryTimeOptionDisabled(deliveryDate, '12-16')}
             >
               12:00 – 16:00
             </option>
             <option
               value="16-20"
-              disabled={isSaturdayAfternoonUnavailable(deliveryDate, '16-20') || isSundayUnavailable(deliveryDate)}
+              disabled={isDeliveryTimeOptionDisabled(deliveryDate, '16-20')}
             >
               16:00 – 20:00
             </option>
           </select>
         </Field>
         </div>
+        {restrictionNotice && (
+          <p className="text-sm text-muted leading-[1.55] mt-3" role="status">
+            {restrictionNotice}
+          </p>
+        )}
       </div>
 
       {/* Message */}
