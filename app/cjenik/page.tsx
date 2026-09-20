@@ -9,7 +9,6 @@ import {
   formatEuro,
   formatEuroRange,
 } from '@/lib/productPrices'
-import { PRICE_LIST_COLUMNS } from '@/lib/priceListCsv'
 
 export const dynamic = 'force-dynamic'
 
@@ -132,10 +131,8 @@ export default async function CjenikPage() {
               Strojno čitljivi cjenik
             </h2>
             <p className="text-[0.9375rem] text-muted leading-[1.75] mb-5">
-              CSV cjenik objavljuje se sukladno Odluci iz NN 101/2026. Datoteka je javna,
-              bez prijave, i može je preuzeti bilo koji program HTTP GET zahtjevom.
-              Stupci: {PRICE_LIST_COLUMNS.join(', ')}. Odabiri Buketa po želji navedeni su
-              kao zasebni redovi s točnom maloprodajnom cijenom.
+              Sukladno NN 101/2026, važeći cjenik dostupan je i u strojno čitljivom CSV
+              formatu. Objavljeni cjenici dostupni su 30 dana.
             </p>
             <a
               href="/cjenik/aktualni.csv"
