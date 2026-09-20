@@ -8,6 +8,7 @@ import {
   anchorRangeLine,
   formatEuroRange,
 } from '@/lib/productPrices'
+import { ORDER_BOUQUET_CUSTOM, orderSelectHref } from '@/lib/orderSelect'
 
 // ── Price range — edit these three values to change the range.
 // Keep in sync with CUSTOM_BUDGET_* in app/api/create-checkout-session/route.ts
@@ -19,7 +20,11 @@ export const CUSTOM_PRICE_STEP = 10
 // Path is relative to /public, e.g. '/images/buket-po-zelji.jpg'
 const CARD_IMAGE = '/images/featured-bouquets/buket-l.jpg'
 
-export function CustomBouquetCard() {
+export function CustomBouquetCard({
+  orderHref = '#order',
+}: {
+  orderHref?: string
+} = {}) {
   const [price, setPrice] = useState(CUSTOM_PRICE_MIN)
 
   const canDec = price > CUSTOM_PRICE_MIN
@@ -29,6 +34,10 @@ export function CustomBouquetCard() {
   function increment() { if (canInc) setPrice(p => p + CUSTOM_PRICE_STEP) }
 
   function handleCta() {
+    if (orderHref.startsWith('/')) {
+      window.location.assign(orderSelectHref(orderHref, ORDER_BOUQUET_CUSTOM, price))
+      return
+    }
     window.dispatchEvent(
       new CustomEvent('luroni:selectBouquet', {
         detail: { size: 'Buket po želji', customBudget: price },

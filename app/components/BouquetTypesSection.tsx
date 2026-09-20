@@ -4,6 +4,7 @@ import { BOUQUET_TYPES, type BouquetType } from '@/lib/data'
 import { CustomBouquetCard } from './CustomBouquetCard'
 import { AnchorPriceNote } from './AnchorPriceNote'
 import { STANDARD_BOUQUETS, anchorPriceLine } from '@/lib/productPrices'
+import { orderSelectHref } from '@/lib/orderSelect'
 
 export function BouquetTypesSection({
   id = 'sizes',
@@ -86,7 +87,7 @@ export function BouquetTypesSection({
                   Fotografija je primjer izgleda i stila buketa.
                 </p>
                 <Link
-                  href={orderHref}
+                  href={orderHref.startsWith('/') ? orderSelectHref(orderHref, bouquet.id) : orderHref}
                   className="inline-flex items-center justify-center px-6 py-3 rounded-full bg-forest text-white text-sm font-medium transition-all hover:bg-forest-dark hover:-translate-y-px hover:shadow-md"
                 >
                   {bouquet.cta}
@@ -98,7 +99,7 @@ export function BouquetTypesSection({
 
         {showCustom && (
           <div className="mb-7">
-            <CustomBouquetCard />
+            <CustomBouquetCard orderHref={orderHref} />
           </div>
         )}
 

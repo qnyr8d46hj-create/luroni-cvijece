@@ -174,7 +174,6 @@ export default function DostavaCvijecaRijekaPage() {
           id="velicine"
           titleId="rijeka-velicine-title"
           orderHref="/#order"
-          showCustom={false}
           backgroundClassName="bg-cream"
         />
         <OrderingSection />

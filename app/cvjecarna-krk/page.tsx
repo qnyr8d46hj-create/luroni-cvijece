@@ -199,7 +199,6 @@ export default function CvjecarnaKrkPage() {
           id="velicine"
           titleId="krk-velicine-title"
           orderHref="/#order"
-          showCustom={false}
           backgroundClassName="bg-white"
           imageAlt={(bouquet) =>
             bouquet.id === 'S'

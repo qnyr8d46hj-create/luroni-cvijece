@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useSyncExternalStore } from 'react'
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import {
@@ -18,6 +18,7 @@ import {
   anchorRangeLine,
   orderFormUnselectedAnchorLine,
 } from '@/lib/productPrices'
+import { parseOrderSelectSearch } from '@/lib/orderSelect'
 
 /* ── Standard bouquet prices ──────────────────────────────────── */
 const BOUQUET_PRICES: Record<string, number> = { S: 35, M: 45, L: 60 }
@@ -171,6 +172,17 @@ function BudgetStepper({
   )
 }
 
+function subscribeOrderSearch(onChange: () => void) {
+  window.addEventListener('popstate', onChange)
+  return () => window.removeEventListener('popstate', onChange)
+}
+function getOrderSearch() {
+  return window.location.search
+}
+function getServerOrderSearch() {
+  return ''
+}
+
 /* ── Main form ────────────────────────────────────────────── */
 export function OrderForm() {
   const [errors, setErrors]           = useState<Record<string, string>>({})
@@ -186,12 +198,26 @@ export function OrderForm() {
   const [orderingBlocked, setOrderingBlocked] = useState(false)
   const [blockNotice, setBlockNotice]         = useState<string | null>(null)
 
-  // Controlled bouquet selection state — driven by the select or by the
-  // external 'luroni:selectBouquet' event fired by CustomBouquetCard.
+  // Controlled bouquet selection state — driven by the select, by the
+  // external 'luroni:selectBouquet' event, or by /?buket=&budzet= handoff.
   const [selectedBouquet, setSelectedBouquet] = useState('')
   const [customBudget, setCustomBudget]       = useState(CUSTOM_PRICE_MIN)
   const [deliveryDate, setDeliveryDate]       = useState('')
   const [deliveryTime, setDeliveryTime]       = useState('')
+  const [appliedOrderSearch, setAppliedOrderSearch] = useState('')
+  const orderSearch = useSyncExternalStore(
+    subscribeOrderSearch,
+    getOrderSearch,
+    getServerOrderSearch,
+  )
+  const parsedOrderSelect = parseOrderSelectSearch(orderSearch)
+  if (parsedOrderSelect && appliedOrderSearch !== orderSearch) {
+    setSelectedBouquet(parsedOrderSelect.size)
+    if (typeof parsedOrderSelect.budget === 'number') {
+      setCustomBudget(parsedOrderSelect.budget)
+    }
+    setAppliedOrderSearch(orderSearch)
+  }
 
   // Fetch ordering availability from the server (Europe/Zagreb timezone).
   useEffect(() => {
@@ -217,6 +243,12 @@ export function OrderForm() {
     }
     window.addEventListener('luroni:selectBouquet', onSelect)
     return () => window.removeEventListener('luroni:selectBouquet', onSelect)
+  }, [])
+
+  useEffect(() => {
+    if (!parseOrderSelectSearch(window.location.search)) return
+    if (window.location.hash !== '#order') return
+    document.getElementById('order')?.scrollIntoView()
   }, [])
 
   const today = new Date().toLocaleDateString('sv')
