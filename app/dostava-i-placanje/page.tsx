@@ -108,9 +108,16 @@ export default function DostavaIPlacanjePage() {
           <li>
             <strong className="font-medium text-ink">Buket L</strong> – 60 EUR (s PDV-om, dostava uključena)
           </li>
+          <li>
+            <strong className="font-medium text-ink">Buket po želji</strong> – 70–200 EUR, korak 10 EUR (s PDV-om, dostava uključena)
+          </li>
         </LegalUl>
         <LegalP>
           Cijene su iskazane u eurima (EUR) i uključuju porez na dodanu vrijednost (PDV). Prodavatelj zadržava pravo promjene cjenik bez prethodne najave, uz objavu na web-mjesta. Na svaku narudžbu primjenjuju se cijene važeće u trenutku njezinog podnošenja.
+        </LegalP>
+        <LegalP>
+          Strojno čitljivi cjenik i cijene na dan 10.9.2026. objavljeni su na stranici{' '}
+          <a href="/cjenik" className="text-forest hover:underline">Cjenik</a>.
         </LegalP>
       </LegalSection>
 

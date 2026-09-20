@@ -2,6 +2,12 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
+import { AnchorPriceNote } from './AnchorPriceNote'
+import {
+  CUSTOM_BOUQUET,
+  anchorRangeLine,
+  formatEuroRange,
+} from '@/lib/productPrices'
 
 // ── Price range — edit these three values to change the range.
 // Keep in sync with CUSTOM_BUDGET_* in app/api/create-checkout-session/route.ts
@@ -57,16 +63,24 @@ export function CustomBouquetCard() {
       {/* Content */}
       <div className="flex flex-col justify-between flex-1 p-6 sm:p-8">
         <div>
-          <div className="flex flex-wrap items-start gap-3 mb-3">
-            <h3 className="font-display text-2xl sm:text-[1.75rem] font-semibold text-ink leading-tight">
-              Buket po&nbsp;želji
-            </h3>
-            <span className="mt-0.5 px-2.5 py-0.5 rounded-full bg-forest/[0.09] text-forest text-[0.7rem] font-bold tracking-widest uppercase">
-              Personalizirano
+          <div className="flex flex-wrap items-start justify-between gap-3 mb-1">
+            <div className="flex flex-wrap items-start gap-3">
+              <h3 className="font-display text-2xl sm:text-[1.75rem] font-semibold text-ink leading-tight">
+                Buket po&nbsp;želji
+              </h3>
+              <span className="mt-0.5 px-2.5 py-0.5 rounded-full bg-forest/[0.09] text-forest text-[0.7rem] font-bold tracking-widest uppercase">
+                Personalizirano
+              </span>
+            </div>
+            <span className="text-[1.4rem] font-bold text-forest whitespace-nowrap">
+              {formatEuroRange(CUSTOM_BOUQUET.currentMinEur, CUSTOM_BOUQUET.currentMaxEur)}
             </span>
           </div>
+          <AnchorPriceNote>
+            {anchorRangeLine(CUSTOM_BOUQUET.anchorMinEur, CUSTOM_BOUQUET.anchorMaxEur)}
+          </AnchorPriceNote>
 
-          <p className="text-sm sm:text-[0.9375rem] text-muted leading-[1.68] mb-3">
+          <p className="text-sm sm:text-[0.9375rem] text-muted leading-[1.68] mb-3 mt-3">
             Odaberite budžet, a mi ćemo složiti jedinstven buket prema prigodi, vašim željama i
             dostupnom sezonskom cvijeću.
           </p>

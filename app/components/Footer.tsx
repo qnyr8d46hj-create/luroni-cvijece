@@ -19,6 +19,7 @@ const LEGAL_LINKS = [
   { href: '/politika-privatnosti',   label: 'Politika privatnosti' },
   { href: '/politika-kolacica',      label: 'Politika kolačića' },
   { href: '/dostava-i-placanje',     label: 'Dostava i plaćanje' },
+  { href: '/cjenik',                 label: 'Cjenik' },
   { href: '/reklamacije-i-povrati',  label: 'Reklamacije i povrati' },
 ]
 

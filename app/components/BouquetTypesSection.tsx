@@ -2,6 +2,8 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { BOUQUET_TYPES, type BouquetType } from '@/lib/data'
 import { CustomBouquetCard } from './CustomBouquetCard'
+import { AnchorPriceNote } from './AnchorPriceNote'
+import { STANDARD_BOUQUETS, anchorPriceLine } from '@/lib/productPrices'
 
 export function BouquetTypesSection({
   id = 'sizes',
@@ -71,11 +73,14 @@ export function BouquetTypesSection({
 
               {/* Body */}
               <div className="flex flex-col flex-1 p-6">
-                <div className="flex items-baseline justify-between gap-2 mb-3">
+                <div className="flex items-baseline justify-between gap-2 mb-1">
                   <h3 className="font-display text-2xl font-semibold text-ink">{bouquet.name}</h3>
                   <span className="text-[1.4rem] font-bold text-forest whitespace-nowrap">{bouquet.price}</span>
                 </div>
-                <p className="text-sm sm:text-[0.9375rem] text-muted leading-[1.68] flex-1 mb-5">
+                <AnchorPriceNote>
+                  {anchorPriceLine(STANDARD_BOUQUETS[bouquet.id].anchorEur)}
+                </AnchorPriceNote>
+                <p className="text-sm sm:text-[0.9375rem] text-muted leading-[1.68] flex-1 mb-5 mt-3">
                   {bouquet.description}
                 </p>
                 <Link

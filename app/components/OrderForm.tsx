@@ -10,6 +10,14 @@ import {
   isDeliveryDateBlocked,
   isDeliveryTimeOptionDisabled,
 } from '@/lib/orderAvailability'
+import { AnchorPriceNote } from './AnchorPriceNote'
+import {
+  CUSTOM_BOUQUET,
+  STANDARD_BOUQUETS,
+  anchorPriceLine,
+  anchorRangeLine,
+  orderFormUnselectedAnchorLine,
+} from '@/lib/productPrices'
 
 /* ── Standard bouquet prices ──────────────────────────────────── */
 const BOUQUET_PRICES: Record<string, number> = { S: 35, M: 45, L: 60 }
@@ -488,6 +496,17 @@ export function OrderForm() {
           <option value="L">Buket L — 60 €</option>
           <option value="Buket po želji">Buket po želji — od 70 €</option>
         </select>
+        <AnchorPriceNote>
+          {selectedBouquet === 'S'
+            ? anchorPriceLine(STANDARD_BOUQUETS.S.anchorEur)
+            : selectedBouquet === 'M'
+              ? anchorPriceLine(STANDARD_BOUQUETS.M.anchorEur)
+              : selectedBouquet === 'L'
+                ? anchorPriceLine(STANDARD_BOUQUETS.L.anchorEur)
+                : selectedBouquet === 'Buket po želji'
+                  ? anchorRangeLine(CUSTOM_BOUQUET.anchorMinEur, CUSTOM_BOUQUET.anchorMaxEur)
+                  : orderFormUnselectedAnchorLine()}
+        </AnchorPriceNote>
 
         {/* Budget stepper — visible only when Buket po želji is selected */}
         {isCustom && (
