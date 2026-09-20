@@ -87,7 +87,7 @@ export const FAQS: FaqItem[] = [
   },
   {
     question: 'Jesu li fotografije buketa stvarne?',
-    answer:   'Fotografije složenih buketa su stvarne. Ostale fotografije buketa su ilustrativnog karaktera. Svaki buket slažemo ručno od svježeg sezonskog cvijeća, pa konačan izgled može blago odstupati.',
+    answer:   'Fotografije u galeriji prikazuju bukete koje smo već složili. Fotografije uz veličine buketa primjeri su izgleda i stila. Svaki buket izrađujemo individualno od trenutno dostupnog sezonskog cvijeća, stoga se vrsta i boja cvijeća te konačan izgled mogu razlikovati od fotografije.',
   },
   {
     question: 'Kako mogu platiti buket?',

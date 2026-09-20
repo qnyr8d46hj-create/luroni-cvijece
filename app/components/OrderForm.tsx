@@ -507,6 +507,10 @@ export function OrderForm() {
                   ? anchorRangeLine(CUSTOM_BOUQUET.anchorMinEur, CUSTOM_BOUQUET.anchorMaxEur)
                   : orderFormUnselectedAnchorLine()}
         </AnchorPriceNote>
+        <p className="text-xs text-muted leading-[1.55] mt-2">
+          Buket se izrađuje individualno od dostupnog sezonskog cvijeća; fotografije na
+          stranici služe kao primjer.
+        </p>
 
         {/* Budget stepper — visible only when Buket po želji is selected */}
         {isCustom && (

@@ -129,7 +129,7 @@ const KRK_SCHEMA_AREAS = [
 const TRUST_ITEMS = [
   {
     title: 'Svježe sezonsko cvijeće',
-    text:  'Svaki buket slažemo ručno od pažljivo odabranog sezonskog cvijeća. Konačan izgled može blago odstupati ovisno o dostupnosti.',
+    text:  'Svaki buket slažemo ručno od pažljivo odabranog sezonskog cvijeća. Konačan izgled ovisi o trenutnoj dostupnosti.',
     icon:  <FlowerIcon />,
   },
   {

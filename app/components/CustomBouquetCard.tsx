@@ -85,6 +85,11 @@ export function CustomBouquetCard() {
             dostupnom sezonskom cvijeću.
           </p>
 
+          <p className="text-xs sm:text-[0.8125rem] text-faint leading-[1.55] mb-3">
+            Fotografija prikazuje primjer. Buket izrađujemo prema odabranom budžetu od
+            dostupnog sezonskog cvijeća.
+          </p>
+
           <p className="text-xs text-faint leading-[1.6] mb-6 sm:mb-8">
             Odabrani budžet uključuje cvijeće i izradu buketa. Konačan izbor cvijeća ovisi o
             sezonskoj dostupnosti.

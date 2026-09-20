@@ -113,7 +113,7 @@ const RIJEKA_AREAS = DELIVERY_AREAS.filter(
 const TRUST_ITEMS = [
   {
     title: 'Svježe sezonsko cvijeće',
-    text:  'Svaki buket slažemo od pažljivo odabranog sezonskog cvijeća. Konačan izgled može blago odstupati ovisno o dostupnosti.',
+    text:  'Svaki buket slažemo od pažljivo odabranog sezonskog cvijeća. Konačan izgled ovisi o trenutnoj dostupnosti.',
     icon:  <FlowerIcon />,
   },
   {

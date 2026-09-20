@@ -36,8 +36,7 @@ export function BouquetTypesSection({
             Odaberite veličinu buketa
           </h2>
           <p className="text-base sm:text-[1.0625rem] text-muted leading-[1.75]">
-            Odaberite veličinu buketa prema prigodi i dojmu koji želite ostaviti. Svaki buket
-            slažemo od pažljivo odabranog sezonskog cvijeća.
+            Odaberite veličinu buketa — svaki buket izrađujemo posebno za vašu narudžbu.
           </p>
         </header>
 
@@ -80,8 +79,11 @@ export function BouquetTypesSection({
                 <AnchorPriceNote>
                   {anchorPriceLine(STANDARD_BOUQUETS[bouquet.id].anchorEur)}
                 </AnchorPriceNote>
-                <p className="text-sm sm:text-[0.9375rem] text-muted leading-[1.68] flex-1 mb-5 mt-3">
+                <p className="text-sm sm:text-[0.9375rem] text-muted leading-[1.68] flex-1 mb-3 mt-3">
                   {bouquet.description}
+                </p>
+                <p className="text-xs sm:text-[0.8125rem] text-faint leading-[1.55] mb-5">
+                  Fotografija je primjer izgleda i stila buketa.
                 </p>
                 <Link
                   href={orderHref}
@@ -100,8 +102,11 @@ export function BouquetTypesSection({
           </div>
         )}
 
-        <p className={`text-center text-sm text-faint italic ${showCustom ? '' : 'mt-1'}`}>
-          Fotografije su ilustrativnog karaktera. Svaki buket slažemo ručno od svježeg sezonskog cvijeća, pa konačan izgled može blago odstupati.
+        <p className={`text-center text-sm text-muted leading-[1.7] max-w-3xl mx-auto ${showCustom ? '' : 'mt-1'}`}>
+          Fotografije su primjeri buketa i ne predstavljaju konkretan buket koji će biti
+          isporučen. Svaki buket izrađujemo individualno od trenutno dostupnog svježeg
+          sezonskog cvijeća, stoga se vrsta i boja cvijeća te konačan izgled buketa mogu
+          razlikovati od fotografije.
         </p>
 
       </div>

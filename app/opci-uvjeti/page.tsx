@@ -60,7 +60,7 @@ export default function OpciUvjetiPage() {
 
       <LegalSection id="proizvodi" title="4. Opisi i fotografije proizvoda">
         <LegalP>
-          Fotografije označene kao &ldquo;stvarni buketi&rdquo; prikazuju konkretne aranžmane rađene za dostavu. Ostale fotografije na web-mjesta imaju ilustrativni karakter. Svaki buket slažemo ručno od svježeg sezonskog cvijeća, pa konačan izgled može blago odstupati od prikazanog zbog sezonske dostupnosti pojedinih vrsta i boja cvijeća.
+          Fotografije označene kao &ldquo;stvarni buketi&rdquo; prikazuju konkretne aranžmane rađene za dostavu. Ostale fotografije na web-mjesta imaju ilustrativni karakter i ne predstavljaju konkretan buket koji će biti isporučen. Svaki buket slažemo ručno od svježeg sezonskog cvijeća, stoga se vrsta i boja cvijeća te konačan izgled mogu razlikovati od prikazanog zbog sezonske dostupnosti.
         </LegalP>
       </LegalSection>
 
