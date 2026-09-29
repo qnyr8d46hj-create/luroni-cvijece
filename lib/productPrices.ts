@@ -8,8 +8,11 @@
 // behaviour cannot regress if this catalog is edited. Keep those files in
 // numeric sync (see scripts/verify-price-compliance.ts).
 
+import { NN_PRICE_COMPLIANCE_ENABLED } from '@/lib/nnPriceCompliance'
+
 export const ANCHOR_PRICE_DATE = '2026-09-10'
 export const ANCHOR_PRICE_LABEL = 'Cijena na dan 10.9.2026.'
+/** Original NN 101/2026 start date — display is gated by NN_PRICE_COMPLIANCE_ENABLED, not this date. */
 export const COMPLIANCE_EFFECTIVE_DATE = '2026-10-01'
 
 export const BRAND_NAME = 'Luroni Cvijeće'
@@ -62,7 +65,8 @@ export function zagrebCalendarDate(now = new Date()): string {
 }
 
 export function isAnchorPriceDisplayActive(now = new Date()): boolean {
-  return zagrebCalendarDate(now) >= COMPLIANCE_EFFECTIVE_DATE
+  void now
+  return NN_PRICE_COMPLIANCE_ENABLED
 }
 
 export function formatEuro(amount: number): string {

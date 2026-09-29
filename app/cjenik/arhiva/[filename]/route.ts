@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getPriceListSnapshotByFilename } from '@/lib/priceListArchive'
+import { NN_PRICE_COMPLIANCE_ENABLED } from '@/lib/nnPriceCompliance'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -8,6 +9,10 @@ export async function GET(
   _request: Request,
   context: { params: Promise<{ filename: string }> },
 ) {
+  if (!NN_PRICE_COMPLIANCE_ENABLED) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
+
   const { filename } = await context.params
   if (!filename || !filename.endsWith('.csv')) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })

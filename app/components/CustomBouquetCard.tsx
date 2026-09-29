@@ -9,6 +9,7 @@ import {
   formatEuroRange,
 } from '@/lib/productPrices'
 import { ORDER_BOUQUET_CUSTOM, orderSelectHref } from '@/lib/orderSelect'
+import { NN_PRICE_COMPLIANCE_ENABLED } from '@/lib/nnPriceCompliance'
 
 // ── Price range — edit these three values to change the range.
 // Keep in sync with CUSTOM_BUDGET_* in app/api/create-checkout-session/route.ts
@@ -85,9 +86,11 @@ export function CustomBouquetCard({
               {formatEuroRange(CUSTOM_BOUQUET.currentMinEur, CUSTOM_BOUQUET.currentMaxEur)}
             </span>
           </div>
-          <AnchorPriceNote>
-            {anchorRangeLine(CUSTOM_BOUQUET.anchorMinEur, CUSTOM_BOUQUET.anchorMaxEur)}
-          </AnchorPriceNote>
+          {NN_PRICE_COMPLIANCE_ENABLED && (
+            <AnchorPriceNote>
+              {anchorRangeLine(CUSTOM_BOUQUET.anchorMinEur, CUSTOM_BOUQUET.anchorMaxEur)}
+            </AnchorPriceNote>
+          )}
 
           <p className="text-sm sm:text-[0.9375rem] text-muted leading-[1.68] mb-3 mt-3">
             Odaberite budžet, a mi ćemo složiti jedinstven buket prema prigodi, vašim željama i

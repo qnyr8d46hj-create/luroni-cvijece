@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
+import { NN_PRICE_COMPLIANCE_ENABLED } from '@/lib/nnPriceCompliance'
 
 const FOOTER_LINKS = [
   { href: '/',           label: 'Početna' },
@@ -92,7 +93,9 @@ export function Footer() {
                 Pravno
               </p>
               <ul className="space-y-0.5">
-                {LEGAL_LINKS.map((link) => (
+                {LEGAL_LINKS.filter(
+                  (link) => NN_PRICE_COMPLIANCE_ENABLED || link.href !== '/cjenik',
+                ).map((link) => (
                   <li key={link.href}>
                     <Link href={link.href} className={navLinkCls}>
                       {link.label}

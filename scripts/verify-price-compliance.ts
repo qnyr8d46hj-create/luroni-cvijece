@@ -7,7 +7,9 @@ import {
   anchorPriceLine,
   anchorRangeLine,
   customSelectableAmounts,
+  isAnchorPriceDisplayActive,
 } from '../lib/productPrices'
+import { NN_PRICE_COMPLIANCE_ENABLED } from '../lib/nnPriceCompliance'
 import {
   PRICE_LIST_COLUMNS,
   buildPriceListRows,
@@ -82,6 +84,15 @@ assert(csv.charCodeAt(0) === 0xfeff, 'CSV must start with UTF-8 BOM')
 assert(csv.includes('naziv;sifra_proizvoda;marka'), 'CSV header is semicolon-delimited')
 assert(!csv.includes('70–200'), 'CSV must not put a range in maloprodajna cijena')
 
+assert(
+  isAnchorPriceDisplayActive() === NN_PRICE_COMPLIANCE_ENABLED,
+  'Anchor-price display must follow NN_PRICE_COMPLIANCE_ENABLED, not a calendar date',
+)
+assert(
+  NN_PRICE_COMPLIANCE_ENABLED === false,
+  'NN price compliance is currently expected to be disabled (deadline extended to 2026-11-17)',
+)
+
 const checkout = readFileSync(resolve(root, 'app/api/create-checkout-session/route.ts'), 'utf8')
 assert(checkout.includes('S: 3500'), 'Stripe S amount unchanged')
 assert(checkout.includes('M: 4500'), 'Stripe M amount unchanged')
@@ -97,4 +108,25 @@ assert(orderForm.includes('CUSTOM_PRICE_MIN  = 70'), 'OrderForm custom min uncha
 const ga = readFileSync(resolve(root, 'app/api/get-checkout-session/route.ts'), 'utf8')
 assert(ga.includes('S: 35, M: 45, L: 60'), 'GA4 fallback amounts unchanged')
 
-console.log('Price compliance checks passed.')
+const vercel = JSON.parse(readFileSync(resolve(root, 'vercel.json'), 'utf8')) as {
+  crons?: { path: string; schedule: string }[]
+}
+if (NN_PRICE_COMPLIANCE_ENABLED) {
+  assert(
+    vercel.crons?.some(
+      (job) => job.path === '/api/cron/publish-price-list' && job.schedule === '0 5 * * *',
+    ),
+    'Enabled compliance requires the daily price-list cron in vercel.json',
+  )
+} else {
+  assert(
+    Array.isArray(vercel.crons) && vercel.crons.length === 0,
+    'Disabled compliance must not register a Vercel cron',
+  )
+}
+
+console.log(
+  NN_PRICE_COMPLIANCE_ENABLED
+    ? 'Price compliance checks passed (feature enabled).'
+    : 'Price compliance checks passed (feature disabled; catalog, CSV, and Stripe unchanged).',
+)

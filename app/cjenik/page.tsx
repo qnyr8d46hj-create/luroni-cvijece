@@ -1,7 +1,9 @@
 import type { Metadata } from 'next'
+import { notFound } from 'next/navigation'
 import { Header } from '@/app/components/Header'
 import { Footer } from '@/app/components/Footer'
 import { listPriceListSnapshots } from '@/lib/priceListArchive'
+import { NN_PRICE_COMPLIANCE_ENABLED } from '@/lib/nnPriceCompliance'
 import {
   ANCHOR_PRICE_LABEL,
   CUSTOM_BOUQUET,
@@ -14,18 +16,21 @@ export const dynamic = 'force-dynamic'
 
 const PAGE_URL = 'https://www.luroni-cvijece.com/cjenik'
 
-export const metadata: Metadata = {
-  title:       'Cjenik | Luroni Cvijeće',
-  description: 'Važeći cjenik buketa Luroni Cvijeće, uključujući strojno čitljivi CSV prema NN 101/2026.',
-  alternates:  { canonical: PAGE_URL },
-  openGraph: {
-    type:        'website',
-    locale:      'hr_HR',
-    url:         PAGE_URL,
-    siteName:    'Luroni Cvijeće',
+export function generateMetadata(): Metadata {
+  if (!NN_PRICE_COMPLIANCE_ENABLED) notFound()
+  return {
     title:       'Cjenik | Luroni Cvijeće',
     description: 'Važeći cjenik buketa Luroni Cvijeće, uključujući strojno čitljivi CSV prema NN 101/2026.',
-  },
+    alternates:  { canonical: PAGE_URL },
+    openGraph: {
+      type:        'website',
+      locale:      'hr_HR',
+      url:         PAGE_URL,
+      siteName:    'Luroni Cvijeće',
+      title:       'Cjenik | Luroni Cvijeće',
+      description: 'Važeći cjenik buketa Luroni Cvijeće, uključujući strojno čitljivi CSV prema NN 101/2026.',
+    },
+  }
 }
 
 const humanRows = [
@@ -56,6 +61,8 @@ const humanRows = [
 ]
 
 export default async function CjenikPage() {
+  if (!NN_PRICE_COMPLIANCE_ENABLED) notFound()
+
   let archives: Awaited<ReturnType<typeof listPriceListSnapshots>> = []
   let archiveError = false
   try {

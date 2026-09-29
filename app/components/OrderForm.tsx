@@ -19,6 +19,7 @@ import {
   orderFormUnselectedAnchorLine,
 } from '@/lib/productPrices'
 import { parseOrderSelectSearch } from '@/lib/orderSelect'
+import { NN_PRICE_COMPLIANCE_ENABLED } from '@/lib/nnPriceCompliance'
 
 /* ── Standard bouquet prices ──────────────────────────────────── */
 const BOUQUET_PRICES: Record<string, number> = { S: 35, M: 45, L: 60 }
@@ -528,17 +529,19 @@ export function OrderForm() {
           <option value="L">Buket L — 60 €</option>
           <option value="Buket po želji">Buket po želji — od 70 €</option>
         </select>
-        <AnchorPriceNote>
-          {selectedBouquet === 'S'
-            ? anchorPriceLine(STANDARD_BOUQUETS.S.anchorEur)
-            : selectedBouquet === 'M'
-              ? anchorPriceLine(STANDARD_BOUQUETS.M.anchorEur)
-              : selectedBouquet === 'L'
-                ? anchorPriceLine(STANDARD_BOUQUETS.L.anchorEur)
-                : selectedBouquet === 'Buket po želji'
-                  ? anchorRangeLine(CUSTOM_BOUQUET.anchorMinEur, CUSTOM_BOUQUET.anchorMaxEur)
-                  : orderFormUnselectedAnchorLine()}
-        </AnchorPriceNote>
+        {NN_PRICE_COMPLIANCE_ENABLED && (
+          <AnchorPriceNote>
+            {selectedBouquet === 'S'
+              ? anchorPriceLine(STANDARD_BOUQUETS.S.anchorEur)
+              : selectedBouquet === 'M'
+                ? anchorPriceLine(STANDARD_BOUQUETS.M.anchorEur)
+                : selectedBouquet === 'L'
+                  ? anchorPriceLine(STANDARD_BOUQUETS.L.anchorEur)
+                  : selectedBouquet === 'Buket po želji'
+                    ? anchorRangeLine(CUSTOM_BOUQUET.anchorMinEur, CUSTOM_BOUQUET.anchorMaxEur)
+                    : orderFormUnselectedAnchorLine()}
+          </AnchorPriceNote>
+        )}
         <p className="text-xs text-muted leading-[1.55] mt-2">
           Buket se izrađuje individualno od dostupnog sezonskog cvijeća; fotografije na
           stranici služe kao primjer.

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { LegalPage, LegalSection, LegalP, LegalUl } from '@/app/components/LegalPage'
 import { AnchorPriceNote } from '@/app/components/AnchorPriceNote'
+import { NN_PRICE_COMPLIANCE_ENABLED } from '@/lib/nnPriceCompliance'
 import {
   CUSTOM_BOUQUET,
   STANDARD_BOUQUETS,
@@ -108,28 +109,38 @@ export default function DostavaIPlacanjePage() {
         <LegalUl>
           <li>
             <strong className="font-medium text-ink">Buket S</strong> – 35 EUR (s PDV-om, dostava uključena)
-            <AnchorPriceNote>{anchorPriceLine(STANDARD_BOUQUETS.S.anchorEur)}</AnchorPriceNote>
+            {NN_PRICE_COMPLIANCE_ENABLED && (
+              <AnchorPriceNote>{anchorPriceLine(STANDARD_BOUQUETS.S.anchorEur)}</AnchorPriceNote>
+            )}
           </li>
           <li>
             <strong className="font-medium text-ink">Buket M</strong> – 45 EUR (s PDV-om, dostava uključena)
-            <AnchorPriceNote>{anchorPriceLine(STANDARD_BOUQUETS.M.anchorEur)}</AnchorPriceNote>
+            {NN_PRICE_COMPLIANCE_ENABLED && (
+              <AnchorPriceNote>{anchorPriceLine(STANDARD_BOUQUETS.M.anchorEur)}</AnchorPriceNote>
+            )}
           </li>
           <li>
             <strong className="font-medium text-ink">Buket L</strong> – 60 EUR (s PDV-om, dostava uključena)
-            <AnchorPriceNote>{anchorPriceLine(STANDARD_BOUQUETS.L.anchorEur)}</AnchorPriceNote>
+            {NN_PRICE_COMPLIANCE_ENABLED && (
+              <AnchorPriceNote>{anchorPriceLine(STANDARD_BOUQUETS.L.anchorEur)}</AnchorPriceNote>
+            )}
           </li>
           <li>
             <strong className="font-medium text-ink">Buket po želji</strong> – 70–200 EUR, korak 10 EUR (s PDV-om, dostava uključena)
-            <AnchorPriceNote>{anchorRangeLine(CUSTOM_BOUQUET.anchorMinEur, CUSTOM_BOUQUET.anchorMaxEur)}</AnchorPriceNote>
+            {NN_PRICE_COMPLIANCE_ENABLED && (
+              <AnchorPriceNote>{anchorRangeLine(CUSTOM_BOUQUET.anchorMinEur, CUSTOM_BOUQUET.anchorMaxEur)}</AnchorPriceNote>
+            )}
           </li>
         </LegalUl>
         <LegalP>
           Cijene su iskazane u eurima (EUR) i uključuju porez na dodanu vrijednost (PDV). Prodavatelj zadržava pravo promjene cjenik bez prethodne najave, uz objavu na web-mjesta. Na svaku narudžbu primjenjuju se cijene važeće u trenutku njezinog podnošenja.
         </LegalP>
-        <LegalP>
-          Strojno čitljivi cjenik i cijene na dan 10.9.2026. objavljeni su na stranici{' '}
-          <a href="/cjenik" className="text-forest hover:underline">Cjenik</a>.
-        </LegalP>
+        {NN_PRICE_COMPLIANCE_ENABLED && (
+          <LegalP>
+            Strojno čitljivi cjenik i cijene na dan 10.9.2026. objavljeni su na stranici{' '}
+            <a href="/cjenik" className="text-forest hover:underline">Cjenik</a>.
+          </LegalP>
+        )}
       </LegalSection>
 
     </LegalPage>

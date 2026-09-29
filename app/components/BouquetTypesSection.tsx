@@ -4,6 +4,7 @@ import { BOUQUET_TYPES, type BouquetType } from '@/lib/data'
 import { CustomBouquetCard } from './CustomBouquetCard'
 import { AnchorPriceNote } from './AnchorPriceNote'
 import { STANDARD_BOUQUETS, anchorPriceLine } from '@/lib/productPrices'
+import { NN_PRICE_COMPLIANCE_ENABLED } from '@/lib/nnPriceCompliance'
 import { orderSelectHref } from '@/lib/orderSelect'
 
 export function BouquetTypesSection({
@@ -77,9 +78,11 @@ export function BouquetTypesSection({
                   <h3 className="font-display text-2xl font-semibold text-ink">{bouquet.name}</h3>
                   <span className="text-[1.4rem] font-bold text-forest whitespace-nowrap">{bouquet.price}</span>
                 </div>
-                <AnchorPriceNote>
-                  {anchorPriceLine(STANDARD_BOUQUETS[bouquet.id].anchorEur)}
-                </AnchorPriceNote>
+                {NN_PRICE_COMPLIANCE_ENABLED && (
+                  <AnchorPriceNote>
+                    {anchorPriceLine(STANDARD_BOUQUETS[bouquet.id].anchorEur)}
+                  </AnchorPriceNote>
+                )}
                 <p className="text-sm sm:text-[0.9375rem] text-muted leading-[1.68] flex-1 mb-3 mt-3">
                   {bouquet.description}
                 </p>

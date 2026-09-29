@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { pruneOldPriceLists, publishTodaysPriceList } from '@/lib/priceListArchive'
+import { NN_PRICE_COMPLIANCE_ENABLED } from '@/lib/nnPriceCompliance'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -17,7 +18,15 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  // Daily including Saturday. Schedule is 05:00 UTC (vercel.json).
+  if (!NN_PRICE_COMPLIANCE_ENABLED) {
+    return NextResponse.json({
+      ok:      true,
+      skipped: true,
+      reason:  'NN_PRICE_COMPLIANCE_ENABLED is false',
+    })
+  }
+
+  // Daily including Saturday. Schedule is restored in vercel.json when re-enabling.
   try {
     const snapshot = await publishTodaysPriceList()
     const pruned   = await pruneOldPriceLists()

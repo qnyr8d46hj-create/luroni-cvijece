@@ -7,7 +7,7 @@ function subscribe() {
   return () => {}
 }
 
-/** Visible additional price from 2026-09-10. Shown from 2026-10-01 Europe/Zagreb. */
+/** Additional/anchor price. Shown only while NN_PRICE_COMPLIANCE_ENABLED is true. */
 export function AnchorPriceNote({ children }: { children: string }) {
   const visible = useSyncExternalStore(
     subscribe,
