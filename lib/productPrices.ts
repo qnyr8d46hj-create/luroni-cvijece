@@ -22,21 +22,21 @@ export const STANDARD_BOUQUETS = {
     id:        'S' as const,
     code:      'LUR-BUK-S',
     name:      'Buket S',
-    currentEur: 35,
+    currentEur: 45,
     anchorEur:  35,
   },
   M: {
     id:        'M' as const,
     code:      'LUR-BUK-M',
     name:      'Buket M',
-    currentEur: 45,
+    currentEur: 55,
     anchorEur:  45,
   },
   L: {
     id:        'L' as const,
     code:      'LUR-BUK-L',
     name:      'Buket L',
-    currentEur: 60,
+    currentEur: 70,
     anchorEur:  60,
   },
 } as const
@@ -46,7 +46,7 @@ export type StandardBouquetId = keyof typeof STANDARD_BOUQUETS
 export const CUSTOM_BOUQUET = {
   codePrefix:     'LUR-BUK-CUSTOM',
   name:           'Buket po želji',
-  currentMinEur:  70,
+  currentMinEur:  80,
   currentMaxEur:  200,
   currentStepEur: 10,
   // Same selectable range existed on 2026-09-10 — do not collapse to a single €70 anchor.
@@ -96,9 +96,9 @@ export function orderFormUnselectedAnchorLine(): string {
 }
 
 export function customSelectableAmounts(
-  min = CUSTOM_BOUQUET.currentMinEur,
-  max = CUSTOM_BOUQUET.currentMaxEur,
-  step = CUSTOM_BOUQUET.currentStepEur,
+  min: number = CUSTOM_BOUQUET.currentMinEur,
+  max: number = CUSTOM_BOUQUET.currentMaxEur,
+  step: number = CUSTOM_BOUQUET.currentStepEur,
 ): number[] {
   const amounts: number[] = []
   for (let value = min; value <= max; value += step) amounts.push(value)

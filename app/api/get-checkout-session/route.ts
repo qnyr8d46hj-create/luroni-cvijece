@@ -12,7 +12,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 })
 
 // Fallback amounts if amount_total is missing (edge case only)
-const BOUQUET_AMOUNTS: Record<string, number> = { S: 35, M: 45, L: 60 }
+const BOUQUET_AMOUNTS: Record<string, number> = { S: 45, M: 55, L: 70 }
 
 function bouquetDisplayName(size: string): string {
   if (size === 'Buket po želji') return 'Buket po želji'

@@ -1,3 +1,5 @@
+import { STANDARD_BOUQUETS, formatEuro } from '@/lib/productPrices'
+
 export type BouquetSize = 'S' | 'M' | 'L'
 
 export interface BouquetType {
@@ -20,7 +22,7 @@ export const BOUQUET_TYPES: BouquetType[] = [
   {
     id: 'S',
     name: 'Buket S',
-    price: '35 €',
+    price: formatEuro(STANDARD_BOUQUETS.S.currentEur),
     description:
       'Manji, elegantan buket idealan za pažnju, zahvalu ili mali znak iznenađenja. Lijep izbor kada želite nekome uljepšati dan bez pretjerivanja.',
     cta: 'Odaberi Buket S',
@@ -31,24 +33,24 @@ export const BOUQUET_TYPES: BouquetType[] = [
   {
     id: 'M',
     name: 'Buket M',
-    price: '45 €',
+    price: formatEuro(STANDARD_BOUQUETS.M.currentEur),
     description:
       'Srednji buket s bogatijim izgledom, odličan za rođendane, godišnjice, posjete i posebne trenutke. Najbolji omjer cijene i dojma.',
     cta: 'Odaberi Buket M',
     image: '/images/featured-bouquets/buket-m.jpg',
     alt: 'Buket M s dostavom u Rijeci i okolici',
-    popular: true,
+    popular: false,
   },
   {
     id: 'L',
     name: 'Buket L',
-    price: '60 €',
+    price: formatEuro(STANDARD_BOUQUETS.L.currentEur),
     description:
       'Veći i raskošniji buket za snažan dojam. Idealan za posebne prigode, velike geste, iznenađenja i trenutke koje želite posebno naglasiti.',
     cta: 'Odaberi Buket L',
     image: '/images/featured-bouquets/buket-l.jpg',
     alt: 'Buket L s dostavom na području Rijeke i Krka',
-    popular: false,
+    popular: true,
   },
 ]
 

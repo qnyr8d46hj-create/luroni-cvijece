@@ -9,9 +9,9 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 // ── Standard bouquet prices (cents) ────────────────────────────
 const UNIT_AMOUNTS: Record<string, number> = {
-  S: 3500,  // 35 EUR
-  M: 4500,  // 45 EUR
-  L: 6000,  // 60 EUR
+  S: 4500,  // 45 EUR
+  M: 5500,  // 55 EUR
+  L: 7000,  // 70 EUR
 }
 
 const BOUQUET_NAMES: Record<string, string> = {
@@ -23,7 +23,7 @@ const BOUQUET_NAMES: Record<string, string> = {
 // ── Custom budget validation ────────────────────────────────────
 // Change these three values to adjust the allowed range.
 // Keep in sync with CUSTOM_PRICE_* in OrderForm.tsx and CustomBouquetCard.tsx
-const CUSTOM_BUDGET_MIN  = 70
+const CUSTOM_BUDGET_MIN  = 80
 const CUSTOM_BUDGET_MAX  = 200
 const CUSTOM_BUDGET_STEP = 10
 

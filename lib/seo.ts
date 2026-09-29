@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { FAQS } from '@/lib/data'
-import { STANDARD_BOUQUETS } from '@/lib/productPrices'
+import { CUSTOM_BOUQUET, STANDARD_BOUQUETS } from '@/lib/productPrices'
 
 export const SITE_URL  = 'https://www.luroni-cvijece.com'
 export const SITE_NAME = 'Luroni Cvijeće'
@@ -39,6 +39,13 @@ export const floristJsonLd = {
       { '@type': 'Offer', name: 'Buket S', price: String(STANDARD_BOUQUETS.S.currentEur), priceCurrency: 'EUR' },
       { '@type': 'Offer', name: 'Buket M', price: String(STANDARD_BOUQUETS.M.currentEur), priceCurrency: 'EUR' },
       { '@type': 'Offer', name: 'Buket L', price: String(STANDARD_BOUQUETS.L.currentEur), priceCurrency: 'EUR' },
+      {
+        '@type':        'AggregateOffer',
+        name:           CUSTOM_BOUQUET.name,
+        lowPrice:       String(CUSTOM_BOUQUET.currentMinEur),
+        highPrice:      String(CUSTOM_BOUQUET.currentMaxEur),
+        priceCurrency:  'EUR',
+      },
     ],
   },
 }

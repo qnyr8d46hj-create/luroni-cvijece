@@ -22,11 +22,11 @@ import { parseOrderSelectSearch } from '@/lib/orderSelect'
 import { NN_PRICE_COMPLIANCE_ENABLED } from '@/lib/nnPriceCompliance'
 
 /* ── Standard bouquet prices ──────────────────────────────────── */
-const BOUQUET_PRICES: Record<string, number> = { S: 35, M: 45, L: 60 }
+const BOUQUET_PRICES: Record<string, number> = { S: 45, M: 55, L: 70 }
 
 /* ── Custom bouquet price range ───────────────────────────────────
    Keep in sync with CUSTOM_BUDGET_* in create-checkout-session/route.ts */
-const CUSTOM_PRICE_MIN  = 70
+const CUSTOM_PRICE_MIN  = 80
 const CUSTOM_PRICE_MAX  = 200
 const CUSTOM_PRICE_STEP = 10
 
@@ -524,10 +524,10 @@ export function OrderForm() {
           className={selectCls(errors.bouquetSize)}
         >
           <option value="" disabled>Odaberite veličinu</option>
-          <option value="S">Buket S — 35 €</option>
-          <option value="M">Buket M — 45 €</option>
-          <option value="L">Buket L — 60 €</option>
-          <option value="Buket po želji">Buket po želji — od 70 €</option>
+          <option value="S">Buket S — 45 €</option>
+          <option value="M">Buket M — 55 €</option>
+          <option value="L">Buket L — 70 €</option>
+          <option value="Buket po želji">Buket po želji — od 80 €</option>
         </select>
         {NN_PRICE_COMPLIANCE_ENABLED && (
           <AnchorPriceNote>

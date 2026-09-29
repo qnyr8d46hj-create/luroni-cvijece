@@ -108,25 +108,25 @@ export default function DostavaIPlacanjePage() {
         <LegalP>Trenutni cjenik buketa s uključenom dostavom:</LegalP>
         <LegalUl>
           <li>
-            <strong className="font-medium text-ink">Buket S</strong> – 35 EUR (s PDV-om, dostava uključena)
+            <strong className="font-medium text-ink">Buket S</strong> – {STANDARD_BOUQUETS.S.currentEur} EUR (s PDV-om, dostava uključena)
             {NN_PRICE_COMPLIANCE_ENABLED && (
               <AnchorPriceNote>{anchorPriceLine(STANDARD_BOUQUETS.S.anchorEur)}</AnchorPriceNote>
             )}
           </li>
           <li>
-            <strong className="font-medium text-ink">Buket M</strong> – 45 EUR (s PDV-om, dostava uključena)
+            <strong className="font-medium text-ink">Buket M</strong> – {STANDARD_BOUQUETS.M.currentEur} EUR (s PDV-om, dostava uključena)
             {NN_PRICE_COMPLIANCE_ENABLED && (
               <AnchorPriceNote>{anchorPriceLine(STANDARD_BOUQUETS.M.anchorEur)}</AnchorPriceNote>
             )}
           </li>
           <li>
-            <strong className="font-medium text-ink">Buket L</strong> – 60 EUR (s PDV-om, dostava uključena)
+            <strong className="font-medium text-ink">Buket L</strong> – {STANDARD_BOUQUETS.L.currentEur} EUR (s PDV-om, dostava uključena)
             {NN_PRICE_COMPLIANCE_ENABLED && (
               <AnchorPriceNote>{anchorPriceLine(STANDARD_BOUQUETS.L.anchorEur)}</AnchorPriceNote>
             )}
           </li>
           <li>
-            <strong className="font-medium text-ink">Buket po želji</strong> – 70–200 EUR, korak 10 EUR (s PDV-om, dostava uključena)
+            <strong className="font-medium text-ink">Buket po želji</strong> – {CUSTOM_BOUQUET.currentMinEur}–{CUSTOM_BOUQUET.currentMaxEur} EUR, korak {CUSTOM_BOUQUET.currentStepEur} EUR (s PDV-om, dostava uključena)
             {NN_PRICE_COMPLIANCE_ENABLED && (
               <AnchorPriceNote>{anchorRangeLine(CUSTOM_BOUQUET.anchorMinEur, CUSTOM_BOUQUET.anchorMaxEur)}</AnchorPriceNote>
             )}

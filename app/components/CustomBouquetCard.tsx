@@ -13,7 +13,7 @@ import { NN_PRICE_COMPLIANCE_ENABLED } from '@/lib/nnPriceCompliance'
 
 // ── Price range — edit these three values to change the range.
 // Keep in sync with CUSTOM_BUDGET_* in app/api/create-checkout-session/route.ts
-export const CUSTOM_PRICE_MIN  = 70
+export const CUSTOM_PRICE_MIN  = 80
 export const CUSTOM_PRICE_MAX  = 200
 export const CUSTOM_PRICE_STEP = 10
 
