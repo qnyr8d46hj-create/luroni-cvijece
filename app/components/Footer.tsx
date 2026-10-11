@@ -3,11 +3,12 @@ import Link from 'next/link'
 import { NN_PRICE_COMPLIANCE_ENABLED } from '@/lib/nnPriceCompliance'
 
 const FOOTER_LINKS = [
-  { href: '/',           label: 'Početna' },
-  { href: '/#bouquets',  label: 'Složeni buketi' },
-  { href: '/#sizes',     label: 'Veličine buketa' },
-  { href: '/#order',     label: 'Narudžba' },
-  { href: '/#contact',   label: 'Kontakt' },
+  { href: '/',                           label: 'Početna' },
+  { href: '/#bouquets',                  label: 'Složeni buketi' },
+  { href: '/#sizes',                     label: 'Veličine buketa' },
+  { href: '/#order',                     label: 'Narudžba' },
+  { href: '/umjetni-cvjetni-aranzmani',  label: 'Umjetni aranžmani' },
+  { href: '/#contact',                   label: 'Kontakt' },
 ]
 
 const CITY_LINKS = [

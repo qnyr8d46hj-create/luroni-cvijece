@@ -1,6 +1,7 @@
 import Stripe from 'stripe'
 import { NextRequest, NextResponse } from 'next/server'
 import { isOrderingBlocked, ORDER_BLOCK_NOTICE, getUnavailableDeliveryMessage } from '@/lib/orderAvailability'
+import { ARTIFICIAL_ORDER_TYPE } from '@/lib/artificialBouquetPaths'
 
 // ── Stripe client — server-side only ──────────────────────────
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -52,6 +53,7 @@ export async function POST(req: NextRequest) {
   }
 
   let body: {
+    orderType?:    string
     orderId:       string
     bouquetSize:   string
     customBudget?: unknown
@@ -59,12 +61,20 @@ export async function POST(req: NextRequest) {
     customerName:  string
     deliveryDate?: string
     deliveryTime?: string
+    sku?:          string
   }
 
   try {
     body = await req.json()
   } catch {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
+  }
+
+  if (body.orderType === ARTIFICIAL_ORDER_TYPE) {
+    return NextResponse.json(
+      { error: 'Artificial orders must be created through /api/create-artificial-order' },
+      { status: 400 },
+    )
   }
 
   const {

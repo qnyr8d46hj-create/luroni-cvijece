@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { Header } from '@/app/components/Header'
 import { Footer } from '@/app/components/Footer'
 import { pageSeo } from '@/lib/seo'
@@ -57,14 +58,14 @@ export default function NarudzbaOtkazanaPage() {
             .
           </p>
 
-          <a
+          <Link
             href="/#order"
             className="inline-flex items-center justify-center px-8 py-3.5 rounded-full
               bg-forest text-white font-medium text-[1.0625rem]
               hover:bg-forest-dark transition-colors"
           >
             Pokušaj ponovo
-          </a>
+          </Link>
 
         </div>
       </main>

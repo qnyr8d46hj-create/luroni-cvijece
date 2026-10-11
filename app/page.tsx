@@ -5,6 +5,7 @@ import { BouquetTypesSection } from '@/app/components/BouquetTypesSection'
 import { OrderSection }       from '@/app/components/OrderSection'
 import { LocalSeoSection }    from '@/app/components/LocalSeoSection'
 import { FaqSection }         from '@/app/components/FaqSection'
+import { ArtificialCatalogTeaser } from '@/app/components/ArtificialCatalogTeaser'
 import { ContactSection }     from '@/app/components/ContactSection'
 import { Footer }             from '@/app/components/Footer'
 import { JsonLd }             from '@/app/components/JsonLd'
@@ -23,6 +24,7 @@ export default function Home() {
         <OrderSection />
         <LocalSeoSection />
         <FaqSection />
+        <ArtificialCatalogTeaser />
         <ContactSection />
       </main>
       <Footer />

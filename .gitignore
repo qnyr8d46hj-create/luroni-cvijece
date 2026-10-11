@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Original HEIC photos for artificial arrangements (not served)
+/assets/artificial-bouquets-originals/

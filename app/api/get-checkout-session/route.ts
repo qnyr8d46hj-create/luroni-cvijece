@@ -1,5 +1,6 @@
 import Stripe from 'stripe'
 import { NextRequest, NextResponse } from 'next/server'
+import { ga4PurchaseFromCheckoutSession } from '@/lib/ga4Purchase'
 
 // ── GET /api/get-checkout-session?session_id=cs_xxx ───────────
 //
@@ -11,18 +12,8 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2026-04-22.dahlia',
 })
 
-// Fallback amounts if amount_total is missing (edge case only)
+// Fallback amounts if amount_total is missing (edge case only, fresh bouquets)
 const BOUQUET_AMOUNTS: Record<string, number> = { S: 45, M: 55, L: 70 }
-
-function bouquetDisplayName(size: string): string {
-  if (size === 'Buket po želji') return 'Buket po želji'
-  return `Buket ${size}`
-}
-
-function bouquetItemId(size: string): string {
-  if (size === 'Buket po želji') return 'buket-po-zelji'
-  return `buket-${size.toLowerCase()}`
-}
 
 export async function GET(req: NextRequest) {
   const sessionId = req.nextUrl.searchParams.get('session_id')
@@ -38,24 +29,27 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Session not paid' }, { status: 402 })
     }
 
-    const bouquetSize = session.metadata?.bouquetSize ?? ''
-    const value = session.amount_total != null
-      ? session.amount_total / 100
-      : (BOUQUET_AMOUNTS[bouquetSize] ?? 0)
+    const mapped = ga4PurchaseFromCheckoutSession(
+      {
+        id: session.id,
+        payment_intent: session.payment_intent,
+        amount_total: session.amount_total,
+        metadata: session.metadata,
+      },
+      BOUQUET_AMOUNTS,
+    )
+
+    if ('error' in mapped) {
+      console.error(`[get-checkout-session] ${mapped.error} — session ${sessionId}`)
+      return NextResponse.json({ error: mapped.error }, { status: 500 })
+    }
 
     console.log(
       `[get-checkout-session] ✓ session ${sessionId} — ` +
-      `bouquetSize: ${bouquetSize}, value: ${value} EUR`,
+      `itemId: ${mapped.itemId}, value: ${mapped.value} EUR`,
     )
 
-    return NextResponse.json({
-      transactionId: String(session.payment_intent ?? session.id),
-      value,
-      currency:    'EUR',
-      bouquetSize,
-      itemName:    bouquetDisplayName(bouquetSize),
-      itemId:      bouquetItemId(bouquetSize),
-    })
+    return NextResponse.json(mapped)
 
   } catch (err) {
     console.error('[get-checkout-session] Stripe error:', err)

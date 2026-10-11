@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { Header }          from '@/app/components/Header'
 import { Footer }          from '@/app/components/Footer'
 import { PurchaseTracker } from '@/app/components/PurchaseTracker'
@@ -60,14 +61,14 @@ export default async function NarudzbaUspjesnaPage({
             Javit ćemo vam se uskoro radi potvrde dostupnosti i termina dostave.
           </p>
 
-          <a
+          <Link
             href="/"
             className="inline-flex items-center justify-center px-8 py-3.5 rounded-full
               bg-forest text-white font-medium text-[1.0625rem]
               hover:bg-forest-dark transition-colors"
           >
             Natrag na početnu
-          </a>
+          </Link>
 
         </div>
       </main>
