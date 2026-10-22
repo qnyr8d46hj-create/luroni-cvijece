@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Header } from '@/app/components/Header'
 import { Footer } from '@/app/components/Footer'
 import { JsonLd } from '@/app/components/JsonLd'
+import { GoogleReviewsBadge } from '@/app/components/GoogleReviewsBadge'
 import { BouquetTypesSection } from '@/app/components/BouquetTypesSection'
 import { DELIVERY_AREAS } from '@/lib/data'
 import { cityLandingJsonLd } from '@/lib/seo'
@@ -228,7 +229,7 @@ function Hero() {
             Naručite do 14:00 za dostavu isti dan, ovisno o dostupnosti.
           </p>
 
-          <div className="flex flex-wrap gap-3 mb-11">
+          <div className="flex flex-wrap gap-3 mb-5">
             <Link
               href="/#order"
               className="inline-flex items-center justify-center px-9 py-4 rounded-full bg-forest text-white font-medium text-[1.0625rem] transition-all hover:bg-forest-dark hover:-translate-y-px hover:shadow-lg"
@@ -241,6 +242,10 @@ function Hero() {
             >
               Pogledaj bukete
             </Link>
+          </div>
+
+          <div className="mb-11">
+            <GoogleReviewsBadge />
           </div>
 
           <div className="flex flex-wrap gap-2.5">
