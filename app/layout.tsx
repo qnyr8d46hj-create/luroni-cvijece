@@ -1,8 +1,10 @@
 import type { Metadata } from 'next'
+import Script from 'next/script'
 import { Cormorant_Garamond, DM_Sans } from 'next/font/google'
-import { Analytics }       from '@vercel/analytics/next'
-import { SpeedInsights }   from '@vercel/speed-insights/next'
-import { GoogleAnalytics } from '@/app/components/GoogleAnalytics'
+import { CookieBanner } from '@/app/components/CookieBanner'
+import { CookieConsentProvider } from '@/app/components/CookieConsentProvider'
+import { ConsentedTelemetry } from '@/app/components/ConsentedTelemetry'
+import { CONSENT_COOKIE_NAME } from '@/lib/cookieConsent'
 import './globals.css'
 
 // ── Fonts ──────────────────────────────────────────────────
@@ -139,15 +141,22 @@ export const metadata: Metadata = {
 
 // ── Root layout ────────────────────────────────────────────
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const gaId =
+    process.env.NODE_ENV === 'production'
+      ? process.env.NEXT_PUBLIC_GA_ID
+      : undefined
+
   return (
     <html lang="hr" className={`${cormorant.variable} ${dmSans.variable}`}>
       <body className="min-h-screen bg-cream text-ink antialiased font-sans">
-        {children}
-        <Analytics />
-        <SpeedInsights />
-        {process.env.NODE_ENV === 'production' && process.env.NEXT_PUBLIC_GA_ID && (
-          <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID} />
-        )}
+        <Script id="luroni-consent-boot" strategy="beforeInteractive">
+          {`(function(){try{if(document.cookie.indexOf('${CONSENT_COOKIE_NAME}=')!==-1){document.documentElement.setAttribute('data-luroni-consent','chosen');}}catch(e){}})();`}
+        </Script>
+        <CookieConsentProvider>
+          {children}
+          <CookieBanner />
+          <ConsentedTelemetry gaId={gaId} />
+        </CookieConsentProvider>
       </body>
     </html>
   )

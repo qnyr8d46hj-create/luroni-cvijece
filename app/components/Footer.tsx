@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
+import { CookieSettingsLink } from '@/app/components/CookieSettingsLink'
 import { NN_PRICE_COMPLIANCE_ENABLED } from '@/lib/nnPriceCompliance'
 
 const FOOTER_LINKS = [
@@ -103,6 +104,9 @@ export function Footer() {
                     </Link>
                   </li>
                 ))}
+                <li>
+                  <CookieSettingsLink className={`${navLinkCls} text-left w-full`} />
+                </li>
               </ul>
             </nav>
 

@@ -38,6 +38,11 @@ html {
 body {
   background: var(--background);
   color: var(--foreground);
+  padding-bottom: var(--cookie-banner-h, 0px);
+}
+
+html[data-luroni-consent='chosen'] [data-cookie-banner] {
+  display: none;
 }
 
 /* ── Keyframes ────────────────────────────────────────────── */

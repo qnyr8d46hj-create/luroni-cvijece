@@ -1,11 +1,12 @@
 import type { Metadata } from 'next'
 import { LegalPage, LegalSection, LegalP, LegalUl } from '@/app/components/LegalPage'
+import { CookieSettingsLink } from '@/app/components/CookieSettingsLink'
 import { pageSeo } from '@/lib/seo'
 
 export const metadata: Metadata = pageSeo({
   title: 'Politika kolačića | Luroni Cvijeće',
   description:
-    'Saznajte koje kolačiće koristi luroni.hr, zašto ih koristimo i kako ih možete kontrolirati.',
+    'Saznajte koje kolačiće koristi luroni-cvijece.com, zašto ih koristimo i kako možete dati ili povući privolu.',
   path: '/politika-kolacica',
 })
 
@@ -13,79 +14,94 @@ export default function PolitikaKolacicaPage() {
   return (
     <LegalPage
       title="Politika kolačića"
-      subtitle="Koje kolačiće koristimo i kako ih možete kontrolirati."
+      subtitle="Koje kolačiće i slične tehnologije koristimo i kako ih možete kontrolirati."
+      updatedAt="Listopad 2026."
     >
 
       <LegalSection id="sto-su" title="1. Što su kolačići?">
         <LegalP>
-          Kolačići (engl. <em>cookies</em>) su male tekstualne datoteke koje web-mjesta pohranjuje na vaš uređaj (računalo, tablet ili mobitel) pri prvom posjetu. Kolačići sami po sebi ne sadržavaju osobne identifikacijske podatke, no u kombinaciji s drugim podacima mogu se koristiti za identifikaciju korisnika.
+          Kolačići (engl. <em>cookies</em>) su male tekstualne datoteke koje web-mjesta pohranjuju na vaš uređaj (računalo, tablet ili mobitel). Uz kolačiće koristimo i slične tehnologije lokalne pohrane u pregledniku (npr. localStorage i sessionStorage).
         </LegalP>
         <LegalP>
-          Koristimo prve strane kolačiće (postavljene izravno od luroni.hr) i kolačiće trećih strana (postavljene od partnera poput Googlea).
+          Koristimo prve strane kolačiće (postavljene od luroni-cvijece.com) i, samo uz vašu privolu, kolačiće trećih strana (Google Analytics 4).
         </LegalP>
       </LegalSection>
 
-      <LegalSection id="zasto" title="2. Zašto koristimo kolačiće?">
-        <LegalP>Kolačiće koristimo radi:</LegalP>
-        <LegalUl>
-          <li>Pravilnog funkcioniranja web-mjesta i sigurnosti transakcija</li>
-          <li>Razumijevanja načina na koji posjetitelji koriste web-mjesta (analitika)</li>
-          <li>Prikazivanja relevantnih oglasa i mjerenja učinkovitosti marketinških kampanja</li>
-        </LegalUl>
+      <LegalSection id="privola" title="2. Privola i vaš izbor">
+        <LegalP>
+          Pri prvom posjetu prikazujemo banner kolačića s jednako dostupnim opcijama <strong className="font-medium text-ink">Prihvati sve</strong>, <strong className="font-medium text-ink">Odbij neobavezne</strong> i <strong className="font-medium text-ink">Postavke kolačića</strong>. Neobavezne kategorije (analitika i marketing) nisu unaprijed odabrane.
+        </LegalP>
+        <LegalP>
+          Nužni kolačići rade uvijek. Analitičke i marketinške tehnologije ne učitavamo dok ne date odgovarajuću privolu. Narudžba svježih buketa, umjetnih aranžmana, gotovinsko plaćanje i Stripe Checkout rade i ako odbijete neobavezne kolačiće.
+        </LegalP>
+        <LegalP>
+          Izbor spremamo do 12 mjeseci. Privolu možete u svakom trenutku promijeniti ili povući putem{' '}
+          <CookieSettingsLink className="text-forest hover:underline" />
+          {' '}u podnožju stranice ili na ovoj stranici.
+        </LegalP>
       </LegalSection>
 
-      <LegalSection id="kategorije" title="3. Kategorije kolačića koje koristimo">
+      <LegalSection id="kategorije" title="3. Kategorije koje koristimo">
 
         <div className="mt-1">
-          <p className="text-[0.9375rem] font-medium text-ink mb-2">Nužni kolačići</p>
+          <p className="text-[0.9375rem] font-medium text-ink mb-2">Nužni</p>
           <LegalP>
-            Ovi kolačići neophodni su za osnovno funkcioniranje web-mjesta – bez njih neke ključne funkcionalnosti, poput sigurnog plaćanja, ne bi radile. Ne mogu se isključiti. Ne prikupljaju osobne podatke u marketinške svrhe.
-          </LegalP>
-        </div>
-
-        <div className="mt-4">
-          <p className="text-[0.9375rem] font-medium text-ink mb-2">Analitički kolačići</p>
-          <LegalP>
-            Koristimo Google Analytics kako bismo razumjeli koje stranice posjetitelji učestalije posjećuju, koliko dugo ostaju i s kojih uređaja pristupaju. Svi podaci su anonimizirani ili pseudonomizirani.
+            Potrebni su za osnovni rad web-mjesta, spremanje vašeg izbora kolačića te za slanje narudžbe i plaćanje. Ne mogu se isključiti i ne koriste se za marketing.
           </LegalP>
           <LegalUl>
-            <li><strong className="font-medium text-ink">_ga</strong> – razlikuje korisnike (2 godine)</li>
-            <li><strong className="font-medium text-ink">_gid</strong> – razlikuje korisnike (24 sata)</li>
-            <li><strong className="font-medium text-ink">_gat_gtag_*</strong> – ograničava broj zahtjeva prema Googleu (1 minuta)</li>
+            <li>
+              <strong className="font-medium text-ink">luroni_cookie_consent</strong> – sprema vaš izbor kategorija (12 mjeseci). Ista informacija može biti i u localStorage pod istim nazivom.
+            </li>
+            <li>
+              <strong className="font-medium text-ink">Stripe Checkout</strong> – pri kartičnom plaćanju preusmjeravamo vas na Stripe. Stripe na svojoj domeni postavlja kolačiće nužne za sigurnu uplatu. Podatke kartice ne pohranjujemo.
+            </li>
+            <li>
+              Firebase / Firestore koristi se za spremanje narudžbe svježeg buketa. To nije marketinški kolačić.
+            </li>
           </LegalUl>
-          <LegalP>
-            Analitičke kolačiće možete isključiti instalacijom{' '}
-            <a
-              href="https://tools.google.com/dlpage/gaoptout"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-forest hover:underline"
-            >
-              Google Analytics Opt-out Browser Add-on
-            </a>.
-          </LegalP>
         </div>
 
         <div className="mt-4">
-          <p className="text-[0.9375rem] font-medium text-ink mb-2">Marketinški kolačići</p>
+          <p className="text-[0.9375rem] font-medium text-ink mb-2">Analitika</p>
           <LegalP>
-            Koristimo Google Ads kolačiće za mjerenje učinkovitosti oglasa (konverzijsko praćenje) i prikazivanje relevantnih promotivnih poruka. Google Ads kolačiće možete upravljati putem{' '}
-            <a
-              href="https://adssettings.google.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-forest hover:underline"
-            >
-              postavki Google oglasa
-            </a>.
+            Uključuje se samo uz analitičku privolu. Koristimo je za razumijevanje posjeta i, ako je plaćanje karticom uspješno, za mjerenje kupnje u Google Analytics 4 (GA4).
+          </LegalP>
+          <LegalUl>
+            <li>
+              <strong className="font-medium text-ink">Google Analytics 4</strong> – učitava se tek nakon analitičke privole. Tipični kolačići: <strong className="font-medium text-ink">_ga</strong> (do 2 godine), <strong className="font-medium text-ink">_ga_*</strong> (do 2 godine), <strong className="font-medium text-ink">_gid</strong> (24 sata), <strong className="font-medium text-ink">_gat_gtag_*</strong> (1 minuta).
+            </li>
+            <li>
+              <strong className="font-medium text-ink">sessionStorage ga4_tracked_*</strong> – sprječava dvostruko slanje događaja kupnje na stranici zahvale, i to tek nakon što je događaj stvarno poslan.
+            </li>
+            <li>
+              <strong className="font-medium text-ink">Vercel Analytics</strong> i <strong className="font-medium text-ink">Vercel Speed Insights</strong> – prve strane mjerne skripte Vercela za posjete i brzinu stranice. Učitavaju se samo uz analitičku privolu.
+            </li>
+          </LegalUl>
+        </div>
+
+        <div className="mt-4">
+          <p className="text-[0.9375rem] font-medium text-ink mb-2">Marketing</p>
+          <LegalP>
+            Na web-mjestu <strong className="font-medium text-ink">nije instaliran zaseban Google Ads piksel</strong> niti Google Tag Manager. Marketinška kategorija upravlja Google Consent Mode signalima za oglašavanje (<em>ad_storage</em>, <em>ad_user_data</em>, <em>ad_personalization</em>).
+          </LegalP>
+          <LegalP>
+            Ti se signali odobravaju samo ako date marketinšku privolu. Analitička privola sama po sebi ne uključuje marketing. Ako GA4 nije učitan (nema analitičke privole), marketinški signali se ne šalju Googleu jer se Google skripta uopće ne učitava.
+          </LegalP>
+          <LegalP>
+            Ako je dana i analitička i marketinška privola, GA4 može postaviti oglasne kolačiće (npr. <strong className="font-medium text-ink">_gcl_au</strong>) ovisno o postavkama Google računa. Konverzije Google Ads kampanja, ako se mjere, dolaze uvozom GA4 događaja kupnje, a ne zasebnim Ads pikselom na ovoj stranici.
           </LegalP>
         </div>
 
       </LegalSection>
 
-      <LegalSection id="upravljanje" title="4. Upravljanje kolačićima i povlačenje privole">
+      <LegalSection id="povlacenje" title="4. Promjena i povlačenje privole">
         <LegalP>
-          Kolačićima možete upravljati izravno u postavkama svog preglednika:
+          Otvorite{' '}
+          <CookieSettingsLink className="text-forest hover:underline" />
+          {' '}u podnožju bilo koje stranice. Ako povučete analitičku ili marketinšku privolu, prestajemo učitavati neobavezno praćenje u budućim posjetima i brišemo primjenjive prve strane opcijske kolačiće (npr. _ga, _gid, _gat*, _gcl*) tamo gdje je to tehnički moguće.
+        </LegalP>
+        <LegalP>
+          Kolačićima možete upravljati i u pregledniku:
         </LegalP>
         <LegalUl>
           <li>
@@ -102,7 +118,7 @@ export default function PolitikaKolacicaPage() {
           </li>
         </LegalUl>
         <LegalP>
-          Ako blokirate ili izbrišete kolačiće, neke funkcionalnosti web-mjesta mogu raditi nepotpuno. Više informacija o upravljanju kolačićima dostupno je na{' '}
+          Više informacija: {' '}
           <a
             href="https://www.allaboutcookies.org"
             target="_blank"
@@ -110,8 +126,8 @@ export default function PolitikaKolacicaPage() {
             className="text-forest hover:underline"
           >
             allaboutcookies.org
-          </a>{' '}
-          i{' '}
+          </a>
+          {' '}i{' '}
           <a
             href="https://www.youronlinechoices.eu"
             target="_blank"

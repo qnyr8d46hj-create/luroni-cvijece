@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { LegalPage, LegalSection, LegalP, LegalUl } from '@/app/components/LegalPage'
+import { CookieSettingsLink } from '@/app/components/CookieSettingsLink'
 
 export const metadata: Metadata = {
   title: 'Politika privatnosti | Luroni Cvijeće',
@@ -30,6 +31,7 @@ export default function PolitikaPrivatnostiPage() {
     <LegalPage
       title="Politika privatnosti"
       subtitle="Kako prikupljamo, koristimo i štitimo vaše osobne podatke."
+      updatedAt="Listopad 2026."
     >
 
       <LegalSection id="voditelj" title="1. Voditelj obrade osobnih podataka">
@@ -46,7 +48,7 @@ export default function PolitikaPrivatnostiPage() {
 
       <LegalSection id="podaci-koje-prikupljamo" title="2. Koje osobne podatke prikupljamo">
         <LegalP>
-          Obradom narudžbe putem luroni.hr prikupljamo sljedeće kategorije osobnih podataka:
+          Obradom narudžbe putem luroni-cvijece.com prikupljamo sljedeće kategorije osobnih podataka:
         </LegalP>
         <LegalUl>
           <li>Ime i prezime naručitelja i/ili primatelja</li>
@@ -55,7 +57,7 @@ export default function PolitikaPrivatnostiPage() {
           <li>Adresa elektroničke pošte</li>
           <li>Datum i termin dostave</li>
           <li>Podaci o narudžbi (veličina buketa, poruka uz buket, posebne napomene)</li>
-          <li>IP adresa i tehnički podaci o uređaju i pregledniku (prikupljeni automatski putem Google Analyticsa)</li>
+          <li>IP adresa i tehnički podaci o uređaju i pregledniku, samo ako date analitičku privolu (Google Analytics 4 i Vercel mjerenje)</li>
         </LegalUl>
         <LegalP>
           Podatke platnih kartica ne pohranjujemo – sve kartičné transakcije obrađuje Stripe, Inc. izravno.
@@ -74,10 +76,10 @@ export default function PolitikaPrivatnostiPage() {
             <strong className="font-medium text-ink">Pohrana narudžbi za računovodstvene i porezne potrebe:</strong> zakonska obveza – čl. 6. st. 1. toč. (c) GDPR.
           </li>
           <li>
-            <strong className="font-medium text-ink">Analitika web-mjesta</strong> (Google Analytics): legitimni interes – čl. 6. st. 1. toč. (f) GDPR.
+            <strong className="font-medium text-ink">Analitika web-mjesta</strong> (Google Analytics 4, Vercel Analytics i Speed Insights): privola – čl. 6. st. 1. toč. (a) GDPR.
           </li>
           <li>
-            <strong className="font-medium text-ink">Oglašavanje i konverzijsko praćenje</strong> (Google Ads): privola – čl. 6. st. 1. toč. (a) GDPR.
+            <strong className="font-medium text-ink">Marketinški / oglasni signali</strong> (Google Consent Mode za oglašavanje, ako je dana marketinška privola uz analitiku): privola – čl. 6. st. 1. toč. (a) GDPR. Na web-mjestu nije instaliran zaseban Google Ads piksel.
           </li>
         </LegalUl>
       </LegalSection>
@@ -100,11 +102,14 @@ export default function PolitikaPrivatnostiPage() {
             <a href="https://resend.com/privacy" target="_blank" rel="noopener noreferrer" className="text-forest hover:underline">resend.com/privacy</a>.
           </li>
           <li>
-            <strong className="font-medium text-ink">Google Analytics</strong> (Google LLC, SAD) – anonimni podaci o posjetima web-mjesta radi razumijevanja korisničkog ponašanja. Možete se odjaviti putem{' '}
+            <strong className="font-medium text-ink">Google Analytics 4</strong> (Google LLC, SAD) – podaci o posjetima i, uz analitičku privolu, događaj kupnje nakon Stripe uplate. Učitava se samo uz privolu. Dodatno se možete odjaviti putem{' '}
             <a href="https://tools.google.com/dlpage/gaoptout" target="_blank" rel="noopener noreferrer" className="text-forest hover:underline">Google Analytics Opt-out Add-on</a>.
           </li>
           <li>
-            <strong className="font-medium text-ink">Google Ads</strong> (Google LLC, SAD) – mjerenje učinkovitosti oglasa i remarketing.
+            <strong className="font-medium text-ink">Vercel Inc.</strong> – Analytics i Speed Insights, samo uz analitičku privolu.
+          </li>
+          <li>
+            <strong className="font-medium text-ink">Google Ads</strong> – na ovoj web-stranici nije ugrađen zaseban Ads piksel ni GTM spremnik. Ako se konverzije mjere u Google Ads, to je putem uvoza GA4 događaja (npr. purchase), a oglasni kolačići mogu se pojaviti samo uz marketinšku privolu kada je GA4 učitan.
           </li>
           <li>
             <strong className="font-medium text-ink">Google Search Console</strong> (Google LLC) – tehnički podaci o izvedbi u pretraživanju (isključivo agregirani, bez osobnih podataka).
@@ -114,7 +119,7 @@ export default function PolitikaPrivatnostiPage() {
 
       <LegalSection id="prijenos" title="5. Prijenos podataka izvan EGP-a">
         <LegalP>
-          Stripe, Resend i Google imaju sjedišta u SAD-u. Prijenos osobnih podataka u SAD obavlja se temeljem standardnih ugovornih klauzula (SCC) koje je odobrila Europska komisija sukladno čl. 46. Uredbe (EU) 2016/679 (GDPR), čime se osigurava odgovarajuća razina zaštite.
+          Stripe, Resend, Google i Vercel imaju sjedišta u SAD-u. Prijenos osobnih podataka u SAD obavlja se temeljem standardnih ugovornih klauzula (SCC) koje je odobrila Europska komisija sukladno čl. 46. Uredbe (EU) 2016/679 (GDPR), čime se osigurava odgovarajuća razina zaštite. Prijenos analitičkih podataka Vercelu i Googleu događa se samo uz analitičku privolu.
         </LegalP>
       </LegalSection>
 
@@ -124,7 +129,10 @@ export default function PolitikaPrivatnostiPage() {
             <strong className="font-medium text-ink">Podaci o narudžbama:</strong> 11 godina od datuma narudžbe (zakonska obveza temeljem Zakona o računovodstvu, NN 78/2015 i izmjene).
           </li>
           <li>
-            <strong className="font-medium text-ink">Analitički podaci</strong> (Google Analytics): prema zadanim postavkama alata (standardno 26 mjeseci, a zatim agregirani podaci bez osobnih identifikatora).
+            <strong className="font-medium text-ink">Analitički podaci</strong> (Google Analytics 4): prema postavkama GA4 svojstva (standardno do 14 ili 26 mjeseci, ovisno o konfiguraciji, a zatim agregirani podaci).
+          </li>
+          <li>
+            <strong className="font-medium text-ink">Izbor kolačića:</strong> 12 mjeseci, nakon čega ponovno tražimo privolu.
           </li>
           <li>
             <strong className="font-medium text-ink">Podaci kontaktnog obrasca:</strong> 1 godinu od primitka upita, nakon čega se brišu.
@@ -140,7 +148,8 @@ export default function PolitikaPrivatnostiPage() {
           <li><strong className="font-medium text-ink">Pravo na brisanje</strong> (pravo na zaborav) – brisanje podataka, uz ograničenja zakonske obveze čuvanja.</li>
           <li><strong className="font-medium text-ink">Pravo na ograničenje obrade</strong> – privremeno zaustavljanje obrade dok se utvrdi točnost podataka.</li>
           <li><strong className="font-medium text-ink">Pravo na prenosivost</strong> – primanje vaših podataka u strojno čitljivom formatu.</li>
-          <li><strong className="font-medium text-ink">Pravo na prigovor</strong> – prigovor na obradu temeljenu na legitimnom interesu.</li>
+          <li><strong className="font-medium text-ink">Pravo na prigovor</strong> – prigovor na obradu temeljenu na legitimnom interesu, gdje se takva osnova koristi.</li>
+          <li><strong className="font-medium text-ink">Pravo na povlačenje privole</strong> – privolu za analitiku i marketing možete povući u svakom trenutku putem postavki kolačića, bez utjecaja na zakonitost obrade prije povlačenja.</li>
           <li><strong className="font-medium text-ink">Pravo na pritužbu nadzornom tijelu</strong> – obraćanje Agenciji za zaštitu osobnih podataka (AZOP), Martićeva 14, 10000 Zagreb,{' '}
             <a href="https://azop.hr" target="_blank" rel="noopener noreferrer" className="text-forest hover:underline">azop.hr</a>.
           </li>
@@ -154,7 +163,9 @@ export default function PolitikaPrivatnostiPage() {
 
       <LegalSection id="kolacici" title="8. Kolačići">
         <LegalP>
-          Web-mjesta koristi kolačiće za analitiku i marketinške svrhe. Više informacija dostupno je u{' '}
+          Neobavezne kolačiće i mjerne skripte koristimo samo uz vašu privolu. Izbor možete promijeniti putem{' '}
+          <CookieSettingsLink className="text-forest hover:underline" />
+          . Pojedinosti o tehnologijama, kategorijama i rokovima dostupne su u{' '}
           <a href="/politika-kolacica" className="text-forest hover:underline">Politici kolačića</a>.
         </LegalP>
       </LegalSection>
