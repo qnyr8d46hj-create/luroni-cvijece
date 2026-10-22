@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import { GoogleReviewsBadge } from '@/app/components/GoogleReviewsBadge'
 
 const TRUST_BADGES = [
   { icon: <TruckIcon />,   text: 'Besplatna dostava' },
@@ -47,7 +48,7 @@ export function HeroSection() {
           </p>
 
           {/* CTAs */}
-          <div className="flex flex-wrap gap-3 mb-11">
+          <div className="flex flex-wrap gap-3 mb-5">
             <a
               href="#order"
               className="inline-flex items-center justify-center px-9 py-4 rounded-full bg-forest text-white font-medium text-[1.0625rem] transition-all hover:bg-forest-dark hover:-translate-y-px hover:shadow-lg"
@@ -60,6 +61,10 @@ export function HeroSection() {
             >
               Pogledaj bukete
             </a>
+          </div>
+
+          <div className="mb-11">
+            <GoogleReviewsBadge />
           </div>
 
           {/* Trust badges */}
