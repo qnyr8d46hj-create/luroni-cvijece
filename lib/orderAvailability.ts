@@ -17,7 +17,7 @@ const BLOCKED_DATE = '2026-07-26'
 export const ORDER_BLOCK_NOTICE =
   'U nedjelju 26.7. ne vršimo dostavu. Naručivanje je ponovno dostupno od ponedjeljka 27.7.'
 
-// ── Temporary delivery-date restrictions (Sep 2026) ────────────
+// ── Temporary delivery-date restrictions ──────────────────────
 //
 // Exact calendar dates only — not day-of-week logic.
 // Delivery dates are YYYY-MM-DD strings from the date picker (Zagreb local calendar).
@@ -32,6 +32,8 @@ const BLOCKED_DELIVERY_DATES: Record<string, string> = {
     'Za ponedjeljak 7.9. ne primamo narudžbe. Dostava je ponovno moguća u utorak 8.9. od 16 h.',
   '2026-09-12':
     'Za subotu 12.9. ne primamo narudžbe. Dostava je ponovno moguća od ponedjeljka 14.9.',
+  '2026-10-24':
+    'Dostava za 24.10. nije dostupna. Molimo odaberite drugi datum. Hvala na razumijevanju! 🌸',
 }
 
 const LIMITED_DELIVERY_DATES: Record<string, { allowedSlot: string; notice: string }> = {
