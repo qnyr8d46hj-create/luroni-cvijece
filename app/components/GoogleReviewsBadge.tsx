@@ -8,7 +8,7 @@ export function GoogleReviewsBadge() {
       href={GOOGLE_REVIEWS_URL}
       target="_blank"
       rel="noopener noreferrer"
-      aria-label="5,0 od 5 na temelju 27 Google recenzija. Otvara recenzije u novoj kartici."
+      aria-label="5,0 od 5 na temelju 28 Google recenzija. Otvara recenzije u novoj kartici."
       className="group inline-flex max-w-full items-center gap-2.5 rounded-2xl border border-cream/80 bg-cream/95 px-3.5 py-2.5 text-forest shadow-[0_10px_24px_rgba(10,22,14,0.18)] backdrop-blur-sm transition-all hover:-translate-y-px hover:bg-white hover:shadow-[0_12px_28px_rgba(10,22,14,0.22)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cream"
     >
       <GoogleMark />
@@ -29,7 +29,7 @@ export function GoogleReviewsBadge() {
           </span>
         </span>
         <span className="text-[0.75rem] leading-tight text-muted">
-          27 Google recenzija
+          28 Google recenzija
         </span>
       </span>
     </a>
