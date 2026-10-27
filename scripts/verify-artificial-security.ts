@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { parseArtificialBouquet, isPurchasableArtificialBouquet } from '../lib/artificialBouquets'
 import { isArtificialCheckoutEnabled } from '../lib/artificialCheckoutEnabled'
@@ -258,6 +258,10 @@ assert(
 )
 const orderPage = readFileSync(resolve(root, 'app/umjetni-cvjetni-aranzmani/narudzba/page.tsx'), 'utf8')
 assert(orderPage.includes('notFound()'), 'Order page returns 404 while hidden')
+assert(
+  !existsSync(resolve(root, 'app/umjetni-cvjetni-aranzmani/loading.tsx')),
+  'Catalog loading.tsx is removed so hidden pages can return HTTP 404',
+)
 const homepage = readFileSync(resolve(root, 'app/page.tsx'), 'utf8')
 assert(
   homepage.includes('ARTIFICIAL_ARRANGEMENTS_PUBLIC && <ArtificialCatalogTeaser />'),

@@ -1,7 +1,8 @@
 import { Header } from '@/app/components/Header'
 import { Footer } from '@/app/components/Footer'
 
-export default function ArtificialCatalogLoading() {
+/** Catalog skeleton. Restore as `app/umjetni-cvjetni-aranzmani/loading.tsx` when the catalog is public again. */
+export function ArtificialCatalogLoading() {
   return (
     <>
       <Header />
