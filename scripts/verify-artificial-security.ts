@@ -20,6 +20,7 @@ import {
 } from '../lib/orderEmailOutbox'
 import { euroToCents } from '../lib/euroCents'
 import { orderEmailFromAddress } from '../lib/resendFrom'
+import { ARTIFICIAL_ARRANGEMENTS_PUBLIC } from '../lib/artificialArrangementsPublic'
 import { ARTIFICIAL_ORDER_TYPE } from '../lib/artificialBouquetPaths'
 import type { OrderEmailPayload } from '../lib/sendOrderEmail'
 import { ga4PurchaseFromCheckoutSession } from '../lib/ga4Purchase'
@@ -232,16 +233,43 @@ assert(isArtificialCheckoutEnabled(), '"true" enables checkout')
 if (previousFlag === undefined) delete process.env.ARTIFICIAL_CHECKOUT_ENABLED
 else process.env.ARTIFICIAL_CHECKOUT_ENABLED = previousFlag
 
+assert(ARTIFICIAL_ARRANGEMENTS_PUBLIC === false, 'Artificial catalog is temporarily hidden')
+
 const root = process.cwd()
 const createArtificialRoute = readFileSync(resolve(root, 'app/api/create-artificial-order/route.ts'), 'utf8')
+assert(
+  createArtificialRoute.includes('if (!ARTIFICIAL_ARRANGEMENTS_PUBLIC)'),
+  'Artificial order API rejects requests when the catalog is hidden',
+)
+assert(
+  createArtificialRoute.indexOf('if (!ARTIFICIAL_ARRANGEMENTS_PUBLIC)') <
+    createArtificialRoute.indexOf('if (!isArtificialCheckoutEnabled())'),
+  'Catalog hide is checked before ARTIFICIAL_CHECKOUT_ENABLED',
+)
 assert(
   createArtificialRoute.includes('if (!isArtificialCheckoutEnabled())'),
   'Artificial order API rejects requests when checkout is disabled',
 )
 const catalogPage = readFileSync(resolve(root, 'app/umjetni-cvjetni-aranzmani/page.tsx'), 'utf8')
+assert(catalogPage.includes('notFound()'), 'Catalog page returns 404 while hidden')
 assert(
   catalogPage.includes('checkoutEnabled={isArtificialCheckoutEnabled()}'),
   'Catalog cards receive the server-side checkout flag',
+)
+const orderPage = readFileSync(resolve(root, 'app/umjetni-cvjetni-aranzmani/narudzba/page.tsx'), 'utf8')
+assert(orderPage.includes('notFound()'), 'Order page returns 404 while hidden')
+const homepage = readFileSync(resolve(root, 'app/page.tsx'), 'utf8')
+assert(
+  homepage.includes('ARTIFICIAL_ARRANGEMENTS_PUBLIC && <ArtificialCatalogTeaser />'),
+  'Homepage teaser is gated by the public flag',
+)
+const footer = readFileSync(resolve(root, 'app/components/Footer.tsx'), 'utf8')
+assert(footer.includes('ARTIFICIAL_ARRANGEMENTS_PUBLIC'), 'Footer link is gated by the public flag')
+const sitemap = readFileSync(resolve(root, 'app/sitemap.ts'), 'utf8')
+assert(sitemap.includes('ARTIFICIAL_ARRANGEMENTS_PUBLIC'), 'Sitemap omits the catalog unless public')
+assert(
+  sitemap.includes('ARTIFICIAL_BOUQUET_PAGE_PATH'),
+  'Sitemap keeps the catalog URL in source for restore',
 )
 const cardSource = readFileSync(resolve(root, 'app/components/ArtificialProductCard.tsx'), 'utf8')
 assert(

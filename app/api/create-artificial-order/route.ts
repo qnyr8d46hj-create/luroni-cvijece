@@ -15,6 +15,10 @@ import {
 } from '@/lib/orderEmailOutbox'
 import { FieldValue } from '@/lib/firebaseAdmin'
 import {
+  ARTIFICIAL_ARRANGEMENTS_PUBLIC,
+  ARTIFICIAL_ARRANGEMENTS_UNAVAILABLE_NOTICE,
+} from '@/lib/artificialArrangementsPublic'
+import {
   ARTIFICIAL_CHECKOUT_DISABLED_NOTICE,
   isArtificialCheckoutEnabled,
 } from '@/lib/artificialCheckoutEnabled'
@@ -26,6 +30,10 @@ function stripeClient() {
 }
 
 export async function POST(req: NextRequest) {
+  if (!ARTIFICIAL_ARRANGEMENTS_PUBLIC) {
+    return NextResponse.json({ error: ARTIFICIAL_ARRANGEMENTS_UNAVAILABLE_NOTICE }, { status: 503 })
+  }
+
   if (!isArtificialCheckoutEnabled()) {
     return NextResponse.json({ error: ARTIFICIAL_CHECKOUT_DISABLED_NOTICE }, { status: 503 })
   }

@@ -1,8 +1,10 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { notFound } from 'next/navigation'
 import { Header } from '@/app/components/Header'
 import { Footer } from '@/app/components/Footer'
 import { ArtificialOrderForm } from '@/app/components/ArtificialOrderForm'
+import { ARTIFICIAL_ARRANGEMENTS_PUBLIC } from '@/lib/artificialArrangementsPublic'
 import {
   ARTIFICIAL_BOUQUET_ORDER_PATH,
   ARTIFICIAL_BOUQUET_PAGE_PATH,
@@ -18,12 +20,15 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-export const metadata: Metadata = pageSeo({
-  title: 'Naruči umjetni aranžman | Luroni Cvijeće',
-  description: 'Naručite odabrani umjetni cvjetni aranžman s dostavom u Rijeci, okolici i na otoku Krku.',
-  path: ARTIFICIAL_BOUQUET_ORDER_PATH,
-  index: false,
-})
+export function generateMetadata(): Metadata {
+  if (!ARTIFICIAL_ARRANGEMENTS_PUBLIC) notFound()
+  return pageSeo({
+    title: 'Naruči umjetni aranžman | Luroni Cvijeće',
+    description: 'Naručite odabrani umjetni cvjetni aranžman s dostavom u Rijeci, okolici i na otoku Krku.',
+    path: ARTIFICIAL_BOUQUET_ORDER_PATH,
+    index: false,
+  })
+}
 
 function OrderMessage({
   title,
@@ -51,6 +56,8 @@ export default async function ArtificialOrderPage({
 }: {
   searchParams: Promise<{ sku?: string }>
 }) {
+  if (!ARTIFICIAL_ARRANGEMENTS_PUBLIC) notFound()
+
   const { sku } = await searchParams
   const requestedSku = typeof sku === 'string' ? sku.trim() : ''
 

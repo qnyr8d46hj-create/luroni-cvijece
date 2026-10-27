@@ -1,6 +1,8 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { CookieSettingsLink } from '@/app/components/CookieSettingsLink'
+import { ARTIFICIAL_ARRANGEMENTS_PUBLIC } from '@/lib/artificialArrangementsPublic'
+import { ARTIFICIAL_BOUQUET_PAGE_PATH } from '@/lib/artificialBouquetPaths'
 import { NN_PRICE_COMPLIANCE_ENABLED } from '@/lib/nnPriceCompliance'
 
 const FOOTER_LINKS = [
@@ -8,7 +10,7 @@ const FOOTER_LINKS = [
   { href: '/#bouquets',                  label: 'Složeni buketi' },
   { href: '/#sizes',                     label: 'Veličine buketa' },
   { href: '/#order',                     label: 'Narudžba' },
-  { href: '/umjetni-cvjetni-aranzmani',  label: 'Umjetni aranžmani' },
+  { href: ARTIFICIAL_BOUQUET_PAGE_PATH,  label: 'Umjetni aranžmani' },
   { href: '/#contact',                   label: 'Kontakt' },
 ]
 
@@ -63,7 +65,9 @@ export function Footer() {
                 Navigacija
               </p>
               <ul className="space-y-0.5">
-                {FOOTER_LINKS.map((link) => (
+                {FOOTER_LINKS.filter(
+                  (link) => ARTIFICIAL_ARRANGEMENTS_PUBLIC || link.href !== ARTIFICIAL_BOUQUET_PAGE_PATH,
+                ).map((link) => (
                   <li key={link.href}>
                     <a href={link.href} className={navLinkCls}>
                       {link.label}

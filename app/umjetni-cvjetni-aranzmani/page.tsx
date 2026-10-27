@@ -1,7 +1,9 @@
 import type { Metadata } from 'next'
+import { notFound } from 'next/navigation'
 import { Header } from '@/app/components/Header'
 import { Footer } from '@/app/components/Footer'
 import { ArtificialProductCard } from '@/app/components/ArtificialProductCard'
+import { ARTIFICIAL_ARRANGEMENTS_PUBLIC } from '@/lib/artificialArrangementsPublic'
 import {
   ARTIFICIAL_BOUQUET_PAGE_PATH,
   getPublicArtificialBouquets,
@@ -19,55 +21,60 @@ const TITLE = 'Umjetni cvjetni aranžmani za Svi svete | Luroni Cvijeće'
 const DESCRIPTION =
   'Gotovi umjetni cvjetni aranžmani za grobna mjesta. Odaberite model s fotografije i naručite dostavu putem Luroni cvijeća.'
 
-export const metadata: Metadata = {
-  title:       TITLE,
-  description: DESCRIPTION,
-  keywords: [
-    'umjetni cvjetni aranžmani',
-    'aranžmani za Svi svete',
-    'grobni aranžmani',
-    'umjetno cvijeće Rijeka',
-  ],
-  alternates: {
-    canonical: PAGE_URL,
-    languages: { 'hr-HR': PAGE_URL },
-  },
-  robots: {
-    index:  true,
-    follow: true,
-    googleBot: {
-      index:               true,
-      follow:              true,
-      'max-image-preview': 'large',
-      'max-snippet':       -1,
-      'max-video-preview': -1,
-    },
-  },
-  openGraph: {
-    type:        'website',
-    locale:      'hr_HR',
-    url:         PAGE_URL,
-    siteName:    SITE_NAME,
+export function generateMetadata(): Metadata {
+  if (!ARTIFICIAL_ARRANGEMENTS_PUBLIC) notFound()
+  return {
     title:       TITLE,
     description: DESCRIPTION,
-    images: [
-      {
-        url:    OG_IMAGE,
-        width:  1200,
-        height: 630,
-        alt:    'Luroni Cvijeće — umjetni cvjetni aranžmani',
-      },
+    keywords: [
+      'umjetni cvjetni aranžmani',
+      'aranžmani za Svi svete',
+      'grobni aranžmani',
+      'umjetno cvijeće Rijeka',
     ],
-  },
-  twitter: {
-    card:        'summary_large_image',
-    title:       TITLE,
-    description: DESCRIPTION,
-    images:      [OG_IMAGE],
-  },
+    alternates: {
+      canonical: PAGE_URL,
+      languages: { 'hr-HR': PAGE_URL },
+    },
+    robots: {
+      index:  true,
+      follow: true,
+      googleBot: {
+        index:               true,
+        follow:              true,
+        'max-image-preview': 'large',
+        'max-snippet':       -1,
+        'max-video-preview': -1,
+      },
+    },
+    openGraph: {
+      type:        'website',
+      locale:      'hr_HR',
+      url:         PAGE_URL,
+      siteName:    SITE_NAME,
+      title:       TITLE,
+      description: DESCRIPTION,
+      images: [
+        {
+          url:    OG_IMAGE,
+          width:  1200,
+          height: 630,
+          alt:    'Luroni Cvijeće — umjetni cvjetni aranžmani',
+        },
+      ],
+    },
+    twitter: {
+      card:        'summary_large_image',
+      title:       TITLE,
+      description: DESCRIPTION,
+      images:      [OG_IMAGE],
+    },
+  }
 }
 
 export default async function ArtificialArrangementsPage() {
+  if (!ARTIFICIAL_ARRANGEMENTS_PUBLIC) notFound()
+
   let products: ArtificialBouquet[] = []
   let loadError = false
 

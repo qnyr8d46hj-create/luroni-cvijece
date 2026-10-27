@@ -10,6 +10,7 @@ import { ContactSection }     from '@/app/components/ContactSection'
 import { Footer }             from '@/app/components/Footer'
 import { JsonLd }             from '@/app/components/JsonLd'
 import { floristJsonLd, homepageFaqJsonLd } from '@/lib/seo'
+import { ARTIFICIAL_ARRANGEMENTS_PUBLIC } from '@/lib/artificialArrangementsPublic'
 
 export default function Home() {
   return (
@@ -24,7 +25,7 @@ export default function Home() {
         <OrderSection />
         <LocalSeoSection />
         <FaqSection />
-        <ArtificialCatalogTeaser />
+        {ARTIFICIAL_ARRANGEMENTS_PUBLIC && <ArtificialCatalogTeaser />}
         <ContactSection />
       </main>
       <Footer />
