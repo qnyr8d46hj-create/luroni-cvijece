@@ -49,12 +49,13 @@ const CUSTOM_PRICE_MAX  = 200
 const CUSTOM_PRICE_STEP = 10
 
 /* ── Validation ───────────────────────────────────────────────── */
-const REQUIRED = ['fullName', 'phone', 'email', 'address', 'city', 'bouquetSize', 'deliveryDate'] as const
+const REQUIRED = ['fullName', 'email', 'address', 'city', 'bouquetSize', 'deliveryDate'] as const
 
 function validate(name: string, value: string): string {
   switch (name) {
     case 'fullName':     return validateFullName(value)
-    case 'phone':        return validatePhone(value)
+    // Recipient phone is optional on fresh orders; validate format only when provided.
+    case 'phone':        return value.trim() ? validatePhone(value) : ''
     case 'email':        return validateEmail(value)
     case 'address':      return validateAddress(value)
     case 'city':         return validateCity(value)
@@ -229,6 +230,11 @@ export function OrderForm() {
       if (msg) ok = false
     }
 
+    // Phone is optional, but validate format when a value is provided.
+    const phoneMsg = validate('phone', String(data.get('phone') ?? ''))
+    newErrors.phone = phoneMsg
+    if (phoneMsg) ok = false
+
     // Extra validation for custom budget
     if (isCustom) {
       const valid =
@@ -379,7 +385,7 @@ export function OrderForm() {
     <form onSubmit={onSubmit} noValidate className="space-y-5">
 
       {/* Full name */}
-      <Field label="Ime i prezime" required error={errors.fullName}>
+      <Field label="Ime i prezime primatelja" required error={errors.fullName}>
         <input
           type="text" name="fullName" id="fullName"
           placeholder="Ana Horvat" autoComplete="name"
@@ -390,22 +396,32 @@ export function OrderForm() {
 
       {/* Phone + Email */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Field label="Broj mobitela" required error={errors.phone}>
-          <input
-            type="tel" name="phone" id="phone"
-            placeholder="+385 91 234 5678" autoComplete="tel"
-            onBlur={onBlur} onChange={onChange}
-            className={inputCls(errors.phone)}
-          />
-        </Field>
-        <Field label="Email" required error={errors.email}>
-          <input
-            type="email" name="email" id="email"
-            placeholder="ana@email.com" autoComplete="email"
-            onBlur={onBlur} onChange={onChange}
-            className={inputCls(errors.email)}
-          />
-        </Field>
+        <div>
+          <Field label="Mobitel primatelja" error={errors.phone}>
+            <input
+              type="tel" name="phone" id="phone"
+              placeholder="+385 91 234 5678" autoComplete="tel"
+              onBlur={onBlur} onChange={onChange}
+              className={inputCls(errors.phone)}
+            />
+          </Field>
+          <p className="text-xs text-muted mt-1.5 leading-[1.55]">
+            Broj koristimo samo ako je potrebno radi dostave.
+          </p>
+        </div>
+        <div>
+          <Field label="E-mail naručitelja" required error={errors.email}>
+            <input
+              type="email" name="email" id="email"
+              placeholder="ana@email.com" autoComplete="email"
+              onBlur={onBlur} onChange={onChange}
+              className={inputCls(errors.email)}
+            />
+          </Field>
+          <p className="text-xs text-muted mt-1.5 leading-[1.55]">
+            Na ovaj e-mail šaljemo potvrdu narudžbe, račun i fotografiju buketa nakon dostave.
+          </p>
+        </div>
       </div>
 
       {/* Address */}

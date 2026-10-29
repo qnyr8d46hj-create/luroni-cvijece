@@ -180,7 +180,7 @@ function buildEmailHtml(o: OrderEmailPayload, audience: 'merchant' | 'customer')
       <h2 style="margin:0 0 12px 0;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#9a9a9a;">Podaci o kupcu</h2>
       <table style="width:100%;border-collapse:collapse;border-radius:10px;overflow:hidden;margin-bottom:24px;">
         ${row('Ime i prezime', o.fullName)}
-        ${row('Mobitel',       o.phone,  true)}
+        ${row('Mobitel',       o.phone.trim() || '—',  true)}
         ${row('Email',         o.email)}
       </table>
 
