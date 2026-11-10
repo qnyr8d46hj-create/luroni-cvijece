@@ -1,3 +1,4 @@
+import { createHmac, timingSafeEqual } from 'node:crypto'
 import { ARTIFICIAL_ORDER_TYPE } from '@/lib/artificialBouquetPaths'
 import {
   canBindStripeSession,
@@ -168,6 +169,70 @@ export function assessFreshCardOrder(
   return quoteStoredFreshBouquet(order)
 }
 
+const STRIPE_CHECKOUT_URL = /^https:\/\/checkout\.stripe\.com\//
+
+export type FreshCheckoutBinding = {
+  orderId: string
+  secret: string
+  checkoutUrl: string
+}
+
+export function isStripeCheckoutUrl(value: string): boolean {
+  return STRIPE_CHECKOUT_URL.test(value)
+}
+
+export function freshCheckoutBindingMac(
+  secret: string,
+  binding: {
+    orderId: string
+    sessionId: string
+    checkoutUrl: string
+    amountCents: number
+    currency: string
+  },
+): string {
+  return createHmac('sha256', secret)
+    .update([
+      'v1',
+      binding.orderId,
+      binding.sessionId,
+      binding.checkoutUrl,
+      String(binding.amountCents),
+      binding.currency,
+    ].join('\n'))
+    .digest('hex')
+}
+
+function macEquals(stored: string, expected: string): boolean {
+  const left = Buffer.from(stored)
+  const right = Buffer.from(expected)
+  return left.length === right.length && timingSafeEqual(left, right)
+}
+
+export function readTrustedFreshBinding(
+  order: Record<string, unknown>,
+  orderId: string,
+  secret: string,
+): { sessionId: string; checkoutUrl: string; amountCents: number } | null {
+  if (!secret) return null
+  const sessionId = asString(order.stripeSessionId)
+  const checkoutUrl = asString(order.stripeCheckoutUrl)
+  const currency = asString(order.expectedCurrency).toLowerCase()
+  const mac = asString(order.stripeBindingMac)
+  const amountCents = order.expectedAmountCents
+  if (!sessionId || !isStripeCheckoutUrl(checkoutUrl) || currency !== 'eur' || !mac) return null
+  if (typeof amountCents !== 'number' || !Number.isInteger(amountCents) || amountCents < 1) return null
+  const expectedMac = freshCheckoutBindingMac(secret, {
+    orderId,
+    sessionId,
+    checkoutUrl,
+    amountCents,
+    currency,
+  })
+  if (!macEquals(mac, expectedMac)) return null
+  return { sessionId, checkoutUrl, amountCents }
+}
+
 export function freshCheckoutRequestAgrees(
   quote: FreshPriceQuote,
   request: { bouquetSize?: unknown; customBudget?: unknown },
@@ -180,41 +245,33 @@ export function freshCheckoutRequestAgrees(
 export function planFreshCheckoutStart(
   order: Record<string, unknown>,
   quote: FreshPriceQuote,
+  orderId: string,
+  secret: string,
 ):
   | { action: 'reuse'; url: string }
   | { action: 'create' }
-  | { action: 'reject'; reason: 'already_paid' | 'lock_mismatch' | 'session_conflict'; error: string } {
+  | { action: 'reject'; reason: 'already_paid' | 'lock_mismatch'; error: string } {
   if (order.status === 'paid') {
     return { action: 'reject', reason: 'already_paid', error: 'Order is already paid' }
   }
 
-  const existingId = asString(order.stripeSessionId)
-  if (!existingId) return { action: 'create' }
-
-  if (
-    typeof order.expectedAmountCents === 'number' &&
-    order.expectedAmountCents !== quote.amountCents
-  ) {
+  const trusted = readTrustedFreshBinding(order, orderId, secret)
+  if (!trusted) return { action: 'create' }
+  if (trusted.amountCents !== quote.amountCents) {
     return {
       action: 'reject',
       reason: 'lock_mismatch',
       error: 'Stored price no longer matches the locked checkout amount',
     }
   }
-
-  const existingUrl = asString(order.stripeCheckoutUrl)
-  if (existingUrl) return { action: 'reuse', url: existingUrl }
-  return {
-    action: 'reject',
-    reason: 'session_conflict',
-    error: 'Checkout session already bound',
-  }
+  return { action: 'reuse', url: trusted.checkoutUrl }
 }
 
 export function planFreshSessionBind(
   order: Record<string, unknown>,
   newSessionId: string,
   chargedCents: number,
+  binding: FreshCheckoutBinding,
 ):
   | { ok: true; update: Record<string, unknown> }
   | {
@@ -224,6 +281,12 @@ export function planFreshSessionBind(
     } {
   if (!newSessionId) {
     return { ok: false, reason: 'session_conflict', error: 'Checkout session is missing' }
+  }
+  if (!binding.secret) {
+    return { ok: false, reason: 'session_conflict', error: 'Checkout binding secret is missing' }
+  }
+  if (!isStripeCheckoutUrl(binding.checkoutUrl)) {
+    return { ok: false, reason: 'session_conflict', error: 'Checkout URL is not a Stripe-hosted URL' }
   }
   if (order.status === 'paid') {
     return { ok: false, reason: 'already_paid', error: 'Order is already paid' }
@@ -241,9 +304,16 @@ export function planFreshSessionBind(
     }
   }
 
-  const existingId = asString(order.stripeSessionId)
-  if (!canBindStripeSession(existingId || null, newSessionId)) {
+  const trusted = readTrustedFreshBinding(order, binding.orderId, binding.secret)
+  if (trusted && !canBindStripeSession(trusted.sessionId, newSessionId)) {
     return { ok: false, reason: 'session_conflict', error: 'Checkout session already bound' }
+  }
+  if (trusted && trusted.amountCents !== chargedCents) {
+    return {
+      ok: false,
+      reason: 'price_changed',
+      error: 'Stored price changed before the session could be bound',
+    }
   }
 
   return {
@@ -253,6 +323,14 @@ export function planFreshSessionBind(
       expectedCurrency: 'eur',
       bouquetPrice: assessed.quote.amountEur,
       stripeSessionId: newSessionId,
+      stripeCheckoutUrl: binding.checkoutUrl,
+      stripeBindingMac: freshCheckoutBindingMac(binding.secret, {
+        orderId: binding.orderId,
+        sessionId: newSessionId,
+        checkoutUrl: binding.checkoutUrl,
+        amountCents: chargedCents,
+        currency: 'eur',
+      }),
     },
   }
 }
@@ -326,14 +404,17 @@ export function applyFreshPayment(
     eventId: string
     session: PaidCheckoutSession & { payment_intent?: string | null }
     recordedAt: string
+    bindingSecret: string
   },
 ): FreshWebhookDecision {
   if (!order) return { action: 'missing' }
 
-  const existingSessionId = asString(order.stripeSessionId)
-  const sameSession = existingSessionId !== '' && existingSessionId === input.session.id
+  const storedSessionId = asString(order.stripeSessionId)
+  const trusted = readTrustedFreshBinding(order, input.orderId, input.bindingSecret)
+  const boundSessionId = trusted?.sessionId ?? ''
+  const sameStoredSession = storedSessionId !== '' && storedSessionId === input.session.id
   const sameEvent = order.stripeEventId === input.eventId
-  if (order.status === 'paid' && (sameSession || sameEvent)) {
+  if (order.status === 'paid' && (sameStoredSession || sameEvent)) {
     return { action: 'already_paid', order }
   }
 
@@ -387,7 +468,7 @@ export function applyFreshPayment(
   if (input.session.amount_total !== expected.cents) {
     return reject('Stripe amount_total does not match the stored bouquet', expected.cents)
   }
-  if (existingSessionId && existingSessionId !== input.session.id) {
+  if (boundSessionId && boundSessionId !== input.session.id) {
     return reject('Stripe session ID does not match the bound order', expected.cents)
   }
 
@@ -406,7 +487,7 @@ export function applyFreshPayment(
   const update: Record<string, unknown> = {
     status: 'paid',
     stripeEventId: input.eventId,
-    stripeSessionId: existingSessionId || input.session.id,
+    stripeSessionId: input.session.id,
     stripePaymentIntent: input.session.payment_intent ?? null,
     stripeAmountTotal: input.session.amount_total,
     stripeCurrency: currency,

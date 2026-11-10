@@ -58,12 +58,21 @@ function paidSession(overrides: Record<string, unknown> = {}) {
   }
 }
 
+const BINDING_SECRET = 'test-binding-secret'
+const PHISHING_URL = 'https://evil.example/checkout'
+const SERVER_CHECKOUT_URL = 'https://checkout.stripe.com/c/pay/cs_test_server'
+
+function bindArgs(checkoutUrl: string) {
+  return { orderId: 'order-1', secret: BINDING_SECRET, checkoutUrl }
+}
+
 function pay(order: Record<string, unknown> | null, session: Record<string, unknown>, eventId = 'evt_1') {
   return applyFreshPayment(order, {
     orderId: 'order-1',
     eventId,
     session: session as never,
     recordedAt,
+    bindingSecret: BINDING_SECRET,
   })
 }
 
@@ -194,11 +203,26 @@ const otherOrder = pay(savedOrder(), paidSession({
 }))
 assert(otherOrder.action === 'reject', 'A session for a different order is rejected')
 
-const wrongSession = pay(
-  savedOrder({ stripeSessionId: 'cs_bound', expectedAmountCents: 7000, expectedCurrency: 'eur' }),
-  paidSession({ id: 'cs_other' }),
+const untrustedSession = pay(
+  savedOrder({
+    stripeSessionId: 'cs_forged',
+    stripeCheckoutUrl: PHISHING_URL,
+    expectedAmountCents: 7000,
+    expectedCurrency: 'eur',
+    stripeBindingMac: 'forged',
+  }),
+  paidSession(),
 )
-assert(wrongSession.action === 'reject', 'A different Stripe session is rejected')
+assert(untrustedSession.action === 'mark_paid', 'A client-supplied session id does not block the real payment')
+if (untrustedSession.action === 'mark_paid') {
+  assert(untrustedSession.update.stripeSessionId === 'cs_l', 'Payment records the Stripe session, not the forged id')
+}
+
+const trustedBind = planFreshSessionBind(savedOrder(), 'cs_bound', 7000, bindArgs('https://checkout.stripe.com/c/pay/cs_bound'))
+assert(trustedBind.ok, 'Server can bind a Stripe-hosted checkout')
+const trustedOrder = trustedBind.ok ? { ...savedOrder(), ...trustedBind.update } : savedOrder()
+const wrongSession = pay(trustedOrder, paidSession({ id: 'cs_other' }))
+assert(wrongSession.action === 'reject', 'A different Stripe session is rejected after a server bind')
 if (wrongSession.action === 'reject') {
   assert(wrongSession.order.status === 'pending_payment', 'Session mismatch stays pending')
   assert(wrongSession.reason === 'Stripe session ID does not match the bound order', 'Session mismatch names the bound session')
@@ -254,19 +278,48 @@ if (secondSession.action === 'reject') {
 
 const staleA = savedOrder()
 const staleB = { ...staleA }
-const planA = planFreshSessionBind(staleA, 'cs_a', 7000)
-const planB = planFreshSessionBind(staleB, 'cs_b', 7000)
+const serverUrlA = 'https://checkout.stripe.com/c/pay/cs_a'
+const planA = planFreshSessionBind(staleA, 'cs_a', 7000, bindArgs(serverUrlA))
+const planB = planFreshSessionBind(staleB, 'cs_b', 7000, bindArgs('https://checkout.stripe.com/c/pay/cs_b'))
 assert(planA.ok && planB.ok, 'Two readers can both plan a bind before either commits')
-if (planA.ok) {
-  const committed = { ...staleA, ...planA.update, stripeCheckoutUrl: 'https://checkout.stripe.test/cs_a' }
-  const retried = planFreshSessionBind(committed, 'cs_b', 7000)
+if (planA.ok && storedL.ok) {
+  const committed = { ...staleA, ...planA.update }
+  const retried = planFreshSessionBind(committed, 'cs_b', 7000, bindArgs('https://checkout.stripe.com/c/pay/cs_b'))
   assert(!retried.ok && retried.reason === 'session_conflict', 'The losing concurrent session cannot replace the bound one')
-  const same = planFreshSessionBind(committed, 'cs_a', 7000)
+  const same = planFreshSessionBind(committed, 'cs_a', 7000, bindArgs(serverUrlA))
   assert(same.ok, 'The winning session can rebind')
-  const cheaper = planFreshSessionBind(staleA, 'cs_cheap', 4500)
+  const cheaper = planFreshSessionBind(staleA, 'cs_cheap', 4500, bindArgs('https://checkout.stripe.com/c/pay/cs_cheap'))
   assert(!cheaper.ok && cheaper.reason === 'price_changed', 'A cheaper charge cannot bind to a stored L order')
-  const reuse = planFreshCheckoutStart(committed, storedL.ok ? storedL.quote : { amountCents: 0 } as never)
-  assert(reuse.action === 'reuse' && reuse.action === 'reuse' && reuse.url.includes('cs_a'), 'A bound checkout reuses its existing URL')
+  const reuse = planFreshCheckoutStart(committed, storedL.quote, 'order-1', BINDING_SECRET)
+  assert(reuse.action === 'reuse' && reuse.url === serverUrlA, 'A server-bound checkout reuses the Stripe URL')
+
+  const forged = savedOrder({
+    stripeSessionId: 'cs_forged',
+    stripeCheckoutUrl: PHISHING_URL,
+    expectedAmountCents: 7000,
+    expectedCurrency: 'eur',
+    stripeBindingMac: 'forged',
+  })
+  const forgedStart = planFreshCheckoutStart(forged, storedL.quote, 'order-1', BINDING_SECRET)
+  assert(forgedStart.action === 'create', 'A client-supplied checkout URL is not reused')
+  assert(!JSON.stringify(forgedStart).includes(PHISHING_URL), 'The phishing URL is not returned')
+  assert(!JSON.stringify(forgedStart).includes('cs_forged'), 'The forged session id is not treated as bound')
+  const forgedBind = planFreshSessionBind(forged, 'cs_real', 7000, bindArgs(SERVER_CHECKOUT_URL))
+  assert(forgedBind.ok, 'An untrusted pre-bound session can be replaced')
+  if (forgedBind.ok) {
+    assert(forgedBind.update.stripeSessionId === 'cs_real', 'The replacement session id comes from the server')
+    assert(forgedBind.update.stripeCheckoutUrl === SERVER_CHECKOUT_URL, 'The replacement URL is the Stripe URL')
+    assert(!JSON.stringify(forgedBind.update).includes(PHISHING_URL), 'The stored phishing URL is not kept')
+  }
+  const tampered = { ...committed, stripeCheckoutUrl: PHISHING_URL }
+  const tamperedStart = planFreshCheckoutStart(tampered, storedL.quote, 'order-1', BINDING_SECRET)
+  assert(tamperedStart.action === 'create', 'A changed checkout URL breaks the server binding')
+  const wrongSecret = planFreshCheckoutStart(committed, storedL.quote, 'order-1', 'other-secret')
+  assert(wrongSecret.action === 'create', 'Another secret cannot reuse a bound checkout')
+  const offHost = planFreshSessionBind(savedOrder(), 'cs_off', 7000, bindArgs(PHISHING_URL))
+  assert(!offHost.ok, 'A non-Stripe URL cannot be signed or stored')
+  const legacyStart = planFreshCheckoutStart(savedOrder(), storedL.quote, 'order-1', BINDING_SECRET)
+  assert(legacyStart.action === 'create', 'A legitimate pending order with no Stripe fields can start checkout')
 }
 
 assert(
@@ -322,6 +375,9 @@ const webhook = readFileSync(resolve(root, 'app/api/stripe/webhook/route.ts'), '
 assert(route.includes('assessFreshCardOrder'), 'Checkout loads a server-side assessment of the saved order')
 assert(route.includes('freshCheckoutRequestAgrees'), 'Checkout rejects a request that disagrees with the saved bouquet')
 assert(route.includes('planFreshSessionBind'), 'Checkout binds the Stripe session inside a transaction')
+assert(route.includes('bindingSecret'), 'Checkout signs session bindings with the server secret')
+assert(!route.includes('order.stripeCheckoutUrl'), 'Checkout does not read a client-supplied checkout URL')
+assert(webhook.includes('bindingSecret'), 'Webhook verifies the server session binding')
 assert(route.includes('sessions.expire'), 'An unbound Stripe session is expired')
 assert(route.includes('unit_amount: quote.amountCents'), 'Checkout charges the saved-order quote')
 assert(!route.includes('customBudget * 100'), 'Checkout does not price the client budget')

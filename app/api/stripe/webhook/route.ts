@@ -197,6 +197,7 @@ async function completeFreshPaidOrder(
       eventId: event.id,
       session: sessionView,
       recordedAt: new Date().toISOString(),
+      bindingSecret: process.env.STRIPE_SECRET_KEY ?? '',
     })
 
     if (result.action === 'mark_paid') {

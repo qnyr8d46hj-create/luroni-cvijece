@@ -68,8 +68,9 @@ export async function POST(req: NextRequest) {
   if (!isSafeOrderId(body.orderId)) {
     return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 })
   }
+  const orderId = body.orderId
 
-  const orderRef = adminDb.collection('orders').doc(body.orderId)
+  const orderRef = adminDb.collection('orders').doc(orderId)
   const orderSnap = await orderRef.get()
   if (!orderSnap.exists) {
     return NextResponse.json({ error: 'Order not found' }, { status: 404 })
@@ -96,7 +97,8 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  const start = planFreshCheckoutStart(order, assessed.quote)
+  const bindingSecret = process.env.STRIPE_SECRET_KEY ?? ''
+  const start = planFreshCheckoutStart(order, assessed.quote, orderId, bindingSecret)
   if (start.action === 'reuse') {
     return NextResponse.json({ url: start.url })
   }
@@ -128,9 +130,9 @@ export async function POST(req: NextRequest) {
       ],
       mode: 'payment',
       customer_email: customerEmail || undefined,
-      client_reference_id: body.orderId,
+      client_reference_id: orderId,
       metadata: {
-        orderId: body.orderId,
+        orderId,
         bouquetSize: quote.bouquetSize,
         customerName,
         ...(quote.customBudget != null ? { customBudget: String(quote.customBudget) } : {}),
@@ -151,34 +153,37 @@ export async function POST(req: NextRequest) {
     if (session.id) await expireUnboundSession(session.id)
     return NextResponse.json({ error: 'Failed to create checkout session' }, { status: 500 })
   }
+  const checkoutSessionId = session.id
+  const checkoutUrl = session.url
 
   try {
     const bound = await adminDb.runTransaction(async t => {
       const snap = await t.get(orderRef)
       if (!snap.exists) return { ok: false as const, reason: 'missing' as const, error: 'Order not found' }
       const current = (snap.data() ?? {}) as Record<string, unknown>
-      const plan = planFreshSessionBind(current, session.id, quote.amountCents)
-      if (!plan.ok) return plan
-      t.update(orderRef, {
-        ...plan.update,
-        stripeCheckoutUrl: session.url ?? null,
+      const plan = planFreshSessionBind(current, checkoutSessionId, quote.amountCents, {
+        orderId,
+        secret: bindingSecret,
+        checkoutUrl,
       })
+      if (!plan.ok) return plan
+      t.update(orderRef, plan.update)
       return { ok: true as const }
     })
 
     if (!bound.ok) {
-      await expireUnboundSession(session.id)
+      await expireUnboundSession(checkoutSessionId)
       const status = bound.reason === 'not_payable' ? 400 : bound.reason === 'missing' ? 404 : 409
       return NextResponse.json({ error: bound.error }, { status })
     }
   } catch (err) {
     console.error('[Stripe] Failed to bind checkout session:', err)
-    await expireUnboundSession(session.id)
+    await expireUnboundSession(checkoutSessionId)
     return NextResponse.json(
       { error: 'Failed to bind checkout session' },
       { status: 500 },
     )
   }
 
-  return NextResponse.json({ url: session.url })
+  return NextResponse.json({ url: checkoutUrl })
 }
