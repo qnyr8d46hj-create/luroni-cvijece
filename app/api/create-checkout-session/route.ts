@@ -2,40 +2,28 @@ import Stripe from 'stripe'
 import { NextRequest, NextResponse } from 'next/server'
 import { isOrderingBlocked, ORDER_BLOCK_NOTICE, getUnavailableDeliveryMessage } from '@/lib/orderAvailability'
 import { ARTIFICIAL_ORDER_TYPE } from '@/lib/artificialBouquetPaths'
+import { adminDb } from '@/lib/firebaseAdmin'
+import {
+  assessFreshCardOrder,
+  freshCheckoutRequestAgrees,
+  planFreshCheckoutStart,
+  planFreshSessionBind,
+} from '@/lib/freshCheckout'
 
-// ── Stripe client — server-side only ──────────────────────────
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2026-04-22.dahlia',
 })
 
-// ── Standard bouquet prices (cents) ────────────────────────────
-const UNIT_AMOUNTS: Record<string, number> = {
-  S: 4500,  // 45 EUR
-  M: 5500,  // 55 EUR
-  L: 7000,  // 70 EUR
+function isSafeOrderId(value: unknown): value is string {
+  return typeof value === 'string' && value.length > 0 && value.length <= 200 && !value.includes('/')
 }
 
-const BOUQUET_NAMES: Record<string, string> = {
-  S: 'Buket S — Luroni Cvijeće',
-  M: 'Buket M — Luroni Cvijeće',
-  L: 'Buket L — Luroni Cvijeće',
-}
-
-// ── Custom budget validation ────────────────────────────────────
-// Change these three values to adjust the allowed range.
-// Keep in sync with CUSTOM_PRICE_* in OrderForm.tsx and CustomBouquetCard.tsx
-const CUSTOM_BUDGET_MIN  = 80
-const CUSTOM_BUDGET_MAX  = 200
-const CUSTOM_BUDGET_STEP = 10
-
-function isValidCustomBudget(v: unknown): v is number {
-  return (
-    typeof v === 'number' &&
-    Number.isInteger(v) &&
-    v >= CUSTOM_BUDGET_MIN &&
-    v <= CUSTOM_BUDGET_MAX &&
-    v % CUSTOM_BUDGET_STEP === 0
-  )
+async function expireUnboundSession(sessionId: string) {
+  try {
+    await stripe.checkout.sessions.expire(sessionId)
+  } catch (err) {
+    console.error(`[Stripe] Failed to expire unbound session ${sessionId}:`, err)
+  }
 }
 
 // ── POST /api/create-checkout-session ─────────────────────────
@@ -54,11 +42,11 @@ export async function POST(req: NextRequest) {
 
   let body: {
     orderType?:    string
-    orderId:       string
-    bouquetSize:   string
+    orderId?:      unknown
+    bouquetSize?:  unknown
     customBudget?: unknown
-    customerEmail: string
-    customerName:  string
+    customerEmail?: string
+    customerName?:  string
     deliveryDate?: string
     deliveryTime?: string
     sku?:          string
@@ -77,89 +65,82 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  const {
-    orderId, bouquetSize, customBudget, customerEmail, customerName,
-    deliveryDate, deliveryTime,
-  } = body
+  if (!isSafeOrderId(body.orderId)) {
+    return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 })
+  }
+  const orderId = body.orderId
+
+  const orderRef = adminDb.collection('orders').doc(orderId)
+  const orderSnap = await orderRef.get()
+  if (!orderSnap.exists) {
+    return NextResponse.json({ error: 'Order not found' }, { status: 404 })
+  }
+
+  const order = (orderSnap.data() ?? {}) as Record<string, unknown>
+  const assessed = assessFreshCardOrder(order)
+  if (!assessed.ok) {
+    return NextResponse.json({ error: assessed.error }, { status: 400 })
+  }
 
   const slotError = getUnavailableDeliveryMessage(
-    String(deliveryDate ?? ''),
-    String(deliveryTime ?? ''),
+    typeof order.deliveryDate === 'string' ? order.deliveryDate : '',
+    typeof order.deliveryTime === 'string' ? order.deliveryTime : '',
   )
   if (slotError) {
     return NextResponse.json({ error: slotError }, { status: 400 })
   }
 
-  if (!orderId || !bouquetSize) {
+  if (!freshCheckoutRequestAgrees(assessed.quote, body)) {
     return NextResponse.json(
-      { error: 'Missing required parameters' },
-      { status: 400 },
+      { error: 'Checkout request does not match the saved bouquet' },
+      { status: 409 },
     )
   }
 
-  // ── Resolve unit amount and product name ───────────────────
-  let unitAmount: number
-  let productName: string
-
-  if (bouquetSize === 'Buket po želji') {
-    // Server-side validation: never trust the frontend price
-    if (!isValidCustomBudget(customBudget)) {
-      return NextResponse.json(
-        {
-          error:
-            `Invalid customBudget. Must be an integer multiple of ${CUSTOM_BUDGET_STEP} ` +
-            `between ${CUSTOM_BUDGET_MIN} and ${CUSTOM_BUDGET_MAX}.`,
-        },
-        { status: 400 },
-      )
-    }
-    unitAmount  = customBudget * 100  // EUR → cents
-    productName = `Buket po želji (${customBudget} €) — Luroni Cvijeće`
-  } else {
-    if (!UNIT_AMOUNTS[bouquetSize]) {
-      return NextResponse.json(
-        { error: 'Missing or invalid parameters' },
-        { status: 400 },
-      )
-    }
-    unitAmount  = UNIT_AMOUNTS[bouquetSize]
-    productName = BOUQUET_NAMES[bouquetSize]
+  const bindingSecret = process.env.STRIPE_SECRET_KEY ?? ''
+  const start = planFreshCheckoutStart(order, assessed.quote, orderId, bindingSecret)
+  if (start.action === 'reuse') {
+    return NextResponse.json({ url: start.url })
+  }
+  if (start.action === 'reject') {
+    return NextResponse.json({ error: start.error }, { status: 409 })
   }
 
-  const origin =
-    req.headers.get('origin') ?? 'https://www.luroni-cvijece.com'
+  const quote = assessed.quote
+  const origin = req.headers.get('origin') ?? 'https://www.luroni-cvijece.com'
+  const customerEmail = typeof order.email === 'string' ? order.email.trim() : ''
+  const customerName = typeof order.fullName === 'string' ? order.fullName.trim() : ''
 
+  let session: Stripe.Checkout.Session
   try {
-    const session = await stripe.checkout.sessions.create({
+    session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [
         {
           price_data: {
-            currency:     'eur',
-            unit_amount:  unitAmount,
+            currency: 'eur',
+            unit_amount: quote.amountCents,
             product_data: {
-              name:        productName,
+              name: quote.productName,
               description: 'Ručno složeni buket s dostavom',
             },
           },
           quantity: 1,
         },
       ],
-      mode:           'payment',
+      mode: 'payment',
       customer_email: customerEmail || undefined,
       client_reference_id: orderId,
       metadata: {
         orderId,
-        bouquetSize,
-        customerName:  customerName || '',
-        ...(bouquetSize === 'Buket po želji' ? { customBudget: String(customBudget) } : {}),
+        bouquetSize: quote.bouquetSize,
+        customerName,
+        ...(quote.customBudget != null ? { customBudget: String(quote.customBudget) } : {}),
       },
       success_url: `${origin}/narudzba-uspjesna?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url:  `${origin}/narudzba-otkazana`,
-      locale:      'hr',
+      cancel_url: `${origin}/narudzba-otkazana`,
+      locale: 'hr',
     })
-
-    return NextResponse.json({ url: session.url })
   } catch (err) {
     console.error('[Stripe] Failed to create checkout session:', err)
     return NextResponse.json(
@@ -167,4 +148,42 @@ export async function POST(req: NextRequest) {
       { status: 500 },
     )
   }
+
+  if (!session.id || !session.url) {
+    if (session.id) await expireUnboundSession(session.id)
+    return NextResponse.json({ error: 'Failed to create checkout session' }, { status: 500 })
+  }
+  const checkoutSessionId = session.id
+  const checkoutUrl = session.url
+
+  try {
+    const bound = await adminDb.runTransaction(async t => {
+      const snap = await t.get(orderRef)
+      if (!snap.exists) return { ok: false as const, reason: 'missing' as const, error: 'Order not found' }
+      const current = (snap.data() ?? {}) as Record<string, unknown>
+      const plan = planFreshSessionBind(current, checkoutSessionId, quote.amountCents, {
+        orderId,
+        secret: bindingSecret,
+        checkoutUrl,
+      })
+      if (!plan.ok) return plan
+      t.update(orderRef, plan.update)
+      return { ok: true as const }
+    })
+
+    if (!bound.ok) {
+      await expireUnboundSession(checkoutSessionId)
+      const status = bound.reason === 'not_payable' ? 400 : bound.reason === 'missing' ? 404 : 409
+      return NextResponse.json({ error: bound.error }, { status })
+    }
+  } catch (err) {
+    console.error('[Stripe] Failed to bind checkout session:', err)
+    await expireUnboundSession(checkoutSessionId)
+    return NextResponse.json(
+      { error: 'Failed to bind checkout session' },
+      { status: 500 },
+    )
+  }
+
+  return NextResponse.json({ url: checkoutUrl })
 }

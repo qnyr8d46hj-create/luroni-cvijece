@@ -281,13 +281,18 @@ assert(
   'Purchase links require checkoutEnabled',
 )
 const checkoutSessionRoute = readFileSync(resolve(root, 'app/api/create-checkout-session/route.ts'), 'utf8')
+const freshCheckoutSource = readFileSync(resolve(root, 'lib/freshCheckout.ts'), 'utf8')
 assert(
   checkoutSessionRoute.includes("body.orderType === ARTIFICIAL_ORDER_TYPE"),
   'Fresh Stripe route still rejects artificial orderType',
 )
 assert(
-  checkoutSessionRoute.includes('S: 4500') && checkoutSessionRoute.includes('M: 5500') && checkoutSessionRoute.includes('L: 7000'),
+  freshCheckoutSource.includes('S: 4500') && freshCheckoutSource.includes('M: 5500') && freshCheckoutSource.includes('L: 7000'),
   'Fresh Stripe amounts are unchanged',
+)
+assert(
+  checkoutSessionRoute.includes('assessFreshCardOrder') && checkoutSessionRoute.includes('planFreshSessionBind'),
+  'Fresh Stripe route prices and binds from the saved order',
 )
 
 assert(NN_PRICE_COMPLIANCE_ENABLED === false, 'NN compliance remains disabled')

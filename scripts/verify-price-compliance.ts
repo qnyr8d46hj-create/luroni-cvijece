@@ -121,7 +121,7 @@ assert(
   'NN price compliance is currently expected to be disabled (deadline extended to 2026-11-17)',
 )
 
-const checkout = readFileSync(resolve(root, 'app/api/create-checkout-session/route.ts'), 'utf8')
+const checkout = readFileSync(resolve(root, 'lib/freshCheckout.ts'), 'utf8')
 assert(checkout.includes('S: 4500'), 'Stripe S amount is 45 EUR')
 assert(checkout.includes('M: 5500'), 'Stripe M amount is 55 EUR')
 assert(checkout.includes('L: 7000'), 'Stripe L amount is 70 EUR')
