@@ -163,9 +163,10 @@ if (NN_PRICE_COMPLIANCE_ENABLED) {
     'Enabled compliance requires the daily price-list cron in vercel.json',
   )
 } else {
+  assert(Array.isArray(vercel.crons), 'vercel.json crons must be an array')
   assert(
-    Array.isArray(vercel.crons) && vercel.crons.length === 0,
-    'Disabled compliance must not register a Vercel cron',
+    !vercel.crons?.some((job) => job.path === '/api/cron/publish-price-list'),
+    'Disabled compliance must not register the price-list Vercel cron',
   )
 }
 

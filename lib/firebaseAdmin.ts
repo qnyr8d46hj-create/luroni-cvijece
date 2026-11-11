@@ -9,6 +9,9 @@
 //   FIREBASE_PRIVATE_KEY   — the full RSA private key from the service account JSON,
 //                            including BEGIN/END lines, with \n for line breaks
 //
+// Gallery sync also needs FIREBASE_STORAGE_BUCKET (server-only, not NEXT_PUBLIC).
+// Orders keep working when that variable is absent.
+//
 // How to get these values:
 //   Firebase Console → Project Settings → Service Accounts → Generate new private key
 //   Download the JSON and copy the three fields listed above.
@@ -37,6 +40,8 @@ function getAdminApp(): App {
     )
   }
 
+  const storageBucket = process.env.FIREBASE_STORAGE_BUCKET
+
   return initializeApp({
     credential: cert({
       projectId,
@@ -45,6 +50,7 @@ function getAdminApp(): App {
       // Vercel stores real newline characters. Handle both.
       privateKey: privateKey.replace(/\\n/g, '\n'),
     }),
+    ...(storageBucket ? { storageBucket } : {}),
   })
 }
 
