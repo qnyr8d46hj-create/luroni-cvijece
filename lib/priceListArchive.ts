@@ -1,45 +1,50 @@
 import { adminDb } from '@/lib/firebaseAdmin'
 import { zagrebCalendarDate } from '@/lib/productPrices'
-import { buildCurrentPriceList } from '@/lib/priceListCsv'
+import { buildPriceListFilename, serializePriceListCsv } from '@/lib/priceListCsv'
+import {
+  PRICE_LIST_RETENTION_DAYS,
+  PRICE_LIST_SEQUENCE_ID,
+  isPriceListSnapshotId,
+  nextStorageNumber,
+  requirePriceListPublication,
+  retentionCutoffDate,
+} from '@/lib/priceListPublication'
 
 export const PRICE_LIST_COLLECTION = 'cjenik_snapshots'
-export const PRICE_LIST_RETENTION_DAYS = 30
+export { PRICE_LIST_RETENTION_DAYS, retentionCutoffDate }
 
 export type PriceListSnapshot = {
-  date:        string
-  filename:    string
-  csv:         string
-  publishedAt: string
-  version:     number
-}
-
-function calendarDatePlusDays(yyyyMmDd: string, delta: number): string {
-  const [year, month, day] = yyyyMmDd.split('-').map(Number)
-  return new Date(Date.UTC(year, month - 1, day + delta)).toISOString().slice(0, 10)
-}
-
-export function retentionCutoffDate(now = new Date()): string {
-  return calendarDatePlusDays(zagrebCalendarDate(now), -PRICE_LIST_RETENTION_DAYS)
+  date:          string
+  filename:      string
+  csv:           string
+  publishedAt:   string
+  /** Monotonic broj pohrane. Never rewritten for an existing day. */
+  version:       number
 }
 
 /** One immutable CSV snapshot per Europe/Zagreb calendar day. Repeat calls return the existing document. */
 export async function publishTodaysPriceList(now = new Date()): Promise<PriceListSnapshot> {
+  const outlet = requirePriceListPublication()
   const date = zagrebCalendarDate(now)
-  const ref  = adminDb.collection(PRICE_LIST_COLLECTION).doc(date)
+  const ref = adminDb.collection(PRICE_LIST_COLLECTION).doc(date)
+  const sequenceRef = adminDb.collection(PRICE_LIST_COLLECTION).doc(PRICE_LIST_SEQUENCE_ID)
 
   return adminDb.runTransaction(async tx => {
     const existing = await tx.get(ref)
     if (existing.exists) return existing.data() as PriceListSnapshot
 
-    const generated = buildCurrentPriceList(now)
+    const sequenceSnap = await tx.get(sequenceRef)
+    const last = sequenceSnap.exists ? sequenceSnap.get('lastStorageNumber') : null
+    const storageNumber = nextStorageNumber(typeof last === 'number' ? last : null)
     const snapshot: PriceListSnapshot = {
       date,
-      filename:    generated.filename,
-      csv:         generated.csv,
+      filename:    buildPriceListFilename(outlet, storageNumber, now),
+      csv:         serializePriceListCsv(),
       publishedAt: now.toISOString(),
-      version:     1,
+      version:     storageNumber,
     }
     tx.set(ref, snapshot)
+    tx.set(sequenceRef, { lastStorageNumber: storageNumber })
     return snapshot
   })
 }
@@ -47,7 +52,7 @@ export async function publishTodaysPriceList(now = new Date()): Promise<PriceLis
 export async function pruneOldPriceLists(now = new Date()): Promise<number> {
   const cutoff = retentionCutoffDate(now)
   const docs   = await adminDb.collection(PRICE_LIST_COLLECTION).get()
-  const stale  = docs.docs.filter(doc => doc.id < cutoff)
+  const stale  = docs.docs.filter(doc => isPriceListSnapshotId(doc.id) && doc.id < cutoff)
   if (stale.length === 0) return 0
 
   const batch = adminDb.batch()
@@ -60,6 +65,7 @@ export async function listPriceListSnapshots(now = new Date()): Promise<PriceLis
   const cutoff = retentionCutoffDate(now)
   const docs   = await adminDb.collection(PRICE_LIST_COLLECTION).get()
   return docs.docs
+    .filter(doc => isPriceListSnapshotId(doc.id))
     .map(doc => doc.data() as PriceListSnapshot)
     .filter(snapshot => snapshot.date >= cutoff)
     .sort((a, b) => b.date.localeCompare(a.date))
@@ -69,7 +75,9 @@ export async function getPriceListSnapshotByFilename(
   filename: string,
 ): Promise<PriceListSnapshot | null> {
   const docs = await adminDb.collection(PRICE_LIST_COLLECTION).get()
-  const match = docs.docs.find(doc => (doc.data() as PriceListSnapshot).filename === filename)
+  const match = docs.docs.find(doc =>
+    isPriceListSnapshotId(doc.id) && (doc.data() as PriceListSnapshot).filename === filename,
+  )
   return match ? match.data() as PriceListSnapshot : null
 }
 

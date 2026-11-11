@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { pruneOldPriceLists, publishTodaysPriceList } from '@/lib/priceListArchive'
 import { NN_PRICE_COMPLIANCE_ENABLED } from '@/lib/nnPriceCompliance'
+import { priceListPublicationBlockers } from '@/lib/priceListPublication'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -20,20 +21,32 @@ export async function GET(req: NextRequest) {
 
   if (!NN_PRICE_COMPLIANCE_ENABLED) {
     return NextResponse.json({
-      ok:      true,
-      skipped: true,
-      reason:  'NN_PRICE_COMPLIANCE_ENABLED is false',
+      ok:       true,
+      skipped:  true,
+      published: false,
+      reason:   'NN_PRICE_COMPLIANCE_ENABLED is false',
     })
   }
 
-  // Daily including Saturday. Schedule is restored in vercel.json when re-enabling.
+  const blockers = priceListPublicationBlockers()
+  if (blockers.length > 0) {
+    return NextResponse.json({
+      ok:        false,
+      published: false,
+      blocked:   true,
+      blockers,
+    }, { status: 409 })
+  }
+
+  // Not registered in vercel.json. Restore "0 5 * * *" only after blockers clear.
   try {
     const snapshot = await publishTodaysPriceList()
     const pruned   = await pruneOldPriceLists()
     return NextResponse.json({
-      ok:       true,
-      date:     snapshot.date,
-      filename: snapshot.filename,
+      ok:        true,
+      published: true,
+      date:      snapshot.date,
+      filename:  snapshot.filename,
       pruned,
     })
   } catch (err) {

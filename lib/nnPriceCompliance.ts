@@ -1,12 +1,15 @@
-// Temporarily disabled after Croatian Government decision of 2026-09-29.
-// Deadline extended from 2026-10-01 to 2026-11-17.
-// Re-check final regulations before re-enabling.
+// Kept off until activation is explicitly approved.
+// NN 110/2026 moved the start date from 2026-10-01 to 2026-11-17.
+// Final implementing regulations were still unpublished on 2026-11-11.
 //
-// To restore (after reviewing the final rules):
-// 1. Set NN_PRICE_COMPLIANCE_ENABLED to true.
-// 2. Restore vercel.json crons to:
-//    { "path": "/api/cron/publish-price-list", "schedule": "0 5 * * *" }
-// 3. Confirm CRON_SECRET is set in Vercel Production.
-// vercel.json cannot read this flag — the cron list must be restored separately.
+// Publication is also blocked until lib/priceListOutlet.ts has a confirmed
+// outlet and the availability meaning is confirmed. Do not invent either.
+// Do not restore the cron before those blockers are clear and CRON_SECRET
+// is set in Vercel Production. vercel.json cannot read this flag.
+//
+// Schedule to restore once publication is allowed:
+// { "path": "/api/cron/publish-price-list", "schedule": "0 5 * * *" }
+// Vercel cron is UTC. On Hobby the 05:00 hour can run until 05:59 UTC,
+// which is 06:59 Europe/Zagreb in winter and 07:59 in summer, before 08:00.
 
 export const NN_PRICE_COMPLIANCE_ENABLED = false
