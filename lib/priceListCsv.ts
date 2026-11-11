@@ -1,4 +1,5 @@
-import { PRICE_LIST_OUTLET } from './priceListOutlet'
+import type { ConfirmedPriceListOutlet } from './priceListOutlet'
+import { outletAddressSlug, requireFilenameToken } from './priceListPublication'
 import {
   BRAND_NAME,
   CUSTOM_BOUQUET,
@@ -6,7 +7,6 @@ import {
   customAnchorAmounts,
   customSelectableAmounts,
   customVariantCode,
-  zagrebCalendarDate,
 } from './productPrices'
 
 export const PRICE_LIST_COLUMNS = [
@@ -49,7 +49,8 @@ export function buildPriceListRows(): PriceListRow[] {
       poseban_oblik_prodaje:  '',
       sidrena_cijena:         money(bouquet.anchorEur),
       barkod:                 '',
-      dostupnost:             'dostupno',
+      // Blank until dostupno/nedostupno is confirmed for made-to-order bouquets.
+      dostupnost:             '',
     })
   }
 
@@ -67,7 +68,7 @@ export function buildPriceListRows(): PriceListRow[] {
       poseban_oblik_prodaje:  '',
       sidrena_cijena:         anchorAmounts.has(amount) ? money(amount) : '',
       barkod:                 '',
-      dostupnost:             'dostupno',
+      dostupnost:             '',
     })
   }
 
@@ -101,15 +102,16 @@ export function zagrebTimestampForFilename(now = new Date()): string {
   return `${parts.year}${parts.month}${parts.day}T${parts.hour}${parts.minute}${parts.second}${offset}`
 }
 
-export function buildPriceListFilename(now = new Date()): string {
-  const { form, addressSlug, identifier, version } = PRICE_LIST_OUTLET
-  return `cjenik_${form}_${addressSlug}_${identifier}_${version}_${zagrebTimestampForFilename(now)}.csv`
-}
-
-export function buildCurrentPriceList(now = new Date()): { csv: string; filename: string; date: string } {
-  return {
-    csv:      serializePriceListCsv(),
-    filename: buildPriceListFilename(now),
-    date:     zagrebCalendarDate(now),
+export function buildPriceListFilename(
+  outlet: ConfirmedPriceListOutlet,
+  storageNumber: number,
+  now = new Date(),
+): string {
+  if (!Number.isInteger(storageNumber) || storageNumber < 1) {
+    throw new Error('Storage number must be a positive integer')
   }
+  const form = requireFilenameToken(outlet.form, 'Outlet form')
+  const identifier = requireFilenameToken(outlet.identifier, 'Outlet identifier')
+  const addressSlug = outletAddressSlug(outlet.address)
+  return `cjenik_${form}_${addressSlug}_${identifier}_${storageNumber}_${zagrebTimestampForFilename(now)}.csv`
 }

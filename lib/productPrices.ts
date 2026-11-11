@@ -17,6 +17,9 @@ export const COMPLIANCE_EFFECTIVE_DATE = '2026-10-01'
 
 export const BRAND_NAME = 'Luroni Cvijeće'
 
+/** Assembled per order from seasonal flowers. Not a legal stock status. */
+export const FRESH_BOUQUET_SUPPLY = 'made-to-order' as const
+
 export const STANDARD_BOUQUETS = {
   S: {
     id:        'S' as const,

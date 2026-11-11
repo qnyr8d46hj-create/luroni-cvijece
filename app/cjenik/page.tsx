@@ -4,6 +4,7 @@ import { Header } from '@/app/components/Header'
 import { Footer } from '@/app/components/Footer'
 import { listPriceListSnapshots } from '@/lib/priceListArchive'
 import { NN_PRICE_COMPLIANCE_ENABLED } from '@/lib/nnPriceCompliance'
+import { isPriceListPublishable } from '@/lib/priceListPublication'
 import {
   ANCHOR_PRICE_LABEL,
   CUSTOM_BOUQUET,
@@ -138,21 +139,31 @@ export default async function CjenikPage() {
               Strojno čitljivi cjenik
             </h2>
             <p className="text-[0.9375rem] text-muted leading-[1.75] mb-5">
-              Sukladno NN 101/2026, važeći cjenik dostupan je i u strojno čitljivom CSV
-              formatu. Objavljeni cjenici dostupni su 30 dana.
+              Sukladno NN 101/2026, važeći cjenik treba biti dostupan i u strojno čitljivom CSV
+              formatu. Objavljeni cjenici ostaju dostupni 30 dana.
             </p>
-            <a
-              href="/cjenik/aktualni.csv"
-              className="inline-flex items-center justify-center px-7 py-3.5 rounded-full bg-forest text-white font-medium text-[0.9375rem] transition-all hover:bg-forest-dark hover:-translate-y-px hover:shadow-md"
-            >
-              Preuzmi aktualni CSV
-            </a>
-            <p className="mt-3 text-sm text-faint">
-              Stabilni URL:{' '}
-              <a href="/cjenik/aktualni.csv" className="text-forest underline-offset-2 hover:underline">
-                https://www.luroni-cvijece.com/cjenik/aktualni.csv
-              </a>
-            </p>
+            {isPriceListPublishable() ? (
+              <>
+                <a
+                  href="/cjenik/aktualni.csv"
+                  className="inline-flex items-center justify-center px-7 py-3.5 rounded-full bg-forest text-white font-medium text-[0.9375rem] transition-all hover:bg-forest-dark hover:-translate-y-px hover:shadow-md"
+                >
+                  Preuzmi aktualni CSV
+                </a>
+                <p className="mt-3 text-sm text-faint">
+                  Stabilni URL:{' '}
+                  <a href="/cjenik/aktualni.csv" className="text-forest underline-offset-2 hover:underline">
+                    https://www.luroni-cvijece.com/cjenik/aktualni.csv
+                  </a>
+                </p>
+              </>
+            ) : (
+              <p className="text-[0.9375rem] text-muted leading-[1.75]">
+                Strojno čitljiva datoteka nije objavljena. Prije objave treba potvrditi adresu
+                prodajnog objekta, oblik objekta u nazivu datoteke, oznaku objekta i značenje
+                raspoloživosti za bukete koji se izrađuju po narudžbi.
+              </p>
+            )}
           </section>
 
           <section className="mt-12 sm:mt-16" aria-labelledby="arhiva-cjenik">
