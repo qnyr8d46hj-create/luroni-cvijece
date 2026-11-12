@@ -4,7 +4,7 @@
 //
 // To restore (after reviewing the final rules):
 // 1. Set NN_PRICE_COMPLIANCE_ENABLED to true.
-// 2. Restore vercel.json crons to:
+// 2. Add the price-list cron back to vercel.json without removing other jobs:
 //    { "path": "/api/cron/publish-price-list", "schedule": "0 5 * * *" }
 // 3. Confirm CRON_SECRET is set in Vercel Production.
 // vercel.json cannot read this flag — the cron list must be restored separately.

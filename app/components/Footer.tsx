@@ -8,6 +8,7 @@ import { NN_PRICE_COMPLIANCE_ENABLED } from '@/lib/nnPriceCompliance'
 const FOOTER_LINKS = [
   { href: '/',                           label: 'Početna' },
   { href: '/#bouquets',                  label: 'Složeni buketi' },
+  { href: '/galerija',                   label: 'Galerija' },
   { href: '/#sizes',                     label: 'Veličine buketa' },
   { href: '/#order',                     label: 'Narudžba' },
   { href: ARTIFICIAL_BOUQUET_PAGE_PATH,  label: 'Umjetni aranžmani' },

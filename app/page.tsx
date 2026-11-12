@@ -11,8 +11,14 @@ import { Footer }             from '@/app/components/Footer'
 import { JsonLd }             from '@/app/components/JsonLd'
 import { floristJsonLd, homepageFaqJsonLd } from '@/lib/seo'
 import { ARTIFICIAL_ARRANGEMENTS_PUBLIC } from '@/lib/artificialArrangementsPublic'
+import { loadHomepagePhotos } from '@/lib/gbpGallery/read'
+import { RecentBouquetsSection } from '@/app/components/RecentBouquetsSection'
 
-export default function Home() {
+export const dynamic = 'force-dynamic'
+
+export default async function Home() {
+  const recentBouquets = await loadHomepagePhotos()
+
   return (
     <>
       <JsonLd data={floristJsonLd} />
@@ -20,7 +26,7 @@ export default function Home() {
       <Header />
       <main>
         <HeroSection />
-        <GallerySection />
+        {recentBouquets ? <RecentBouquetsSection photos={recentBouquets} /> : <GallerySection />}
         <BouquetTypesSection />
         <OrderSection />
         <LocalSeoSection />
