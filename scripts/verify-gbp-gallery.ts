@@ -15,7 +15,12 @@ import {
   type FetchResult,
   type GbpSyncEnv,
 } from '../lib/gbpGallery/google'
-import { handleGbpGalleryCron, isCronAuthorized } from '../lib/gbpGallery/cron'
+import {
+  handleGbpGalleryCron,
+  handleManualGbpGallerySync,
+  isCronAuthorized,
+  isManualSyncAuthorized,
+} from '../lib/gbpGallery/cron'
 import {
   classifyPost,
   dedupeRemotePosts,
@@ -288,6 +293,13 @@ assert(isCronAuthorized({ authorization: null, cronSecret: undefined, nodeEnv: '
 assert(isCronAuthorized({ authorization: 'Bearer wrong', cronSecret: 'expected', nodeEnv: 'production' }) === false, 'A wrong cron secret is refused')
 assert(isCronAuthorized({ authorization: 'Bearer expected', cronSecret: 'expected', nodeEnv: 'production' }) === true, 'The matching cron secret is accepted')
 assert(isCronAuthorized({ authorization: null, cronSecret: undefined, nodeEnv: 'development' }) === true, 'Local development can call the endpoint without a secret')
+assert(isManualSyncAuthorized({ authorization: null, cronSecret: undefined }) === false, 'Manual sync without a configured secret is refused')
+assert(isManualSyncAuthorized({ authorization: 'Bearer expected', cronSecret: undefined }) === false, 'Manual sync is refused when the secret is missing')
+assert(isManualSyncAuthorized({ authorization: 'Bearer expected', cronSecret: '' }) === false, 'Manual sync is refused when the secret is empty')
+assert(isManualSyncAuthorized({ authorization: null, cronSecret: 'expected' }) === false, 'Manual sync without a bearer token is refused')
+assert(isManualSyncAuthorized({ authorization: 'Bearer wrong', cronSecret: 'expected' }) === false, 'A wrong manual sync secret is refused')
+assert(isManualSyncAuthorized({ authorization: 'Bearer expected-extra', cronSecret: 'expected' }) === false, 'A longer bearer token is refused')
+assert(isManualSyncAuthorized({ authorization: 'Bearer expected', cronSecret: 'expected' }) === true, 'The matching cron secret authorizes a manual sync')
 
 let ran = false
 const disabled = await handleGbpGalleryCron({
@@ -308,6 +320,87 @@ const unauthorized = await handleGbpGalleryCron({
   },
 })
 assert(unauthorized.status === 401 && !ran, 'An unauthorized cron does not sync')
+let enabledRan = false
+const enabled = await handleGbpGalleryCron({
+  authorized: true,
+  enabled: true,
+  run: async () => {
+    enabledRan = true
+    return { ok: true, fetched: 3 }
+  },
+})
+assert(enabled.status === 200 && enabled.body.fetched === 3 && enabledRan && enabled.body.skipped !== true, 'An enabled scheduled sync still runs')
+const crashed = await handleGbpGalleryCron({
+  authorized: true,
+  enabled: true,
+  run: async () => {
+    throw new Error('refresh token leaked')
+  },
+})
+assert(
+  crashed.status === 500 && crashed.body.preserved === true && crashed.body.error === 'Sync failed' && !JSON.stringify(crashed.body).includes('refresh'),
+  'A failed scheduled sync does not report credentials',
+)
+
+let manualRan = false
+const manualDenied = await handleManualGbpGallerySync({
+  authorized: false,
+  run: async () => {
+    manualRan = true
+    return { ok: true }
+  },
+})
+assert(manualDenied.status === 401 && manualDenied.body.error === 'Unauthorized' && !manualRan, 'An unauthorized manual sync does not import')
+const manual = await handleManualGbpGallerySync({
+  authorized: true,
+  run: async () => ({ ok: true, fetched: 2, imagesStored: 2 }),
+})
+assert(
+  manual.status === 200 && manual.body.ok === true && manual.body.skipped !== true && manual.body.imagesStored === 2,
+  'An authorized manual sync runs while the daily flag is unset',
+)
+
+let releaseManual: (() => void) | undefined
+const manualHold = new Promise<{ ok: true; imagesStored: number }>((resolve) => {
+  releaseManual = () => resolve({ ok: true, imagesStored: 1 })
+})
+const inFlight = handleManualGbpGallerySync({ authorized: true, run: () => manualHold })
+let overlapRan = false
+const overlap = await handleManualGbpGallerySync({
+  authorized: true,
+  run: async () => {
+    overlapRan = true
+    return { ok: true }
+  },
+})
+assert(overlap.status === 409 && overlap.body.preserved === true && !overlapRan, 'A second manual sync does not start while one is running')
+const deniedDuringSync = await handleManualGbpGallerySync({
+  authorized: false,
+  run: async () => ({ ok: true, imagesStored: 9 }),
+})
+assert(deniedDuringSync.status === 401 && deniedDuringSync.body.error === 'Unauthorized', 'An unauthorized request during a sync is still refused')
+ran = false
+const skippedDuringManual = await handleGbpGalleryCron({
+  authorized: true,
+  enabled: false,
+  run: async () => {
+    ran = true
+    return { ok: true }
+  },
+})
+assert(
+  skippedDuringManual.status === 200 && skippedDuringManual.body.skipped === true && skippedDuringManual.body.reason === 'GBP_SYNC_ENABLED is not true' && !ran,
+  'Authorized GET still skips while the flag is unset',
+)
+if (!releaseManual) fail('Manual sync lock was not acquired')
+releaseManual()
+const finishedManual = await inFlight
+assert(finishedManual.status === 200 && finishedManual.body.imagesStored === 1, 'The in-flight manual sync still finishes')
+const manualAfter = await handleManualGbpGallerySync({
+  authorized: true,
+  run: async () => ({ ok: true, fetched: 1 }),
+})
+assert(manualAfter.status === 200 && manualAfter.body.fetched === 1, 'A later manual sync can run after the first finishes')
 
 const fresh = memoryStore()
 const freshFetch = mockGoogle({ posts: [remotePost('one', { summary: 'Buket ruža' }), remotePost('two')] })
@@ -491,7 +584,13 @@ for (const rel of sourceFiles) {
 
 const route = read('app/api/cron/sync-gbp-gallery/route.ts')
 assert(route.includes('CRON_SECRET') && route.includes('isGbpSyncEnabled'), 'The cron route requires the secret and the sync flag')
-assert(!/export async function (POST|PUT|PATCH|DELETE)/.test(route), 'The sync route has no write handlers')
+assert(/export async function POST/.test(route), 'Manual gallery sync is a POST on the existing route')
+assert(route.includes('isManualSyncAuthorized'), 'Manual POST requires the cron secret in every environment')
+assert(route.includes('maxDuration = 60'), 'The sync route allows the first import to finish on the current plan')
+const postSource = route.slice(route.indexOf('export async function POST'))
+assert(!postSource.includes('isGbpSyncEnabled'), 'Manual POST does not require GBP_SYNC_ENABLED')
+assert(!postSource.includes('NODE_ENV'), 'Manual POST has no development auth bypass')
+assert(!/export async function (PUT|PATCH|DELETE)/.test(route), 'The sync route has no other write handlers')
 const http = read('lib/gbpGallery/http.ts')
 assert(http.includes("redirect: 'manual'"), 'Google fetches do not follow redirects automatically')
 const storage = read('lib/gbpGallery/storage.ts')
