@@ -5,5 +5,8 @@ export interface PublicGalleryPhoto {
   id: string
   src: string
   alt: string
+  title: string
+  description: string | null
+  occasion: string | null
   createdAt: string
 }

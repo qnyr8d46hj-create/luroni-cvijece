@@ -9,12 +9,14 @@ export function BouquetPhotoGrid({
   photos,
   initialCount,
   pageSize,
+  showCaptions = false,
   gridClassName = 'grid grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4 md:gap-5',
   sizes = '(max-width: 640px) 46vw, (max-width: 1024px) 33vw, 22rem',
 }: {
   photos: PublicGalleryPhoto[]
   initialCount?: number
   pageSize?: number
+  showCaptions?: boolean
   gridClassName?: string
   sizes?: string
 }) {
@@ -49,8 +51,8 @@ export function BouquetPhotoGrid({
   return (
     <>
       <ul className={gridClassName}>
-        {visiblePhotos.map((photo) => (
-          <li key={photo.id}>
+        {visiblePhotos.map((photo) => {
+          const imageButton = (
             <button
               type="button"
               onClick={(event) => {
@@ -73,8 +75,29 @@ export function BouquetPhotoGrid({
                 loading="lazy"
               />
             </button>
-          </li>
-        ))}
+          )
+          return (
+            <li key={photo.id}>
+              {showCaptions ? (
+                <figure>
+                  {imageButton}
+                  <figcaption className="px-0.5 pt-3">
+                    <h3 className="font-display text-[1.05rem] sm:text-lg font-semibold leading-snug text-ink break-words">
+                      {photo.title}
+                    </h3>
+                    {photo.description ? (
+                      <p className="mt-1.5 text-sm leading-relaxed text-muted break-words">
+                        {photo.description}
+                      </p>
+                    ) : null}
+                  </figcaption>
+                </figure>
+              ) : (
+                imageButton
+              )}
+            </li>
+          )
+        })}
       </ul>
 
       {canLoadMore && (
@@ -117,9 +140,22 @@ export function BouquetPhotoGrid({
                 loading="eager"
               />
             </div>
-            <p id="bouquet-lightbox-title" className="mt-4 text-center text-sm text-white/90">
-              {active.alt}
-            </p>
+            {showCaptions ? (
+              <>
+                <p id="bouquet-lightbox-title" className="mt-4 text-center text-base font-medium text-white break-words">
+                  {active.title}
+                </p>
+                {active.description ? (
+                  <p className="mt-2 text-center text-sm leading-relaxed text-white/80 break-words">
+                    {active.description}
+                  </p>
+                ) : null}
+              </>
+            ) : (
+              <p id="bouquet-lightbox-title" className="mt-4 text-center text-sm text-white/90">
+                {active.alt}
+              </p>
+            )}
             <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:justify-center">
               <Link
                 href="/#order"
