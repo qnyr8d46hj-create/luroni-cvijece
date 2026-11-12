@@ -3,8 +3,11 @@ import type { PublicGalleryPhoto } from './public'
 export type { PublicGalleryPhoto }
 
 export const HOMEPAGE_GALLERY_LIMIT = 6
+export const GALLERY_PAGE_INITIAL = 6
 export const GALLERY_PAGE_LIMIT = 12
+export const LANDING_GALLERY_LIMIT = 4
 export const MIN_SYNCED_HOMEPAGE_PHOTOS = 6
+export const GALLERY_READ_REVALIDATE_SECONDS = 3600
 export const MAX_IMAGE_BYTES = 8 * 1024 * 1024
 
 export interface RemotePhoto {
@@ -258,6 +261,10 @@ export function selectPublicPhotos(posts: StoredGalleryPost[], limit: number): P
 
 export function homepageUsesSyncedGallery(visibleCount: number): boolean {
   return visibleCount >= MIN_SYNCED_HOMEPAGE_PHOTOS
+}
+
+export function landingUsesSyncedGallery(visibleCount: number): boolean {
+  return visibleCount >= LANDING_GALLERY_LIMIT
 }
 
 export function toPublicPhoto(post: StoredGalleryPost): PublicGalleryPhoto {

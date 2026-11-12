@@ -5,14 +5,24 @@ import type { PublicGalleryPhoto } from '@/lib/gbpGallery/public'
 export function RecentBouquetsSection({
   photos,
   showGalleryLink = true,
+  initialCount,
+  pageSize,
+  backgroundClassName = 'bg-cream',
+  gridClassName,
+  sizes,
 }: {
   photos: PublicGalleryPhoto[]
   showGalleryLink?: boolean
+  initialCount?: number
+  pageSize?: number
+  backgroundClassName?: string
+  gridClassName?: string
+  sizes?: string
 }) {
   return (
     <section
       id={showGalleryLink ? 'bouquets' : 'galerija'}
-      className="py-20 md:py-28 bg-cream overflow-hidden"
+      className={`py-20 md:py-28 overflow-hidden ${backgroundClassName}`}
       aria-labelledby="gallery-title"
     >
       <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-12">
@@ -31,7 +41,13 @@ export function RecentBouquetsSection({
           </p>
         </div>
 
-        <BouquetPhotoGrid photos={photos} />
+        <BouquetPhotoGrid
+          photos={photos}
+          initialCount={initialCount}
+          pageSize={pageSize}
+          gridClassName={gridClassName}
+          sizes={sizes}
+        />
 
         {showGalleryLink && (
           <div className="mt-10 flex justify-center">
