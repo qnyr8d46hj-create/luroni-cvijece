@@ -3,6 +3,7 @@ import { Header } from '@/app/components/Header'
 import { Footer } from '@/app/components/Footer'
 import { GallerySection } from '@/app/components/GallerySection'
 import { RecentBouquetsSection } from '@/app/components/RecentBouquetsSection'
+import { GALLERY_PAGE_INITIAL } from '@/lib/gbpGallery/model'
 import { loadGalleryPagePhotos } from '@/lib/gbpGallery/read'
 
 const PAGE_URL = 'https://www.luroni-cvijece.com/galerija'
@@ -35,7 +36,12 @@ export default async function GalerijaPage() {
       <Header />
       <main>
         {photos ? (
-          <RecentBouquetsSection photos={photos} showGalleryLink={false} />
+          <RecentBouquetsSection
+            photos={photos}
+            showGalleryLink={false}
+            initialCount={GALLERY_PAGE_INITIAL}
+            pageSize={GALLERY_PAGE_INITIAL}
+          />
         ) : (
           <GallerySection />
         )}

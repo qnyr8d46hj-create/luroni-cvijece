@@ -28,6 +28,7 @@ import {
   firestorePayload,
   galleryAlt,
   homepageUsesSyncedGallery,
+  landingUsesSyncedGallery,
   isPubliclyVisible,
   isStoredGalleryImageUrl,
   nextStoredPost,
@@ -244,6 +245,8 @@ const selected = selectPublicPhotos([older, hidden, newer, middle], 2)
 assert(selected.map((photo) => photo.id).join() === 'newer,middle', 'Public photos are the newest visible posts')
 assert(homepageUsesSyncedGallery(5) === false, 'Five synced photos keep the static homepage gallery')
 assert(homepageUsesSyncedGallery(6) === true, 'Six synced photos replace the static homepage gallery')
+assert(landingUsesSyncedGallery(3) === false, 'Fewer than four synced photos leave a landing page without the strip')
+assert(landingUsesSyncedGallery(4) === true, 'Four synced photos can fill a landing strip')
 assert(galleryAlt('Radno vrijeme 9-17') === 'Nedavno izrađen buket cvjećarnice Luroni', 'Operational copy is not used as alt text')
 assert(galleryAlt('Buket ruža') === 'Buket ruža', 'A bouquet caption can be the alt text')
 
@@ -608,11 +611,47 @@ assert(
 const grid = read('app/components/BouquetPhotoGrid.tsx')
 assert(grid.includes('Naruči sličan buket') && grid.includes('href="/#order"'), 'Lightbox links to the existing order section')
 assert(!grid.includes('firebase') && !grid.includes('gbpGallery/sync'), 'The lightbox does not import server sync code')
+assert(grid.includes('Učitaj još'), 'The gallery reveals another page of photos in the browser')
+assert(!grid.includes('fetch('), 'Load more does not request more photos')
+assert(grid.includes('loading="lazy"'), 'Gallery photos lazy load')
+assert(grid.includes('sizes={sizes}'), 'Gallery photos use responsive sizes')
+const galerija = read('app/galerija/page.tsx')
+assert(galerija.includes('initialCount={GALLERY_PAGE_INITIAL}'), 'The gallery page starts with the six newest photos')
+assert(galerija.includes('pageSize={GALLERY_PAGE_INITIAL}'), 'Učitaj još reveals the next six photos')
+assert(!read('app/page.tsx').includes('initialCount'), 'The homepage still shows its photos at once')
+const rijeka = read('app/dostava-cvijeca-rijeka/page.tsx')
+assert(
+  rijeka.indexOf('<BouquetTypesSection') < rijeka.indexOf('<RecentBouquetsSection') &&
+    rijeka.indexOf('<RecentBouquetsSection') < rijeka.indexOf('<OrderingSection'),
+  'Rijeka places the gallery between bouquet sizes and ordering',
+)
+assert(rijeka.includes('loadLandingPhotos'), 'Rijeka reads the synced bouquet photos')
+const krk = read('app/cvjecarna-krk/page.tsx')
+assert(krk.includes('loadLandingPhotos') && krk.includes('GALLERY_IMAGES_FEATURED'), 'Krk uses synced photos and keeps the static fallback')
+assert(krk.includes('href="/galerija"'), 'Krk links to the gallery')
+assert(krk.includes('orderHref="/#order"'), 'Krk ordering still opens the existing order section')
+for (const claim of [
+  'Buket pripremljen za dostavu cvijeća na Krku',
+  'Svježi buket za dostavu na otoku Krku',
+  'Ručno složeni sezonski buket za dostavu na Krku',
+  'Cvjetni aranžman spreman za dostavu na otoku Krku',
+  'Buket S pripremljen za dostavu cvijeća na Krku',
+  'Svježi buket M za dostavu na otoku Krku',
+  'Buket L složen za dostavu cvijeća na Krku',
+  'svježi buketi s dostavom na otoku Krku',
+]) {
+  assert(!krk.includes(claim), `Krk no longer claims this photo was delivered there: ${claim}`)
+}
 const vercel = read('vercel.json')
 assert(vercel.includes('/api/cron/sync-gbp-gallery') && vercel.includes('15 5 * * *'), 'Daily gallery cron is registered')
 assert(!vercel.includes('publish-price-list'), 'The disabled price-list cron stays unregistered')
 const reader = read('lib/gbpGallery/read.ts')
 assert(reader.includes('homepageUsesSyncedGallery'), 'Homepage publication uses the six-photo threshold')
+assert(reader.includes('unstable_cache'), 'Gallery reads are cached on the server')
+assert(reader.includes('revalidate: GALLERY_READ_REVALIDATE_SECONDS'), 'The gallery cache lasts about one hour')
+assert(reader.includes('readVisibleGalleryPhotos(GALLERY_PAGE_LIMIT)'), 'Homepage, gallery, and landing pages share one photo read')
+assert(reader.includes('photos.slice(0, limit)'), 'Callers reuse the cached read instead of querying again')
+assert(!reader.includes('GBP_SYNC_ENABLED'), 'Display reads do not toggle synchronization')
 
 console.log('GBP gallery synchronization checks passed.')
 }

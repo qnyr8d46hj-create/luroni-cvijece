@@ -7,8 +7,11 @@ import { Footer } from '@/app/components/Footer'
 import { JsonLd } from '@/app/components/JsonLd'
 import { GoogleReviewsBadge } from '@/app/components/GoogleReviewsBadge'
 import { BouquetTypesSection } from '@/app/components/BouquetTypesSection'
+import { BouquetPhotoGrid } from '@/app/components/BouquetPhotoGrid'
 import { GALLERY_IMAGES_FEATURED } from '@/lib/data'
 import { cityLandingJsonLd } from '@/lib/seo'
+import { loadLandingPhotos } from '@/lib/gbpGallery/read'
+import type { PublicGalleryPhoto } from '@/lib/gbpGallery/public'
 
 const SITE_URL  = 'https://www.luroni-cvijece.com'
 const PAGE_PATH = '/cvjecarna-krk'
@@ -56,7 +59,7 @@ export const metadata: Metadata = {
         url:    OG_IMAGE,
         width:  1200,
         height: 630,
-        alt:    'Luroni Cvijeće — svježi buketi s dostavom na otoku Krku',
+        alt:    'Luroni Cvijeće — ručno složeni svježi buket',
       },
     ],
   },
@@ -148,11 +151,11 @@ const TRUST_ITEMS = [
 const GALLERY_PREVIEW = GALLERY_IMAGES_FEATURED.slice(0, 4).map((image, index) => ({
   ...image,
   alt: [
-    'Buket pripremljen za dostavu cvijeća na Krku',
-    'Svježi buket za dostavu na otoku Krku',
-    'Ručno složeni sezonski buket za dostavu na Krku',
-    'Cvjetni aranžman spreman za dostavu na otoku Krku',
-  ][index] ?? image.alt,
+    'Primjer ručno složenog buketa',
+    'Primjer svježeg sezonskog buketa',
+    'Primjer buketa iz cvjećarnice Luroni',
+    'Primjer cvjetnog aranžmana',
+  ][index] ?? 'Primjer ručno složenog buketa',
 }))
 
 const FAQS = [
@@ -178,6 +181,8 @@ const FAQS = [
   },
 ]
 
+export const revalidate = 3600
+
 const jsonLd = cityLandingJsonLd({
   pageUrl:         PAGE_URL,
   name:            TITLE,
@@ -188,14 +193,16 @@ const jsonLd = cityLandingJsonLd({
   faqs:            FAQS,
 })
 
-export default function CvjecarnaKrkPage() {
+export default async function CvjecarnaKrkPage() {
+  const photos = await loadLandingPhotos()
+
   return (
     <>
       <JsonLd data={jsonLd} />
       <Header />
       <main id="top">
         <Hero />
-        <OccasionsSection />
+        <OccasionsSection photos={photos} />
         <BouquetTypesSection
           id="velicine"
           titleId="krk-velicine-title"
@@ -203,10 +210,10 @@ export default function CvjecarnaKrkPage() {
           backgroundClassName="bg-white"
           imageAlt={(bouquet) =>
             bouquet.id === 'S'
-              ? 'Buket S pripremljen za dostavu cvijeća na Krku'
+              ? 'Buket S, manji ručno složeni buket'
               : bouquet.id === 'M'
-                ? 'Svježi buket M za dostavu na otoku Krku'
-                : 'Buket L složen za dostavu cvijeća na Krku'
+                ? 'Buket M, srednji ručno složeni buket'
+                : 'Buket L, veći ručno složeni buket'
           }
         />
         <DeliverySection />
@@ -296,7 +303,7 @@ function Hero() {
   )
 }
 
-function OccasionsSection() {
+function OccasionsSection({ photos }: { photos: PublicGalleryPhoto[] | null }) {
   return (
     <section
       className="py-20 md:py-28 bg-cream"
@@ -342,32 +349,43 @@ function OccasionsSection() {
           ))}
         </ul>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {GALLERY_PREVIEW.map((image) => (
-            <div
-              key={image.src}
-              className="relative aspect-[3/4] rounded-2xl overflow-hidden bg-[linear-gradient(135deg,#ede7df,#d4cdc3)] shadow-[0_2px_14px_rgba(0,0,0,0.09)]"
-            >
-              <Image
-                src={image.src}
-                alt={image.alt}
-                fill
-                className="object-cover"
-                sizes="(max-width: 1024px) 50vw, 25vw"
-              />
+        <div className="mb-8">
+          {photos ? (
+            <BouquetPhotoGrid
+              photos={photos}
+              gridClassName="grid grid-cols-2 lg:grid-cols-4 gap-4"
+              sizes="(max-width: 1024px) 50vw, 25vw"
+            />
+          ) : (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              {GALLERY_PREVIEW.map((image) => (
+                <div
+                  key={image.src}
+                  className="relative aspect-[3/4] rounded-2xl overflow-hidden bg-[linear-gradient(135deg,#ede7df,#d4cdc3)] shadow-[0_2px_14px_rgba(0,0,0,0.09)]"
+                >
+                  <Image
+                    src={image.src}
+                    alt={image.alt}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 1024px) 50vw, 25vw"
+                    loading="lazy"
+                  />
+                </div>
+              ))}
             </div>
-          ))}
+          )}
         </div>
 
         <p className="text-center text-sm text-muted leading-[1.75]">
           Pogledajte veličine i cijene buketa na ovoj stranici ili{' '}
           <Link
-            href="/#bouquets"
+            href="/galerija"
             className="text-forest font-medium hover:underline underline-offset-2"
           >
-            stvarne bukete
+            galeriju buketa
           </Link>
-          {' '}koje smo složili za naše kupce.
+          .
         </p>
       </div>
     </section>

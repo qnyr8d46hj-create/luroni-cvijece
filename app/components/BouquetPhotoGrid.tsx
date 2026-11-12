@@ -5,10 +5,30 @@ import Image from 'next/image'
 import Link from 'next/link'
 import type { PublicGalleryPhoto } from '@/lib/gbpGallery/public'
 
-export function BouquetPhotoGrid({ photos }: { photos: PublicGalleryPhoto[] }) {
+export function BouquetPhotoGrid({
+  photos,
+  initialCount,
+  pageSize,
+  gridClassName = 'grid grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4 md:gap-5',
+  sizes = '(max-width: 640px) 46vw, (max-width: 1024px) 33vw, 22rem',
+}: {
+  photos: PublicGalleryPhoto[]
+  initialCount?: number
+  pageSize?: number
+  gridClassName?: string
+  sizes?: string
+}) {
   const [active, setActive] = useState<PublicGalleryPhoto | null>(null)
+  const [visibleCount, setVisibleCount] = useState(initialCount ?? photos.length)
   const opener = useRef<HTMLButtonElement | null>(null)
   const dialogRef = useRef<HTMLDivElement>(null)
+  const visiblePhotos = photos.slice(0, visibleCount)
+  const canLoadMore = initialCount !== undefined && visibleCount < photos.length
+
+  function loadMore() {
+    const step = pageSize ?? initialCount ?? photos.length
+    setVisibleCount((count) => Math.min(photos.length, count + step))
+  }
 
   useEffect(() => {
     if (!active) return
@@ -28,8 +48,8 @@ export function BouquetPhotoGrid({ photos }: { photos: PublicGalleryPhoto[] }) {
 
   return (
     <>
-      <ul className="grid grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4 md:gap-5">
-        {photos.map((photo) => (
+      <ul className={gridClassName}>
+        {visiblePhotos.map((photo) => (
           <li key={photo.id}>
             <button
               type="button"
@@ -49,12 +69,27 @@ export function BouquetPhotoGrid({ photos }: { photos: PublicGalleryPhoto[] }) {
                 alt={photo.alt}
                 fill
                 className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.06]"
-                sizes="(max-width: 640px) 46vw, (max-width: 1024px) 33vw, 22rem"
+                sizes={sizes}
+                loading="lazy"
               />
             </button>
           </li>
         ))}
       </ul>
+
+      {canLoadMore && (
+        <div className="mt-10 flex justify-center">
+          <button
+            type="button"
+            onClick={loadMore}
+            className="inline-flex items-center gap-2.5 px-7 py-3 rounded-full
+              border-[1.5px] border-forest text-forest text-sm font-medium tracking-[0.03em]
+              hover:bg-forest hover:text-white transition-all duration-200"
+          >
+            Učitaj još
+          </button>
+        </div>
+      )}
 
       {active && (
         <div className="fixed inset-0 z-[60] flex items-end justify-center p-4 sm:items-center sm:p-8">
@@ -79,6 +114,7 @@ export function BouquetPhotoGrid({ photos }: { photos: PublicGalleryPhoto[] }) {
                 fill
                 className="object-cover"
                 sizes="(max-width: 640px) 100vw, 28rem"
+                loading="eager"
               />
             </div>
             <p id="bouquet-lightbox-title" className="mt-4 text-center text-sm text-white/90">

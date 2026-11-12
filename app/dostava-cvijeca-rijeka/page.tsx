@@ -7,8 +7,10 @@ import { Footer } from '@/app/components/Footer'
 import { JsonLd } from '@/app/components/JsonLd'
 import { GoogleReviewsBadge } from '@/app/components/GoogleReviewsBadge'
 import { BouquetTypesSection } from '@/app/components/BouquetTypesSection'
+import { RecentBouquetsSection } from '@/app/components/RecentBouquetsSection'
 import { DELIVERY_AREAS } from '@/lib/data'
 import { cityLandingJsonLd } from '@/lib/seo'
+import { loadLandingPhotos } from '@/lib/gbpGallery/read'
 
 const SITE_URL  = 'https://www.luroni-cvijece.com'
 const PAGE_PATH = '/dostava-cvijeca-rijeka'
@@ -152,6 +154,8 @@ const FAQS = [
   },
 ]
 
+export const revalidate = 3600
+
 const jsonLd = cityLandingJsonLd({
   pageUrl:         PAGE_URL,
   name:            TITLE,
@@ -162,7 +166,9 @@ const jsonLd = cityLandingJsonLd({
   faqs:            FAQS,
 })
 
-export default function DostavaCvijecaRijekaPage() {
+export default async function DostavaCvijecaRijekaPage() {
+  const photos = await loadLandingPhotos()
+
   return (
     <>
       <JsonLd data={jsonLd} />
@@ -177,6 +183,14 @@ export default function DostavaCvijecaRijekaPage() {
           orderHref="/#order"
           backgroundClassName="bg-cream"
         />
+        {photos ? (
+          <RecentBouquetsSection
+            photos={photos}
+            backgroundClassName="bg-white"
+            gridClassName="grid grid-cols-2 lg:grid-cols-4 gap-4"
+            sizes="(max-width: 1024px) 50vw, 25vw"
+          />
+        ) : null}
         <OrderingSection />
         <DeliverySection />
         <TrustSection />
