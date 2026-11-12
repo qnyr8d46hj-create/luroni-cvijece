@@ -301,6 +301,56 @@ assert(proteaMeta.title.toLocaleLowerCase('hr-HR').includes('protea'), 'An unkno
 assert(!/ruž|tulipan|božur/i.test(proteaMeta.title), 'An unknown flower does not get replaced with another flower')
 assert(proteaMeta.description === null, 'A short specific caption does not repeat itself as a description')
 
+function captionWordCount(value: string): number {
+  return value.trim().split(/\s+/).filter(Boolean).length
+}
+
+function captionSentences(value: string): number {
+  return value.split(/(?<=[.!?])\s+/).filter(Boolean).length
+}
+
+const harmonijaSource = 'Cvjetna harmonija boja i elegancije 🌸💐 Ponekad je dovoljan samo jedan buket da nekome uljepšate cijeli dan. ❤️ Ovaj raskošni buket spaj'
+const harmonijaMeta = galleryMetadata(harmonijaSource)
+assert(harmonijaMeta.title === NEUTRAL_GALLERY_TITLE, 'A floral slogan does not become the bouquet title')
+assert(!/cvjetna harmonija|ponekad|uljepšate|elegancije/i.test(`${harmonijaMeta.title} ${harmonijaMeta.alt} ${harmonijaMeta.description ?? ''}`), 'The harmonija slogan and its call to action are left out')
+assert(captionWordCount(harmonijaMeta.title) <= 8, 'The harmonija title stays within eight words')
+assert(!/ruž|orhide|tulipan|ljiljan|karanfil|kala\b|eukalipt|antur/i.test(`${harmonijaMeta.title} ${harmonijaMeta.description ?? ''} ${harmonijaMeta.alt}`), 'The harmonija caption does not invent flowers')
+assert(harmonijaMeta.description === null, 'A slogan without a factual bouquet sentence has no description')
+
+const raskosSource = 'Raskoš boja, elegancije i emocija 💐❤️ Neki buketi jednostavno privlače pogled, a ovaj je jedan od njih! 🌸 Spoj nježnih bijelih ruža, in'
+const raskosMeta = galleryMetadata(raskosSource)
+assert(raskosMeta.title === 'Buket ruža', 'The raskoš slogan becomes the rose the florist named')
+assert(captionWordCount(raskosMeta.title) >= 2 && captionWordCount(raskosMeta.title) <= 8, 'The raskoš title stays concise')
+assert(!/raskoš boja|elegancije i emocija|privlače pogled|jedan od njih/i.test(`${raskosMeta.title} ${raskosMeta.description ?? ''} ${raskosMeta.alt}`), 'The raskoš slogan is not appended to the caption')
+assert(raskosMeta.description !== null && /bijel/i.test(raskosMeta.description) && /ruž/i.test(raskosMeta.description), 'The raskoš description keeps the white roses the florist wrote')
+assert(!raskosMeta.description?.toLocaleLowerCase('hr-HR').includes(raskosMeta.title.toLocaleLowerCase('hr-HR')), 'The raskoš description does not repeat its title')
+assert((raskosMeta.description?.length ?? 0) <= 150 && captionSentences(raskosMeta.description ?? '') <= 2, 'The raskoš description stays within two short sentences')
+assert(!/orhide|tulipan|ljiljan|karanfil|antur/i.test(`${raskosMeta.title} ${raskosMeta.description ?? ''}`), 'The raskoš caption does not invent another flower')
+
+const plavaSource = 'Premium buket „Plava elegancija” 💙🤍 Za trenutke kada običan buket jednostavno nije dovoljan. Raskošna kombinacija bijelih orhideja, ele'
+const plavaMeta = galleryMetadata(plavaSource)
+assert(plavaMeta.title === 'Premium buket Plava elegancija', 'A named premium bouquet keeps its name')
+assert(captionWordCount(plavaMeta.title) >= 3 && captionWordCount(plavaMeta.title) <= 8, 'The Plava elegancija title stays within eight words')
+assert(!/za trenutke|nije dovoljan|običan buket/i.test(plavaMeta.title), 'The promotional sentence is not appended to the Plava elegancija title')
+assert(plavaMeta.description !== null && /orhide/i.test(plavaMeta.description) && /bijel/i.test(plavaMeta.description), 'The Plava elegancija description keeps the white orchids the florist wrote')
+assert(!/plava elegancija|premium buket|za trenutke|nije dovoljan/i.test(plavaMeta.description ?? ''), 'The Plava elegancija description does not repeat the title or the slogan')
+assert((plavaMeta.description?.length ?? 0) <= 150 && captionSentences(plavaMeta.description ?? '') <= 2, 'The Plava elegancija description stays within two short sentences')
+assert(!/ruž|tulipan|ljiljan|karanfil/i.test(`${plavaMeta.title} ${plavaMeta.description ?? ''} ${plavaMeta.alt}`), 'The Plava elegancija caption does not invent another flower')
+assert(plavaMeta.alt.includes('Premium buket Plava elegancija') && /orhide/i.test(plavaMeta.alt), 'Alt text keeps the bouquet name and the flowers the florist named')
+
+const captionPhotos = [
+  selectPublicPhotos([storedFrom(remotePost('harmonija', { summary: harmonijaSource }))], 1)[0],
+  selectPublicPhotos([storedFrom(remotePost('raskos', { summary: raskosSource }))], 1)[0],
+  selectPublicPhotos([storedFrom(remotePost('plava', { summary: plavaSource }))], 1)[0],
+]
+assert(captionPhotos.every((photo) => photo), 'The three screenshot captions become public photos')
+const captionJson = galleryImageGalleryJsonLd(captionPhotos.flatMap((photo) => photo ? [photo] : []))
+assert(captionJson?.image.length === 3, 'ImageGallery lists the three cleaned captions')
+assert(captionJson?.image[0]?.name === NEUTRAL_GALLERY_TITLE && !('description' in (captionJson.image[0] ?? {})), 'ImageGallery does not publish the harmonija slogan')
+assert(captionJson?.image[1]?.name === 'Buket ruža' && captionJson.image[1]?.description === raskosMeta.description, 'ImageGallery uses the cleaned raskoš title and description')
+assert(captionJson?.image[2]?.name === 'Premium buket Plava elegancija' && captionJson.image[2]?.description === plavaMeta.description, 'ImageGallery uses the cleaned Plava elegancija title and description')
+assert(!/cvjetna harmonija|raskoš boja|za trenutke kada|ponekad je dovoljan/i.test(JSON.stringify(captionJson)), 'ImageGallery does not repeat the promotional sentences')
+
 const overridden = storedFrom(remotePost('meta', { summary: 'Buket ruža' }))
 overridden.metadataOverride = { title: 'Ručno ispravljen naslov', alt: 'Ručni alt', description: 'Ručni opis', occasion: 'rođendan' }
 const overriddenPhoto = selectPublicPhotos([overridden], 1)[0]
@@ -716,7 +766,9 @@ assert(grid.includes('Naruči sličan buket') && grid.includes('href="/#order"')
 assert(!grid.includes('firebase') && !grid.includes('gbpGallery/sync'), 'The lightbox does not import server sync code')
 assert(grid.includes('Učitaj još'), 'The gallery reveals another page of photos in the browser')
 assert(!grid.includes('fetch('), 'Load more does not request more photos')
-assert(grid.includes('loading="lazy"'), 'Gallery photos lazy load')
+assert(grid.includes("'lazy'") && grid.includes("'eager'"), 'Later photos lazy load and the first gallery page loads with its captions')
+assert(grid.indexOf('<figcaption') < grid.indexOf('Učitaj još'), 'Captions render with the first photos, before Učitaj još')
+assert(grid.includes('line-clamp-2') && grid.includes('min-h-24'), 'Caption blocks stay on two lines so the cards remain balanced')
 assert(grid.includes('sizes={sizes}'), 'Gallery photos use responsive sizes')
 const galerija = read('app/galerija/page.tsx')
 assert(galerija.includes('initialCount={GALLERY_PAGE_INITIAL}'), 'The gallery page starts with the six newest photos')

@@ -1,9 +1,11 @@
 // Deterministic Croatian gallery text. This module must stay free of network
-// calls, paid APIs, Firebase, and Google credentials. A title may name a flower
-// or an occasion only when the Google summary contains that word. Colors,
-// prices, and places are never added. When the summary does not support a
-// specific title, the public description is left empty so the same generic
-// sentence is not repeated under every photo.
+// calls, paid APIs, Firebase, and Google credentials. Titles stay within eight
+// words. A quoted or premium bouquet name is kept as written. A flower or an
+// occasion is used only when the Google summary says it. Promotional sentences
+// are not appended to the title. The visible description is the florist's
+// factual wording, at most two short sentences and about 150 characters, and it
+// is omitted when it would only repeat the title or a slogan. Colors, prices,
+// and places are never added.
 
 import { FLORIST_ID, SITE_URL } from '../seo'
 import type { PublicGalleryPhoto } from './public'
@@ -41,9 +43,10 @@ const FLOWERS: readonly FlowerEntry[] = [
   { forms: ['karanfil', 'karanfila', 'karanfili', 'karanfile', 'karanfilima'], phrase: 'karanfila' },
   { forms: ['frezija', 'frezije', 'freziju', 'frezijom', 'frezijama'], phrase: 'frezija' },
   { forms: ['iris', 'irisa', 'irisi', 'irise', 'irisima'], phrase: 'irisa' },
+  { forms: ['anturij', 'anturija', 'anturije', 'anturiju', 'anturijem', 'anthurium', 'anthuriuma'], phrase: 'anturija' },
   { forms: ['margareta', 'margarete', 'margaretu', 'margaretom', 'margaretama'], phrase: 'margareta' },
   { forms: ['gladijol', 'gladijola', 'gladijole', 'gladijolu', 'gladijoli', 'gladijolima'], phrase: 'gladijola' },
-  { forms: ['alstromerija', 'alstromerije', 'alstromeriju', 'alstroemeria'], phrase: 'alstromerija' },
+  { forms: ['alstromerija', 'alstromerije', 'alstromeriju', 'alstromerijom', 'alstromerijama', 'alstroemeria'], phrase: 'alstromerija' },
   { forms: ['krizantema', 'krizanteme', 'krizantemu', 'krizantemom', 'krizantemama'], phrase: 'krizantema' },
   { forms: ['ljubicica', 'ljubicice', 'ljubicicu', 'ljubicicom', 'ljubicicama'], phrase: 'ljubičica' },
   { forms: ['ranunkul', 'ranunkula', 'ranunkule', 'ranunkulu', 'ranunkulom'], phrase: 'ranunkula' },
@@ -110,6 +113,7 @@ const GENERIC = new Set([
   'javite', 'pozovite', 'kontaktirajte', 'pratite', 'posjetite', 'koji', 'koja', 'koje', 'koju',
   'nama', 'vama', 'vas', 'malo', 'jako', 'vrlo', 'bas', 'dan', 'dana', 'jutro', 'jutros',
   'cijena', 'cijene', 'cijenu', 'cijenom', 'akcija', 'popust',
+  'spoj', 'spaja', 'spajaju', 'spajanje',
 ])
 
 const PRICE_PATTERN = /(?:€|\beur(?:a|o)?\b|\bkn\b|\bkuna\b)\s*\d+(?:[.,]\d+)?|\d+(?:[.,]\d+)?\s*(?:€|\beur(?:a|o)?\b|\bkn\b|\bkuna\b)/gi
@@ -136,7 +140,7 @@ function words(value: string): string[] {
 function isGeneric(word: string): boolean {
   if (word.length < 4) return true
   if (GENERIC.has(word)) return true
-  return /^(svjez|prekras|dostav|naruc|pogled|lijep|divn)/.test(word)
+  return /^(svjez|prekras|dostav|naruc|pogled|lijep|divn|raskos|harmon|emoc|elegan|njez|romantic|upecat|kombinac)/.test(word)
 }
 
 function stripEmoji(value: string): string {
@@ -197,16 +201,6 @@ function clipWords(value: string, max: number): string {
   return `${stem.replace(/[,:;-]+$/g, '').trim()}…`
 }
 
-function normalizeTitleCase(value: string): string {
-  const letters = value.match(/\p{L}/gu) ?? []
-  if (letters.length < 4) return value
-  const upper = letters.filter((char) => char === char.toLocaleUpperCase('hr-HR') && char !== char.toLocaleLowerCase('hr-HR'))
-  if (upper.length / letters.length < 0.8) return value
-  const lower = value.toLocaleLowerCase('hr-HR')
-  const cased = lower.charAt(0).toLocaleUpperCase('hr-HR') + lower.slice(1)
-  return cased.replace(/\bluroni\b/gi, 'Luroni')
-}
-
 function detectFlowers(text: string): string[] {
   const found: string[] = []
   for (const word of words(text)) {
@@ -237,13 +231,133 @@ function hasArrangement(text: string): boolean {
   return /\baranz/.test(fold(text))
 }
 
-function sentenceIsSpecific(sentence: string): boolean {
-  if (detectFlowers(sentence).length > 0 || detectOccasion(sentence) || hasSeason(sentence) || hasArrangement(sentence)) {
-    return true
-  }
+const DESCRIPTION_LIMIT = 150
+const ALT_LIMIT = 180
+const TITLE_WORD_LIMIT = 8
+
+const SLOGAN = [
+  /harmonij/,
+  /elegancij/,
+  /\bemocij/,
+  /raskos\s+boja/,
+  /boja i elegan/,
+  /\bponekad\b/,
+  /uljeps/,
+  /privlac/,
+  /jedan od njih/,
+  /nije dovolj/,
+  /za trenutke/,
+  /pogledajte|\bnarucite\b|\bnaruci\b|\bjavite\b|\bpozovite\b|\bpratite\b|\bposjetite\b/,
+  /modernim detalj/,
+  /toplim ton/,
+  /u svakom cvijet/,
+  /odusev/,
+  /\bklasika\b/,
+]
+
+function wordCount(value: string): number {
+  return value.trim().split(/\s+/).filter(Boolean).length
+}
+
+function capitalizeFirst(value: string): string {
+  if (!value) return value
+  return value.charAt(0).toLocaleUpperCase('hr-HR') + value.slice(1)
+}
+
+function isSlogan(sentence: string): boolean {
+  if (detectFlowers(sentence).length > 0) return false
   const folded = fold(sentence)
-  if (!/\b(?:buket\w*|cvijet\w*|cvije\w*|cvjec\w*|aranz\w*)/.test(folded)) return false
-  return words(sentence).some((word) => !isGeneric(word))
+  return SLOGAN.some((pattern) => pattern.test(folded))
+}
+
+function stripLeadingHype(value: string): string {
+  const pattern = /^(?:prekrasan|prekrasna|prekrasno|prekrasni|prekrasne|divan|divna|divno|raskošan|raskošna|raskošni|nježan|nježna|romantičan|romantična|upečatljiv|upečatljiva|upečatljive|svjež|svježa|svježi|svježe|novi|nova|novo|naš|naša|ovaj|ova|ovo)\s+/i
+  let current = value.trim()
+  let next = current.replace(pattern, '').trim()
+  while (next && next !== current) {
+    current = next
+    next = current.replace(pattern, '').trim()
+  }
+  return current
+}
+
+function stripCutoffFragment(value: string): string {
+  return value.replace(/,\s*\p{L}{1,3}$/u, '').trim()
+}
+
+function segmentSummary(summary: string): string[] {
+  const broken = summary
+    .replace(/[\p{Extended_Pictographic}\uFE0F]/gu, '\n')
+    .replace(/\u200d/g, '')
+  const promoStart = /(?<=\S)\s+(?=(?:Ponekad|Neki|Za trenutke|Jer|Naručite|Pogledajte|Javite|Pozovite)\b)/
+  return splitSentences(broken).flatMap((part) => part.split(promoStart).map((piece) => piece.trim()).filter(Boolean))
+}
+
+function acceptableBouquetName(name: string): boolean {
+  const count = wordCount(name)
+  if (count < 1 || count > 4) return false
+  if (/\b(?:ponekad|dovoljan|naruci|pogledaj|javite|uljeps|privlac|trenutke)\b/.test(fold(name))) return false
+  return words(name).some((word) => !isGeneric(word))
+}
+
+function buildNamedTitle(lead: string | undefined, name: string): string | null {
+  const cleanedName = name.replace(/\s+/g, ' ').trim()
+  if (!acceptableBouquetName(cleanedName)) return null
+  const nameWords = words(cleanedName)
+  if (nameWords.length > 0 && nameWords.every((word) => FLOWER_PHRASE.has(word) || isGeneric(word))) return null
+  const prefix = lead ? `${capitalizeFirst(lead.trim())} ` : ''
+  const noun = prefix ? 'buket' : 'Buket'
+  const title = `${prefix}${noun} ${cleanedName}`.replace(/\s+/g, ' ').trim()
+  if (wordCount(title) < 3 || wordCount(title) > TITLE_WORD_LIMIT) return null
+  return title
+}
+
+function namedBouquetTitle(summary: string): string | null {
+  const text = stripEmoji(summary).replace(/[<>#]/g, ' ').replace(/\s+/g, ' ').trim()
+  const quoted = text.match(/\b((?:premium|luksuzni|luksuzna)\s+)?buket\s*[„“"']\s*([^„“"”']{2,40}?)\s*[”"']/iu)
+  if (quoted) {
+    const built = buildNamedTitle(quoted[1], quoted[2])
+    if (built) return built
+  }
+  const premium = text.match(/\b(premium|luksuzni|luksuzna)\s+buket\s+/iu)
+  if (!premium || premium.index === undefined) return null
+  const tokens = text.slice(premium.index + premium[0].length).match(/\p{L}+/gu) ?? []
+  const name: string[] = []
+  for (const token of tokens) {
+    const folded = fold(token)
+    if (['ponekad', 'neki', 'ovaj', 'ova', 'ovo', 'jer', 'narucite', 'pogledajte', 'javite', 'pozovite', 'za'].includes(folded)) break
+    if (name.length === 3) break
+    name.push(token)
+  }
+  return name.length > 0 ? buildNamedTitle(premium[1], name.join(' ')) : null
+}
+
+function fitTitle(title: string | null): string | null {
+  if (!title) return null
+  if (wordCount(title) <= TITLE_WORD_LIMIT) return title
+  const flowers = detectFlowers(title)
+  for (let count = Math.min(flowers.length, 2); count >= 1; count -= 1) {
+    const shorter = composeTitle(flowers.slice(0, count), null, false, false)
+    if (shorter && wordCount(shorter) <= TITLE_WORD_LIMIT) return shorter
+  }
+  return null
+}
+
+function shortBouquetLabel(sentences: string[]): string | null {
+  for (const sentence of sentences) {
+    const stripped = stripLeadingHype(stripTrailingPeriod(sentence))
+    if (!/^buket\b/i.test(stripped)) continue
+    if (wordCount(stripped) < 2 || wordCount(stripped) > TITLE_WORD_LIMIT) continue
+    if (isSlogan(stripped)) continue
+    const tokens = words(stripped)
+    if (tokens.some((word) => word !== 'buket' && isGeneric(word))) continue
+    const content = tokens.filter((word) => word !== 'buket')
+    if (content.length === 0) continue
+    if (content.every((word) => FLOWER_PHRASE.has(word))) return capitalizeFirst(stripped)
+    if (/^(?:spaj|sloz|pokaz|privlac|stvar|kombin|odusev)/.test(content[0] ?? '')) continue
+    if (detectFlowers(stripped).length === 0) return capitalizeFirst(stripped)
+  }
+  return null
 }
 
 function joinPhrases(phrases: string[]): string {
@@ -265,40 +379,78 @@ function composeTitle(flowers: string[], occasion: Occasion | null, season: bool
   return null
 }
 
-function chooseTitle(first: string | null, flowers: string[], occasion: Occasion | null, season: boolean, arrangement: boolean): string {
-  if (first && first.length <= 90 && sentenceIsSpecific(first)) return normalizeTitleCase(stripTrailingPeriod(first))
-  const composed = composeTitle(flowers, occasion, season, arrangement)
-  if (composed) return composed
-  if (first && sentenceIsSpecific(first)) return normalizeTitleCase(clipWords(stripTrailingPeriod(first), 90))
-  return NEUTRAL_GALLERY_TITLE
-}
-
 function meaningfulExtras(text: string, title: string): string[] {
   const used = new Set(words(title))
-  return words(text).filter((word) => !isGeneric(word) && !used.has(word))
+  const usedFlowers = new Set(detectFlowers(title))
+  return words(text).filter((word) => {
+    if (isGeneric(word) || used.has(word)) return false
+    const flower = FLOWER_PHRASE.get(word)
+    return !flower || !usedFlowers.has(flower)
+  })
+}
+
+function repeatsTitle(description: string, title: string): boolean {
+  const left = fold(stripTrailingPeriod(description))
+  const right = fold(stripTrailingPeriod(title))
+  if (!left || !right) return false
+  if (left === right) return true
+  if (!left.startsWith(right)) return false
+  const rest = left.slice(right.length).replace(/^[\s.:;-]+/, '')
+  return rest.length === 0 || words(rest).every((word) => isGeneric(word))
+}
+
+function ensurePeriod(value: string): string {
+  const trimmed = value.trim()
+  if (/[.!?…]$/.test(trimmed)) return trimmed
+  return `${trimmed}.`
+}
+
+function factualDescription(sentences: string[], title: string): string | null {
+  const chosen: string[] = []
+  for (const sentence of sentences) {
+    if (isSlogan(sentence)) continue
+    if (detectFlowers(sentence).length === 0 && !hasSeason(sentence) && !hasArrangement(sentence)) continue
+    if (meaningfulExtras(sentence, title).length === 0 || repeatsTitle(sentence, title)) continue
+    const next = ensurePeriod(stripTrailingPeriod(sentence))
+    const joined = [...chosen, next].join(' ')
+    if (chosen.length === 2) break
+    if (joined.length <= DESCRIPTION_LIMIT) {
+      chosen.push(next)
+      continue
+    }
+    if (chosen.length === 0) chosen.push(clipWords(next, DESCRIPTION_LIMIT))
+    break
+  }
+  const description = chosen.join(' ').trim()
+  if (!description || repeatsTitle(description, title)) return null
+  return description
+}
+
+function descriptiveAlt(title: string, description: string | null): string {
+  if (!description) return title
+  if (repeatsTitle(description, title) || fold(description).includes(fold(title))) return clipWords(description, ALT_LIMIT)
+  return clipWords(`${stripTrailingPeriod(title)}. ${description}`, ALT_LIMIT)
 }
 
 export function galleryMetadata(summary: string): GalleryMetadata {
-  const sentences = splitSentences(sanitize(summary))
+  const sentences = segmentSummary(summary)
     .filter((sentence) => !OPERATIONAL.some((pattern) => pattern.test(sentence)))
     .map(cleanSentence)
-    .filter((sentence) => sentence.length >= 3)
+    .map(stripCutoffFragment)
+    .filter((sentence) => sentence.length >= 3 && !isSlogan(sentence))
   const text = sentences.join(' ')
   const flowers = detectFlowers(text)
   const occasion = detectOccasion(text)
-  const title = chooseTitle(sentences[0] ?? null, flowers, occasion, hasSeason(text), hasArrangement(text))
+  const title = namedBouquetTitle(summary)
+    ?? shortBouquetLabel(sentences)
+    ?? fitTitle(composeTitle(flowers, occasion, hasSeason(text), hasArrangement(text)))
+    ?? NEUTRAL_GALLERY_TITLE
   const specific = title !== NEUTRAL_GALLERY_TITLE
-  const descriptionSentences = specific
-    ? sentences.filter((sentence) => meaningfulExtras(sentence, title).length > 0).slice(0, 2)
-    : []
-  const joined = descriptionSentences.join(' ').trim()
-  const description = joined && joined !== title && meaningfulExtras(joined, title).length > 0
-    ? clipWords(joined, 320)
-    : null
+  const description = specific ? factualDescription(sentences, title) : null
 
   return {
     title,
-    alt: specific ? title : FALLBACK_GALLERY_ALT,
+    alt: specific ? descriptiveAlt(title, description) : FALLBACK_GALLERY_ALT,
     description,
     occasion: occasion?.label ?? null,
   }

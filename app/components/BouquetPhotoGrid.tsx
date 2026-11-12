@@ -51,7 +51,7 @@ export function BouquetPhotoGrid({
   return (
     <>
       <ul className={gridClassName}>
-        {visiblePhotos.map((photo) => {
+        {visiblePhotos.map((photo, index) => {
           const imageButton = (
             <button
               type="button"
@@ -72,21 +72,21 @@ export function BouquetPhotoGrid({
                 fill
                 className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.06]"
                 sizes={sizes}
-                loading="lazy"
+                loading={showCaptions && index < (initialCount ?? 0) ? 'eager' : 'lazy'}
               />
             </button>
           )
           return (
-            <li key={photo.id}>
+            <li key={photo.id} className="h-full">
               {showCaptions ? (
-                <figure>
+                <figure className="flex h-full flex-col">
                   {imageButton}
-                  <figcaption className="px-0.5 pt-3">
-                    <h3 className="font-display text-[1.05rem] sm:text-lg font-semibold leading-snug text-ink break-words">
+                  <figcaption className="flex min-h-24 flex-col px-0.5 pt-3">
+                    <h3 className="line-clamp-2 font-display text-[1.02rem] font-semibold leading-snug text-ink sm:text-[1.08rem]">
                       {photo.title}
                     </h3>
                     {photo.description ? (
-                      <p className="mt-1.5 text-sm leading-relaxed text-muted break-words">
+                      <p className="mt-1.5 line-clamp-2 text-sm leading-snug text-muted">
                         {photo.description}
                       </p>
                     ) : null}
