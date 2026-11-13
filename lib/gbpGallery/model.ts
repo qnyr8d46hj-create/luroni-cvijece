@@ -1,3 +1,4 @@
+import { approvedGalleryTitle } from './approvedTitles'
 import { galleryMetadata } from './metadata'
 import type { PublicGalleryPhoto } from './public'
 
@@ -269,14 +270,24 @@ export function landingUsesSyncedGallery(visibleCount: number): boolean {
   return visibleCount >= LANDING_GALLERY_LIMIT
 }
 
+function altWithTitle(title: string, generatedTitle: string, generatedAlt: string): string {
+  if (generatedAlt === generatedTitle) return title
+  const prefix = `${generatedTitle}. `
+  if (generatedAlt.startsWith(prefix)) return `${title}. ${generatedAlt.slice(prefix.length)}`
+  return generatedAlt
+}
+
 export function toPublicPhoto(post: StoredGalleryPost): PublicGalleryPhoto {
   const generated = galleryMetadata(post.summary)
   const override = post.metadataOverride
+  const id = docIdFromResourceName(post.resourceName)
+  const approved = approvedGalleryTitle(id)
+  const title = override?.title ?? approved ?? generated.title
   return {
-    id: docIdFromResourceName(post.resourceName),
+    id,
     src: post.imageUrl ?? '',
-    alt: override?.alt ?? generated.alt,
-    title: override?.title ?? generated.title,
+    alt: override?.alt ?? (approved && approved !== generated.title ? altWithTitle(title, generated.title, generated.alt) : generated.alt),
+    title,
     description: override?.description ?? generated.description,
     occasion: override?.occasion ?? generated.occasion,
     createdAt: post.createTime,

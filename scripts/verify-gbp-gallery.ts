@@ -355,6 +355,63 @@ assert(captionJson?.image[1]?.name === 'Raskoš boja' && captionJson.image[1]?.d
 assert(captionJson?.image[2]?.name === 'Premium buket „Plava elegancija”' && captionJson.image[2]?.description === plavaMeta.description, 'ImageGallery uses the cleaned Plava elegancija title and description')
 assert(!/za trenutke kada|ponekad je dovoljan|elegancije i emocija/i.test(JSON.stringify(captionJson)), 'ImageGallery does not repeat the promotional sentences')
 
+const approvedSummaries: Record<string, { summary: string; title: string }> = {
+  '2719924025939426649': {
+    summary: 'Romantični buket crvenih i ružičastih ruža 🌸❤️ Postoje trenuci kada cvijeće govori više od tisuću riječi.',
+    title: 'Romantični buket',
+  },
+  '7147548008275532225': {
+    summary: 'Cvjetna harmonija boja i elegancije 🌸💐 Ponekad je dovoljan samo jedan buket da nekome uljepšate cijeli dan.',
+    title: 'Cvjetna harmonija',
+  },
+  '7011050255258978573': {
+    summary: 'Raskoš boja, elegancije i emocija 💐❤️ Neki buketi jednostavno privlače pogled! 🌸 Spoj nježnih bijelih ruža.',
+    title: 'Raskoš boja',
+  },
+  '4047939570653660542': {
+    summary: 'Premium buket „Plava elegancija” 💙🤍 Za trenutke kada običan buket jednostavno nije dovoljan. Raskošna kombinacija bijelih orhideja.',
+    title: 'Premium buket „Plava elegancija”',
+  },
+  '2642321651677910290': {
+    summary: 'Nježna elegancija u svakom cvijetu 🌸💗 Romantična kombinacija ružičastih ruža, elegantnih ljiljana i eukaliptusa.',
+    title: 'Nježna elegancija',
+  },
+  '8446843066109521103': {
+    summary: 'Crvena klasika s modernim detaljem ❤️🌿 Crvene ruže u kombinaciji s raskošnim karanfilima i eukaliptusom.',
+    title: 'Crvena klasika',
+  },
+  '3352157841610244391': {
+    summary: 'Jesenska elegancija u toplim tonovima 🍂🧡 Upečatljive narančaste kale u kombinaciji s karanfilima i eukaliptusom.',
+    title: 'Jesenska elegancija',
+  },
+  '3241958255975358749': {
+    summary: 'Raskošne boje jeseni 🍂💐 Bordo, crveni i ljubičasti tonovi u kombinaciji s eukaliptusom i sezonskim zelenilom.',
+    title: 'Raskoš jesenskih tonova',
+  },
+  '4415220057863362207': {
+    summary: 'Jesen u buketu 🍂🧡 Duboki bordo tonovi, jarke narančaste nijanse i dekorativno jesensko lišće.',
+    title: 'Jesen u buketu',
+  },
+  '7191446364504786981': {
+    summary: 'Jesenske boje u buketu 🍂💐 Topli tonovi narančaste, bijele i zelene, uz eukaliptus i sezonsko cvijeće.',
+    title: 'Jesenska čarolija',
+  },
+}
+for (const [postId, approved] of Object.entries(approvedSummaries)) {
+  const stored = storedFrom(remotePost(postId, { summary: approved.summary }))
+  const photo = selectPublicPhotos([stored], 1)[0]
+  const payload = firestorePayload(stored)
+  assert(photo?.id === postId && photo.title === approved.title, `Approved title is used for post ${postId}`)
+  assert(!('title' in payload) && !('metadataOverride' in payload) && !('alt' in payload), `Approved title for ${postId} is not written by sync`)
+}
+assert(!JSON.stringify(firestorePayload(storedFrom(remotePost('7191446364504786981', { summary: approvedSummaries['7191446364504786981'].summary })))).includes('Jesenska čarolija'), 'The corrected title is not stored in the sync payload')
+assert(!JSON.stringify(firestorePayload(storedFrom(remotePost('3241958255975358749', { summary: approvedSummaries['3241958255975358749'].summary })))).includes('Raskoš jesenskih tonova'), 'The other corrected title is not stored in the sync payload')
+const renamed = storedFrom(remotePost('3241958255975358749', { summary: approvedSummaries['3241958255975358749'].summary }))
+renamed.metadataOverride = { title: 'Ručno ispravljen naslov', alt: null, description: null, occasion: null }
+assert(selectPublicPhotos([renamed], 1)[0]?.title === 'Ručno ispravljen naslov', 'A manual title still replaces an approved read-time title')
+const syncSource = read('lib/gbpGallery/sync.ts') + read('lib/gbpGallery/firestore.ts')
+assert(!syncSource.includes('approvedTitles') && !syncSource.includes('Jesenska čarolija'), 'Sync does not write the approved title map')
+
 const overridden = storedFrom(remotePost('meta', { summary: 'Buket ruža' }))
 overridden.metadataOverride = { title: 'Ručno ispravljen naslov', alt: 'Ručni alt', description: 'Ručni opis', occasion: 'rođendan' }
 const overriddenPhoto = selectPublicPhotos([overridden], 1)[0]
