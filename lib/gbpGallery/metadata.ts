@@ -300,14 +300,15 @@ function acceptableBouquetName(name: string): boolean {
   return words(name).some((word) => !isGeneric(word))
 }
 
-function buildNamedTitle(lead: string | undefined, name: string): string | null {
+function buildNamedTitle(lead: string | undefined, name: string, quoted = false): string | null {
   const cleanedName = name.replace(/\s+/g, ' ').trim()
   if (!acceptableBouquetName(cleanedName)) return null
   const nameWords = words(cleanedName)
   if (nameWords.length > 0 && nameWords.every((word) => FLOWER_PHRASE.has(word) || isGeneric(word))) return null
   const prefix = lead ? `${capitalizeFirst(lead.trim())} ` : ''
   const noun = prefix ? 'buket' : 'Buket'
-  const title = `${prefix}${noun} ${cleanedName}`.replace(/\s+/g, ' ').trim()
+  const displayName = quoted ? `„${cleanedName}”` : cleanedName
+  const title = `${prefix}${noun} ${displayName}`.replace(/\s+/g, ' ').trim()
   if (wordCount(title) < 3 || wordCount(title) > TITLE_WORD_LIMIT) return null
   return title
 }
@@ -316,7 +317,7 @@ function namedBouquetTitle(summary: string): string | null {
   const text = stripEmoji(summary).replace(/[<>#]/g, ' ').replace(/\s+/g, ' ').trim()
   const quoted = text.match(/\b((?:premium|luksuzni|luksuzna)\s+)?buket\s*[„“"']\s*([^„“"”']{2,40}?)\s*[”"']/iu)
   if (quoted) {
-    const built = buildNamedTitle(quoted[1], quoted[2])
+    const built = buildNamedTitle(quoted[1], quoted[2], true)
     if (built) return built
   }
   const premium = text.match(/\b(premium|luksuzni|luksuzna)\s+buket\s+/iu)
@@ -353,6 +354,7 @@ function shortBouquetLabel(sentences: string[]): string | null {
     if (tokens.some((word) => word !== 'buket' && isGeneric(word))) continue
     const content = tokens.filter((word) => word !== 'buket')
     if (content.length === 0) continue
+    if (content.filter((word) => FLOWER_PHRASE.has(word)).length > 1) continue
     if (content.every((word) => FLOWER_PHRASE.has(word))) return capitalizeFirst(stripped)
     if (/^(?:spaj|sloz|pokaz|privlac|stvar|kombin|odusev)/.test(content[0] ?? '')) continue
     if (detectFlowers(stripped).length === 0) return capitalizeFirst(stripped)
@@ -367,8 +369,11 @@ function joinPhrases(phrases: string[]): string {
 }
 
 function composeTitle(flowers: string[], occasion: Occasion | null, season: boolean, arrangement: boolean): string | null {
-  if (flowers.length > 0) {
-    const noun = `Buket ${joinPhrases(flowers)}`
+  // One flower keeps a fallback specific. A list of roses, carnations, and
+  // eucalyptus is not a title: those facts belong in the description.
+  const picked = flowers.slice(0, 1)
+  if (picked.length > 0) {
+    const noun = `Buket ${joinPhrases(picked)}`
     return occasion ? `${noun} ${occasion.suffix}` : noun
   }
   if (season && occasion) return `Sezonski buket ${occasion.suffix}`
@@ -377,6 +382,64 @@ function composeTitle(flowers: string[], occasion: Occasion | null, season: bool
   if (arrangement) return 'Cvjetni aranžman'
   if (occasion) return `Buket ${occasion.suffix}`
   return null
+}
+
+const HEADLINE_TAILS = [
+  /[,]?\s+elegancije i emocija$/i,
+  /\s+boja i elegancije$/i,
+  /\s+u svakom cvijetu$/i,
+  /\s+u toplim tonovima$/i,
+  /\s+s modernim detaljem$/i,
+]
+
+const COLOR_WORD = /^(?:bijel\p{L}*|crven\p{L}*|ružičast\p{L}*|ruzicast\p{L}*|narančast\p{L}*|narancast\p{L}*|žut\p{L}*|zut\p{L}*|ljubičast\p{L}*|ljubicast\p{L}*|plav\p{L}*|zelen\p{L}*|bordo|roze|roza)$/iu
+
+function headlineRejected(value: string): boolean {
+  return /^(?:danas|pogledaj|ponekad|neki|postoje|ovaj|ova|ovo|za\s+trenutke|naru[cč]|javite|pozovite)/i.test(value.trim())
+}
+
+function fillerHeadline(value: string): boolean {
+  const tokens = words(value).filter((word) => !['i', 'u', 's', 'sa', 'uz', 'od', 'za'].includes(word))
+  if (tokens.length === 0) return true
+  const fillers = new Set(['prekrasan', 'prekrasna', 'prekrasno', 'prekrasni', 'cvijece', 'cvijeca', 'cvijecem', 'buket', 'buketa', 'nas', 'novi', 'nova', 'novo'])
+  return tokens.every((word) => fillers.has(word))
+}
+
+function stripTitleHype(value: string): string {
+  return value.replace(/^(?:prekrasan|prekrasna|prekrasno|divan|divna|divno|ovaj|ova|novo|novi|naš|naša)\s+/i, '').trim()
+}
+
+function hasColor(sentence: string): boolean {
+  return (sentence.match(/\p{L}+/gu) ?? []).some((token) => COLOR_WORD.test(token))
+}
+
+function shortenHeadline(headline: string): string | null {
+  let current = stripTrailingPeriod(headline).replace(/\s+/g, ' ').trim()
+  if (!current || headlineRejected(current)) return null
+  for (const tail of HEADLINE_TAILS) {
+    const next = current.replace(tail, '').replace(/[,]+$/g, '').trim()
+    if (next && wordCount(next) >= 2 && !fillerHeadline(next)) current = next
+  }
+  current = stripTitleHype(current)
+  const tokens = current.match(/\p{L}+/gu) ?? []
+  if (tokens.length > 4) {
+    const restIsInventory = tokens.slice(2).every((token) => {
+      const folded = fold(token)
+      return isGeneric(folded) || Boolean(FLOWER_PHRASE.get(folded)) || COLOR_WORD.test(token)
+    })
+    if (restIsInventory) current = current.split(/\s+/).slice(0, 2).join(' ')
+  }
+  if (wordCount(current) < 2 || wordCount(current) > 5 || fillerHeadline(current)) return null
+  return capitalizeFirst(current)
+}
+
+function distinctiveHeadline(summary: string): string | null {
+  const broken = summary.replace(/[\p{Extended_Pictographic}\uFE0F]/gu, '\n').replace(/\u200d/g, '')
+  const first = splitSentences(broken)[0]
+  if (!first) return null
+  const headline = cleanSentence(stripEmoji(first).replace(/[<>#]/g, ' '))
+  if (!headline || wordCount(headline) > 12 || OPERATIONAL.some((pattern) => pattern.test(headline))) return null
+  return shortenHeadline(headline)
 }
 
 function meaningfulExtras(text: string, title: string): string[] {
@@ -409,7 +472,7 @@ function factualDescription(sentences: string[], title: string): string | null {
   const chosen: string[] = []
   for (const sentence of sentences) {
     if (isSlogan(sentence)) continue
-    if (detectFlowers(sentence).length === 0 && !hasSeason(sentence) && !hasArrangement(sentence)) continue
+    if (detectFlowers(sentence).length === 0 && !hasSeason(sentence) && !hasArrangement(sentence) && !hasColor(sentence)) continue
     if (meaningfulExtras(sentence, title).length === 0 || repeatsTitle(sentence, title)) continue
     const next = ensurePeriod(stripTrailingPeriod(sentence))
     const joined = [...chosen, next].join(' ')
@@ -442,6 +505,7 @@ export function galleryMetadata(summary: string): GalleryMetadata {
   const flowers = detectFlowers(text)
   const occasion = detectOccasion(text)
   const title = namedBouquetTitle(summary)
+    ?? distinctiveHeadline(summary)
     ?? shortBouquetLabel(sentences)
     ?? fitTitle(composeTitle(flowers, occasion, hasSeason(text), hasArrangement(text)))
     ?? NEUTRAL_GALLERY_TITLE

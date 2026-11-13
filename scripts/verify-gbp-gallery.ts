@@ -311,32 +311,36 @@ function captionSentences(value: string): number {
 
 const harmonijaSource = 'Cvjetna harmonija boja i elegancije 🌸💐 Ponekad je dovoljan samo jedan buket da nekome uljepšate cijeli dan. ❤️ Ovaj raskošni buket spaj'
 const harmonijaMeta = galleryMetadata(harmonijaSource)
-assert(harmonijaMeta.title === NEUTRAL_GALLERY_TITLE, 'A floral slogan does not become the bouquet title')
-assert(!/cvjetna harmonija|ponekad|uljepšate|elegancije/i.test(`${harmonijaMeta.title} ${harmonijaMeta.alt} ${harmonijaMeta.description ?? ''}`), 'The harmonija slogan and its call to action are left out')
-assert(captionWordCount(harmonijaMeta.title) <= 8, 'The harmonija title stays within eight words')
+assert(harmonijaMeta.title === 'Cvjetna harmonija', 'A short florist headline becomes the title')
+assert(!/ponekad|uljepšate|elegancije/i.test(`${harmonijaMeta.title} ${harmonijaMeta.description ?? ''}`), 'The harmonija call to action is left out of the caption')
+assert(captionWordCount(harmonijaMeta.title) <= 4, 'The harmonija title stays short')
 assert(!/ruž|orhide|tulipan|ljiljan|karanfil|kala\b|eukalipt|antur/i.test(`${harmonijaMeta.title} ${harmonijaMeta.description ?? ''} ${harmonijaMeta.alt}`), 'The harmonija caption does not invent flowers')
-assert(harmonijaMeta.description === null, 'A slogan without a factual bouquet sentence has no description')
+assert(harmonijaMeta.description === null, 'A headline without a factual bouquet sentence has no description')
 
 const raskosSource = 'Raskoš boja, elegancije i emocija 💐❤️ Neki buketi jednostavno privlače pogled, a ovaj je jedan od njih! 🌸 Spoj nježnih bijelih ruža, in'
 const raskosMeta = galleryMetadata(raskosSource)
-assert(raskosMeta.title === 'Buket ruža', 'The raskoš slogan becomes the rose the florist named')
-assert(captionWordCount(raskosMeta.title) >= 2 && captionWordCount(raskosMeta.title) <= 8, 'The raskoš title stays concise')
-assert(!/raskoš boja|elegancije i emocija|privlače pogled|jedan od njih/i.test(`${raskosMeta.title} ${raskosMeta.description ?? ''} ${raskosMeta.alt}`), 'The raskoš slogan is not appended to the caption')
+assert(raskosMeta.title === 'Raskoš boja', 'The raskoš headline stays a short title instead of a flower list')
+assert(captionWordCount(raskosMeta.title) >= 2 && captionWordCount(raskosMeta.title) <= 4, 'The raskoš title stays concise')
+assert(!/elegancije i emocija|privlače pogled|jedan od njih|karanfil|eukalipt/i.test(`${raskosMeta.title} ${raskosMeta.description ?? ''}`), 'The raskoš caption does not append the slogan or extra flowers')
 assert(raskosMeta.description !== null && /bijel/i.test(raskosMeta.description) && /ruž/i.test(raskosMeta.description), 'The raskoš description keeps the white roses the florist wrote')
 assert(!raskosMeta.description?.toLocaleLowerCase('hr-HR').includes(raskosMeta.title.toLocaleLowerCase('hr-HR')), 'The raskoš description does not repeat its title')
 assert((raskosMeta.description?.length ?? 0) <= 150 && captionSentences(raskosMeta.description ?? '') <= 2, 'The raskoš description stays within two short sentences')
-assert(!/orhide|tulipan|ljiljan|karanfil|antur/i.test(`${raskosMeta.title} ${raskosMeta.description ?? ''}`), 'The raskoš caption does not invent another flower')
 
 const plavaSource = 'Premium buket „Plava elegancija” 💙🤍 Za trenutke kada običan buket jednostavno nije dovoljan. Raskošna kombinacija bijelih orhideja, ele'
 const plavaMeta = galleryMetadata(plavaSource)
-assert(plavaMeta.title === 'Premium buket Plava elegancija', 'A named premium bouquet keeps its name')
+assert(plavaMeta.title === 'Premium buket „Plava elegancija”', 'A named premium bouquet keeps its quoted name')
 assert(captionWordCount(plavaMeta.title) >= 3 && captionWordCount(plavaMeta.title) <= 8, 'The Plava elegancija title stays within eight words')
 assert(!/za trenutke|nije dovoljan|običan buket/i.test(plavaMeta.title), 'The promotional sentence is not appended to the Plava elegancija title')
 assert(plavaMeta.description !== null && /orhide/i.test(plavaMeta.description) && /bijel/i.test(plavaMeta.description), 'The Plava elegancija description keeps the white orchids the florist wrote')
 assert(!/plava elegancija|premium buket|za trenutke|nije dovoljan/i.test(plavaMeta.description ?? ''), 'The Plava elegancija description does not repeat the title or the slogan')
 assert((plavaMeta.description?.length ?? 0) <= 150 && captionSentences(plavaMeta.description ?? '') <= 2, 'The Plava elegancija description stays within two short sentences')
 assert(!/ruž|tulipan|ljiljan|karanfil/i.test(`${plavaMeta.title} ${plavaMeta.description ?? ''} ${plavaMeta.alt}`), 'The Plava elegancija caption does not invent another flower')
-assert(plavaMeta.alt.includes('Premium buket Plava elegancija') && /orhide/i.test(plavaMeta.alt), 'Alt text keeps the bouquet name and the flowers the florist named')
+assert(plavaMeta.alt.includes('Premium buket „Plava elegancija”') && /orhide/i.test(plavaMeta.alt), 'Alt text keeps the bouquet name and the flowers the florist named')
+
+const inventoryMeta = galleryMetadata('Crvena klasika s modernim detaljem ❤️🌿 Crvene ruže u kombinaciji s raskošnim karanfilima, alstromerijama, eukaliptusom i anturijem.')
+assert(inventoryMeta.title === 'Crvena klasika', 'A flower inventory does not replace the florist headline')
+assert(!/karanfil|eukalipt|alstromer|antur|ruž/i.test(inventoryMeta.title), 'The Crvena klasika title does not list the flowers')
+assert(/ruž/i.test(inventoryMeta.description ?? '') && /karanfil/i.test(inventoryMeta.description ?? '') && /eukalipt/i.test(inventoryMeta.description ?? ''), 'The flower inventory stays in the description')
 
 const captionPhotos = [
   selectPublicPhotos([storedFrom(remotePost('harmonija', { summary: harmonijaSource }))], 1)[0],
@@ -346,10 +350,10 @@ const captionPhotos = [
 assert(captionPhotos.every((photo) => photo), 'The three screenshot captions become public photos')
 const captionJson = galleryImageGalleryJsonLd(captionPhotos.flatMap((photo) => photo ? [photo] : []))
 assert(captionJson?.image.length === 3, 'ImageGallery lists the three cleaned captions')
-assert(captionJson?.image[0]?.name === NEUTRAL_GALLERY_TITLE && !('description' in (captionJson.image[0] ?? {})), 'ImageGallery does not publish the harmonija slogan')
-assert(captionJson?.image[1]?.name === 'Buket ruža' && captionJson.image[1]?.description === raskosMeta.description, 'ImageGallery uses the cleaned raskoš title and description')
-assert(captionJson?.image[2]?.name === 'Premium buket Plava elegancija' && captionJson.image[2]?.description === plavaMeta.description, 'ImageGallery uses the cleaned Plava elegancija title and description')
-assert(!/cvjetna harmonija|raskoš boja|za trenutke kada|ponekad je dovoljan/i.test(JSON.stringify(captionJson)), 'ImageGallery does not repeat the promotional sentences')
+assert(captionJson?.image[0]?.name === 'Cvjetna harmonija' && !('description' in (captionJson.image[0] ?? {})), 'ImageGallery uses the short harmonija title and omits an empty description')
+assert(captionJson?.image[1]?.name === 'Raskoš boja' && captionJson.image[1]?.description === raskosMeta.description, 'ImageGallery uses the cleaned raskoš title and description')
+assert(captionJson?.image[2]?.name === 'Premium buket „Plava elegancija”' && captionJson.image[2]?.description === plavaMeta.description, 'ImageGallery uses the cleaned Plava elegancija title and description')
+assert(!/za trenutke kada|ponekad je dovoljan|elegancije i emocija/i.test(JSON.stringify(captionJson)), 'ImageGallery does not repeat the promotional sentences')
 
 const overridden = storedFrom(remotePost('meta', { summary: 'Buket ruža' }))
 overridden.metadataOverride = { title: 'Ručno ispravljen naslov', alt: 'Ručni alt', description: 'Ručni opis', occasion: 'rođendan' }
@@ -762,7 +766,9 @@ assert(
   'Homepage section subtitle is set',
 )
 const grid = read('app/components/BouquetPhotoGrid.tsx')
-assert(grid.includes('Naruči sličan buket') && grid.includes('href="/#order"'), 'Lightbox links to the existing order section')
+assert(!grid.includes('Naruči sličan buket') && !grid.includes('href="/#order"'), 'The gallery lightbox does not offer to order the selected photo')
+assert(grid.includes('Zatvori') && grid.includes('role="dialog"'), 'The lightbox can still be opened and closed')
+assert(read('app/components/Header.tsx').includes('Naruči buket') && read('app/components/Header.tsx').includes('href="/#order"'), 'Order buttons outside the gallery stay in place')
 assert(!grid.includes('firebase') && !grid.includes('gbpGallery/sync'), 'The lightbox does not import server sync code')
 assert(grid.includes('Učitaj još'), 'The gallery reveals another page of photos in the browser')
 assert(!grid.includes('fetch('), 'Load more does not request more photos')

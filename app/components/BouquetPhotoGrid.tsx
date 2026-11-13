@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
-import Link from 'next/link'
 import type { PublicGalleryPhoto } from '@/lib/gbpGallery/public'
 
 export function BouquetPhotoGrid({
@@ -156,13 +155,7 @@ export function BouquetPhotoGrid({
                 {active.alt}
               </p>
             )}
-            <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:justify-center">
-              <Link
-                href="/#order"
-                className="inline-flex items-center justify-center rounded-full bg-forest px-6 py-3 text-sm font-medium text-white hover:bg-forest-dark transition-colors"
-              >
-                Naruči sličan buket
-              </Link>
+            <div className="mt-4 flex justify-center">
               <button
                 type="button"
                 onClick={() => setActive(null)}
