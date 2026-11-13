@@ -1,3 +1,5 @@
+import { approvedGalleryTitle } from './approvedTitles'
+import { galleryMetadata } from './metadata'
 import type { PublicGalleryPhoto } from './public'
 
 export type { PublicGalleryPhoto }
@@ -25,6 +27,13 @@ export interface RemoteLocalPost {
   photo: RemotePhoto | null
 }
 
+export interface GalleryMetadataOverride {
+  title: string | null
+  alt: string | null
+  description: string | null
+  occasion: string | null
+}
+
 export interface StoredGalleryPost {
   resourceName: string
   mediaResourceName: string | null
@@ -37,6 +46,7 @@ export interface StoredGalleryPost {
   suitable: boolean
   suitabilityReasons: string[]
   visibilityOverride: 'show' | 'hide' | null
+  metadataOverride: GalleryMetadataOverride | null
   storagePath: string | null
   imageUrl: string | null
   contentType: string | null
@@ -234,14 +244,7 @@ export function classifyPost(post: RemoteLocalPost): Suitability {
   return { suitable: true, reasons }
 }
 
-export function galleryAlt(summary: string): string {
-  const cleaned = summary.replace(/\s+/g, ' ').trim()
-  if (!cleaned || nonBouquetSignals(cleaned).length > 0) {
-    return 'Nedavno izrađen buket cvjećarnice Luroni'
-  }
-  if (cleaned.length <= 140) return cleaned
-  return `${cleaned.slice(0, 137).trimEnd()}…`
-}
+export { galleryAlt } from './metadata'
 
 export function isPubliclyVisible(post: StoredGalleryPost): boolean {
   if (post.deletedAt) return false
@@ -267,11 +270,26 @@ export function landingUsesSyncedGallery(visibleCount: number): boolean {
   return visibleCount >= LANDING_GALLERY_LIMIT
 }
 
+function altWithTitle(title: string, generatedTitle: string, generatedAlt: string): string {
+  if (generatedAlt === generatedTitle) return title
+  const prefix = `${generatedTitle}. `
+  if (generatedAlt.startsWith(prefix)) return `${title}. ${generatedAlt.slice(prefix.length)}`
+  return generatedAlt
+}
+
 export function toPublicPhoto(post: StoredGalleryPost): PublicGalleryPhoto {
+  const generated = galleryMetadata(post.summary)
+  const override = post.metadataOverride
+  const id = docIdFromResourceName(post.resourceName)
+  const approved = approvedGalleryTitle(id)
+  const title = override?.title ?? approved ?? generated.title
   return {
-    id: docIdFromResourceName(post.resourceName),
+    id,
     src: post.imageUrl ?? '',
-    alt: galleryAlt(post.summary),
+    alt: override?.alt ?? (approved && approved !== generated.title ? altWithTitle(title, generated.title, generated.alt) : generated.alt),
+    title,
+    description: override?.description ?? generated.description,
+    occasion: override?.occasion ?? generated.occasion,
     createdAt: post.createTime,
   }
 }
@@ -292,11 +310,12 @@ function sameMedia(remote: RemoteLocalPost, previous: StoredGalleryPost): boolea
   )
 }
 
+// Download only when the stored image is missing, the last image sync failed,
+// or Google changed the media id or URL. A summary edit still updates Firestore.
 function shouldDownload(remote: RemoteLocalPost, previous: StoredGalleryPost | null): boolean {
   if (!remote.photo || !isAllowedImageUrl(remote.photo.googleUrl)) return false
   if (!previous || !isStoredGalleryImageUrl(previous.imageUrl)) return true
   if (previous.imageSyncError) return true
-  if (previous.updateTime !== remote.updateTime) return true
   if (!sameMedia(remote, previous)) return true
   return false
 }
@@ -376,6 +395,7 @@ export function nextStoredPost(input: {
     suitable: suitability.suitable,
     suitabilityReasons: suitability.reasons,
     visibilityOverride: input.previous?.visibilityOverride ?? null,
+    metadataOverride: input.previous?.metadataOverride ?? null,
     storagePath: input.image?.storagePath ?? (keepPrevious ? previousImage.storagePath : null),
     imageUrl: input.image?.imageUrl ?? (keepPrevious ? previousImage.imageUrl : null),
     contentType: input.image?.contentType ?? (keepPrevious ? previousImage.contentType : null),
@@ -428,6 +448,26 @@ function readNullableString(value: unknown, max: number): string | null {
   return readString(value, max)
 }
 
+function readOverrideField(value: unknown, max: number): string | null {
+  if (typeof value !== 'string') return null
+  const cleaned = value.replace(/[<>]/g, '').replace(/\s+/g, ' ').trim()
+  if (!cleaned) return null
+  return cleaned.slice(0, max)
+}
+
+function parseMetadataOverride(value: unknown): GalleryMetadataOverride | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null
+  const record = value as Record<string, unknown>
+  const override = {
+    title: readOverrideField(record.title, 140),
+    alt: readOverrideField(record.alt, 180),
+    description: readOverrideField(record.description, 400),
+    occasion: readOverrideField(record.occasion, 80),
+  }
+  if (!override.title && !override.alt && !override.description && !override.occasion) return null
+  return override
+}
+
 export function parseStoredPost(data: unknown): StoredGalleryPost | null {
   if (!data || typeof data !== 'object') return null
   const record = data as Record<string, unknown>
@@ -457,6 +497,7 @@ export function parseStoredPost(data: unknown): StoredGalleryPost | null {
     suitable: record.suitable,
     suitabilityReasons: reasons,
     visibilityOverride: override,
+    metadataOverride: parseMetadataOverride(record.metadataOverride),
     storagePath: readNullableString(record.storagePath, 300),
     imageUrl: readNullableString(record.imageUrl, 2000),
     contentType: readNullableString(record.contentType, 64),

@@ -2,7 +2,9 @@ import type { Metadata } from 'next'
 import { Header } from '@/app/components/Header'
 import { Footer } from '@/app/components/Footer'
 import { GallerySection } from '@/app/components/GallerySection'
+import { JsonLd } from '@/app/components/JsonLd'
 import { RecentBouquetsSection } from '@/app/components/RecentBouquetsSection'
+import { galleryImageGalleryJsonLd } from '@/lib/gbpGallery/metadata'
 import { GALLERY_PAGE_INITIAL } from '@/lib/gbpGallery/model'
 import { loadGalleryPagePhotos } from '@/lib/gbpGallery/read'
 
@@ -30,15 +32,18 @@ export const metadata: Metadata = {
 
 export default async function GalerijaPage() {
   const photos = await loadGalleryPagePhotos()
+  const galleryJsonLd = photos ? galleryImageGalleryJsonLd(photos) : null
 
   return (
     <>
+      {galleryJsonLd ? <JsonLd data={galleryJsonLd} /> : null}
       <Header />
       <main>
         {photos ? (
           <RecentBouquetsSection
             photos={photos}
             showGalleryLink={false}
+            showCaptions
             initialCount={GALLERY_PAGE_INITIAL}
             pageSize={GALLERY_PAGE_INITIAL}
           />

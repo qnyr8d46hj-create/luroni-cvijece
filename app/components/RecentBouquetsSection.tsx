@@ -5,6 +5,7 @@ import type { PublicGalleryPhoto } from '@/lib/gbpGallery/public'
 export function RecentBouquetsSection({
   photos,
   showGalleryLink = true,
+  showCaptions = false,
   initialCount,
   pageSize,
   backgroundClassName = 'bg-cream',
@@ -13,6 +14,7 @@ export function RecentBouquetsSection({
 }: {
   photos: PublicGalleryPhoto[]
   showGalleryLink?: boolean
+  showCaptions?: boolean
   initialCount?: number
   pageSize?: number
   backgroundClassName?: string
@@ -45,6 +47,7 @@ export function RecentBouquetsSection({
           photos={photos}
           initialCount={initialCount}
           pageSize={pageSize}
+          showCaptions={showCaptions}
           gridClassName={gridClassName}
           sizes={sizes}
         />

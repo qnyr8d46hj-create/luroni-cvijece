@@ -3,9 +3,10 @@ import { docIdFromResourceName, firestorePayload, parseStoredPost, selectPublicP
 import { uploadGalleryImage } from './storage'
 import type { GalleryStore } from './sync'
 
-// Server-only metadata. Sync never writes visibilityOverride, so a manual
-// Firestore value of "show" or "hide" survives every synchronization.
-// "hide" removes a photo. "show" keeps a photo the automatic filter rejected.
+// Server-only metadata. Sync never writes visibilityOverride or metadataOverride,
+// so a manual Firestore value survives every synchronization.
+// visibilityOverride "hide" removes a photo. "show" keeps a photo the filter rejected.
+// metadataOverride replaces one generated title, alt, description, or occasion.
 export const GBP_GALLERY_COLLECTION = 'gbpGalleryPosts'
 
 export async function listStoredPosts(): Promise<StoredGalleryPost[]> {

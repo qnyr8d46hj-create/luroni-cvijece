@@ -40,6 +40,12 @@ import {
   type StoredImage,
 } from '../lib/gbpGallery/model'
 import { syncGbpGallery, type GalleryStore } from '../lib/gbpGallery/sync'
+import {
+  FALLBACK_GALLERY_ALT,
+  galleryImageGalleryJsonLd,
+  galleryMetadata,
+  NEUTRAL_GALLERY_TITLE,
+} from '../lib/gbpGallery/metadata'
 
 globalThis.fetch = async () => {
   throw new Error('Gallery tests must not call the network')
@@ -250,6 +256,189 @@ assert(landingUsesSyncedGallery(4) === true, 'Four synced photos can fill a land
 assert(galleryAlt('Radno vrijeme 9-17') === 'Nedavno izrađen buket cvjećarnice Luroni', 'Operational copy is not used as alt text')
 assert(galleryAlt('Buket ruža') === 'Buket ruža', 'A bouquet caption can be the alt text')
 
+const insufficient = ['', 'Buket', 'Prekrasno cvijeće', 'Pogledajte naš novi buket'].map(galleryMetadata)
+assert(insufficient.every((meta) => meta.title === NEUTRAL_GALLERY_TITLE), 'A thin caption keeps the neutral title')
+assert(insufficient.every((meta) => meta.alt === FALLBACK_GALLERY_ALT), 'A thin caption keeps the fallback alt')
+assert(insufficient.every((meta) => meta.description === null), 'A thin caption does not repeat a generic description')
+assert(insufficient.every((meta) => meta.occasion === null), 'A thin caption does not invent an occasion')
+
+const roseMeta = galleryMetadata('Buket ruža')
+assert(roseMeta.title === 'Buket ruža' && roseMeta.alt === 'Buket ruža', 'A rose caption becomes the title and alt')
+assert(roseMeta.description === null && roseMeta.occasion === null, 'A short rose caption does not add a description or occasion')
+assert(!/crven|bijel|roza|ružič|rijek|krk|opatij|€|\beur\b|\bkn\b/i.test(`${roseMeta.title} ${roseMeta.alt}`), 'A rose caption does not gain a color, place, or price')
+
+const birthdayMeta = galleryMetadata('Buket za rođendan')
+assert(birthdayMeta.title === 'Buket za rođendan', 'A birthday caption stays a birthday title')
+assert(birthdayMeta.occasion === 'rođendan', 'A birthday caption records the occasion')
+assert(!/ruž|tulipan|božur|ljiljan|rijek|krk|€/i.test(birthdayMeta.title), 'A birthday caption does not gain a flower, place, or price')
+assert(birthdayMeta.description === null, 'A short birthday caption does not add a description')
+
+const detailedMeta = galleryMetadata('Prekrasan buket ruža za rođendan. Složili smo ga od svježih crvenih ruža.')
+assert(/ruž/i.test(detailedMeta.title) && /rođendan/i.test(detailedMeta.title), 'A detailed caption keeps the supported flower and occasion')
+assert(!/tulipan|božur|rijek|krk|€/i.test(`${detailedMeta.title} ${detailedMeta.description ?? ''}`), 'A detailed caption does not gain another flower, place, or price')
+assert(detailedMeta.description?.toLocaleLowerCase('hr-HR').includes('crven'), 'A detailed caption keeps the color the florist wrote')
+assert(detailedMeta.occasion === 'rođendan', 'A detailed caption records the supported occasion')
+
+const pricedMeta = galleryMetadata('Buket ruža. Cijena 25€.')
+assert(!/€|25|eur/i.test(`${pricedMeta.title} ${pricedMeta.alt} ${pricedMeta.description ?? ''}`), 'Prices are left out of gallery text')
+
+const mixedMeta = galleryMetadata('Tulipani i ruže za Valentinovo')
+assert(/tulipan/i.test(mixedMeta.title) && /ruž/i.test(mixedMeta.title) && /valentin/i.test(mixedMeta.title), 'A mixed caption keeps both flowers and the occasion')
+assert(!/božur|ljiljan|rijek|krk|€/i.test(mixedMeta.title), 'A mixed caption does not gain another flower, place, or price')
+assert(mixedMeta.occasion === 'Valentinovo', 'Valentinovo is recorded only from the caption')
+
+const longMeta = galleryMetadata('Danas vam pokazujemo jedan buket koji smo složili od svježih tulipana za poseban rođendan, uz puno pažnje i sezonskog zelenila iz našeg izloga, jer želimo da fotografija ostane vjeran zapis ovog jutarnjeg rada u cvjećarnici.')
+assert(longMeta.title === 'Buket tulipana za rođendan', 'A long caption becomes a short supported title')
+assert(longMeta.description !== null && /zelenil/i.test(longMeta.description), 'A long caption keeps the extra florist detail as the description')
+assert(!/€|rijek|krk/i.test(`${longMeta.title} ${longMeta.description}`), 'A long caption does not gain a price or place')
+
+const cityMeta = galleryMetadata('Buket ruža za dostavu u Rijeci i na Krku')
+assert(/ruž/i.test(cityMeta.title), 'A delivery caption keeps the flower the florist named')
+assert(!/rijek|rijeci|riječ|krk|opatij|kastav|viškov|lovran|malinsk/i.test(`${cityMeta.title} ${cityMeta.alt} ${cityMeta.description ?? ''}`), 'Gallery text does not attach a delivery place to the photo')
+
+const proteaMeta = galleryMetadata('Buket protea')
+assert(proteaMeta.title.toLocaleLowerCase('hr-HR').includes('protea'), 'An unknown flower stays in the title when the florist named it')
+assert(!/ruž|tulipan|božur/i.test(proteaMeta.title), 'An unknown flower does not get replaced with another flower')
+assert(proteaMeta.description === null, 'A short specific caption does not repeat itself as a description')
+
+function captionWordCount(value: string): number {
+  return value.trim().split(/\s+/).filter(Boolean).length
+}
+
+function captionSentences(value: string): number {
+  return value.split(/(?<=[.!?])\s+/).filter(Boolean).length
+}
+
+const harmonijaSource = 'Cvjetna harmonija boja i elegancije 🌸💐 Ponekad je dovoljan samo jedan buket da nekome uljepšate cijeli dan. ❤️ Ovaj raskošni buket spaj'
+const harmonijaMeta = galleryMetadata(harmonijaSource)
+assert(harmonijaMeta.title === 'Cvjetna harmonija', 'A short florist headline becomes the title')
+assert(!/ponekad|uljepšate|elegancije/i.test(`${harmonijaMeta.title} ${harmonijaMeta.description ?? ''}`), 'The harmonija call to action is left out of the caption')
+assert(captionWordCount(harmonijaMeta.title) <= 4, 'The harmonija title stays short')
+assert(!/ruž|orhide|tulipan|ljiljan|karanfil|kala\b|eukalipt|antur/i.test(`${harmonijaMeta.title} ${harmonijaMeta.description ?? ''} ${harmonijaMeta.alt}`), 'The harmonija caption does not invent flowers')
+assert(harmonijaMeta.description === null, 'A headline without a factual bouquet sentence has no description')
+
+const raskosSource = 'Raskoš boja, elegancije i emocija 💐❤️ Neki buketi jednostavno privlače pogled, a ovaj je jedan od njih! 🌸 Spoj nježnih bijelih ruža, in'
+const raskosMeta = galleryMetadata(raskosSource)
+assert(raskosMeta.title === 'Raskoš boja', 'The raskoš headline stays a short title instead of a flower list')
+assert(captionWordCount(raskosMeta.title) >= 2 && captionWordCount(raskosMeta.title) <= 4, 'The raskoš title stays concise')
+assert(!/elegancije i emocija|privlače pogled|jedan od njih|karanfil|eukalipt/i.test(`${raskosMeta.title} ${raskosMeta.description ?? ''}`), 'The raskoš caption does not append the slogan or extra flowers')
+assert(raskosMeta.description !== null && /bijel/i.test(raskosMeta.description) && /ruž/i.test(raskosMeta.description), 'The raskoš description keeps the white roses the florist wrote')
+assert(!raskosMeta.description?.toLocaleLowerCase('hr-HR').includes(raskosMeta.title.toLocaleLowerCase('hr-HR')), 'The raskoš description does not repeat its title')
+assert((raskosMeta.description?.length ?? 0) <= 150 && captionSentences(raskosMeta.description ?? '') <= 2, 'The raskoš description stays within two short sentences')
+
+const plavaSource = 'Premium buket „Plava elegancija” 💙🤍 Za trenutke kada običan buket jednostavno nije dovoljan. Raskošna kombinacija bijelih orhideja, ele'
+const plavaMeta = galleryMetadata(plavaSource)
+assert(plavaMeta.title === 'Premium buket „Plava elegancija”', 'A named premium bouquet keeps its quoted name')
+assert(captionWordCount(plavaMeta.title) >= 3 && captionWordCount(plavaMeta.title) <= 8, 'The Plava elegancija title stays within eight words')
+assert(!/za trenutke|nije dovoljan|običan buket/i.test(plavaMeta.title), 'The promotional sentence is not appended to the Plava elegancija title')
+assert(plavaMeta.description !== null && /orhide/i.test(plavaMeta.description) && /bijel/i.test(plavaMeta.description), 'The Plava elegancija description keeps the white orchids the florist wrote')
+assert(!/plava elegancija|premium buket|za trenutke|nije dovoljan/i.test(plavaMeta.description ?? ''), 'The Plava elegancija description does not repeat the title or the slogan')
+assert((plavaMeta.description?.length ?? 0) <= 150 && captionSentences(plavaMeta.description ?? '') <= 2, 'The Plava elegancija description stays within two short sentences')
+assert(!/ruž|tulipan|ljiljan|karanfil/i.test(`${plavaMeta.title} ${plavaMeta.description ?? ''} ${plavaMeta.alt}`), 'The Plava elegancija caption does not invent another flower')
+assert(plavaMeta.alt.includes('Premium buket „Plava elegancija”') && /orhide/i.test(plavaMeta.alt), 'Alt text keeps the bouquet name and the flowers the florist named')
+
+const inventoryMeta = galleryMetadata('Crvena klasika s modernim detaljem ❤️🌿 Crvene ruže u kombinaciji s raskošnim karanfilima, alstromerijama, eukaliptusom i anturijem.')
+assert(inventoryMeta.title === 'Crvena klasika', 'A flower inventory does not replace the florist headline')
+assert(!/karanfil|eukalipt|alstromer|antur|ruž/i.test(inventoryMeta.title), 'The Crvena klasika title does not list the flowers')
+assert(/ruž/i.test(inventoryMeta.description ?? '') && /karanfil/i.test(inventoryMeta.description ?? '') && /eukalipt/i.test(inventoryMeta.description ?? ''), 'The flower inventory stays in the description')
+
+const captionPhotos = [
+  selectPublicPhotos([storedFrom(remotePost('harmonija', { summary: harmonijaSource }))], 1)[0],
+  selectPublicPhotos([storedFrom(remotePost('raskos', { summary: raskosSource }))], 1)[0],
+  selectPublicPhotos([storedFrom(remotePost('plava', { summary: plavaSource }))], 1)[0],
+]
+assert(captionPhotos.every((photo) => photo), 'The three screenshot captions become public photos')
+const captionJson = galleryImageGalleryJsonLd(captionPhotos.flatMap((photo) => photo ? [photo] : []))
+assert(captionJson?.image.length === 3, 'ImageGallery lists the three cleaned captions')
+assert(captionJson?.image[0]?.name === 'Cvjetna harmonija' && !('description' in (captionJson.image[0] ?? {})), 'ImageGallery uses the short harmonija title and omits an empty description')
+assert(captionJson?.image[1]?.name === 'Raskoš boja' && captionJson.image[1]?.description === raskosMeta.description, 'ImageGallery uses the cleaned raskoš title and description')
+assert(captionJson?.image[2]?.name === 'Premium buket „Plava elegancija”' && captionJson.image[2]?.description === plavaMeta.description, 'ImageGallery uses the cleaned Plava elegancija title and description')
+assert(!/za trenutke kada|ponekad je dovoljan|elegancije i emocija/i.test(JSON.stringify(captionJson)), 'ImageGallery does not repeat the promotional sentences')
+
+const approvedSummaries: Record<string, { summary: string; title: string }> = {
+  '2719924025939426649': {
+    summary: 'Romantični buket crvenih i ružičastih ruža 🌸❤️ Postoje trenuci kada cvijeće govori više od tisuću riječi.',
+    title: 'Romantični buket',
+  },
+  '7147548008275532225': {
+    summary: 'Cvjetna harmonija boja i elegancije 🌸💐 Ponekad je dovoljan samo jedan buket da nekome uljepšate cijeli dan.',
+    title: 'Cvjetna harmonija',
+  },
+  '7011050255258978573': {
+    summary: 'Raskoš boja, elegancije i emocija 💐❤️ Neki buketi jednostavno privlače pogled! 🌸 Spoj nježnih bijelih ruža.',
+    title: 'Raskoš boja',
+  },
+  '4047939570653660542': {
+    summary: 'Premium buket „Plava elegancija” 💙🤍 Za trenutke kada običan buket jednostavno nije dovoljan. Raskošna kombinacija bijelih orhideja.',
+    title: 'Premium buket „Plava elegancija”',
+  },
+  '2642321651677910290': {
+    summary: 'Nježna elegancija u svakom cvijetu 🌸💗 Romantična kombinacija ružičastih ruža, elegantnih ljiljana i eukaliptusa.',
+    title: 'Nježna elegancija',
+  },
+  '8446843066109521103': {
+    summary: 'Crvena klasika s modernim detaljem ❤️🌿 Crvene ruže u kombinaciji s raskošnim karanfilima i eukaliptusom.',
+    title: 'Crvena klasika',
+  },
+  '3352157841610244391': {
+    summary: 'Jesenska elegancija u toplim tonovima 🍂🧡 Upečatljive narančaste kale u kombinaciji s karanfilima i eukaliptusom.',
+    title: 'Jesenska elegancija',
+  },
+  '3241958255975358749': {
+    summary: 'Raskošne boje jeseni 🍂💐 Bordo, crveni i ljubičasti tonovi u kombinaciji s eukaliptusom i sezonskim zelenilom.',
+    title: 'Raskoš jesenskih tonova',
+  },
+  '4415220057863362207': {
+    summary: 'Jesen u buketu 🍂🧡 Duboki bordo tonovi, jarke narančaste nijanse i dekorativno jesensko lišće.',
+    title: 'Jesen u buketu',
+  },
+  '7191446364504786981': {
+    summary: 'Jesenske boje u buketu 🍂💐 Topli tonovi narančaste, bijele i zelene, uz eukaliptus i sezonsko cvijeće.',
+    title: 'Jesenska čarolija',
+  },
+}
+for (const [postId, approved] of Object.entries(approvedSummaries)) {
+  const stored = storedFrom(remotePost(postId, { summary: approved.summary }))
+  const photo = selectPublicPhotos([stored], 1)[0]
+  const payload = firestorePayload(stored)
+  assert(photo?.id === postId && photo.title === approved.title, `Approved title is used for post ${postId}`)
+  assert(!('title' in payload) && !('metadataOverride' in payload) && !('alt' in payload), `Approved title for ${postId} is not written by sync`)
+}
+assert(!JSON.stringify(firestorePayload(storedFrom(remotePost('7191446364504786981', { summary: approvedSummaries['7191446364504786981'].summary })))).includes('Jesenska čarolija'), 'The corrected title is not stored in the sync payload')
+assert(!JSON.stringify(firestorePayload(storedFrom(remotePost('3241958255975358749', { summary: approvedSummaries['3241958255975358749'].summary })))).includes('Raskoš jesenskih tonova'), 'The other corrected title is not stored in the sync payload')
+const renamed = storedFrom(remotePost('3241958255975358749', { summary: approvedSummaries['3241958255975358749'].summary }))
+renamed.metadataOverride = { title: 'Ručno ispravljen naslov', alt: null, description: null, occasion: null }
+assert(selectPublicPhotos([renamed], 1)[0]?.title === 'Ručno ispravljen naslov', 'A manual title still replaces an approved read-time title')
+const syncSource = read('lib/gbpGallery/sync.ts') + read('lib/gbpGallery/firestore.ts')
+assert(!syncSource.includes('approvedTitles') && !syncSource.includes('Jesenska čarolija'), 'Sync does not write the approved title map')
+
+const overridden = storedFrom(remotePost('meta', { summary: 'Buket ruža' }))
+overridden.metadataOverride = { title: 'Ručno ispravljen naslov', alt: 'Ručni alt', description: 'Ručni opis', occasion: 'rođendan' }
+const overriddenPhoto = selectPublicPhotos([overridden], 1)[0]
+assert(overriddenPhoto?.title === 'Ručno ispravljen naslov' && overriddenPhoto.alt === 'Ručni alt', 'A manual title and alt replace the generated text')
+assert(overriddenPhoto?.description === 'Ručni opis' && overriddenPhoto.occasion === 'rođendan', 'A manual description and occasion replace the generated text')
+const partial = storedFrom(remotePost('partial', { summary: 'Buket ruža' }))
+partial.metadataOverride = { title: 'Samo naslov', alt: null, description: null, occasion: null }
+const partialPhoto = selectPublicPhotos([partial], 1)[0]
+assert(partialPhoto?.title === 'Samo naslov' && partialPhoto.alt === 'Buket ruža' && partialPhoto.description === null, 'An empty override field still follows the summary')
+
+const summaryPlan = planSync(
+  [remotePost('edit', { summary: 'Novi buket ruža', updateTime: '2026-11-05T00:00:00.000Z' })],
+  [storedFrom(remotePost('edit', { summary: 'Stari buket' }))],
+)
+assert(summaryPlan.upserts[0]?.downloadImage === false, 'A summary change does not require a new image')
+assert(summaryPlan.upserts[0]?.skipWrite === false, 'A summary change is still written')
+const mediaPlan = planSync(
+  [remotePost('edit', {
+    photo: {
+      mediaResourceName: `${resourceName('edit')}/media/2`,
+      googleUrl: 'https://lh3.googleusercontent.com/bouquet-edit-2',
+    },
+  })],
+  [storedFrom(remotePost('edit', { summary: 'Stari buket' }))],
+)
+assert(mediaPlan.upserts[0]?.downloadImage === true, 'A new Google media URL is downloaded')
+
 const duplicate = dedupeRemotePosts([
   remotePost('dup', { updateTime: '2026-11-01T00:00:00.000Z', summary: 'stari' }),
   remotePost('dup', { updateTime: '2026-11-02T00:00:00.000Z', summary: 'novi' }),
@@ -257,9 +446,17 @@ const duplicate = dedupeRemotePosts([
 assert(duplicate.length === 1 && duplicate[0]?.summary === 'novi', 'The same post id keeps the newer update timestamp')
 
 const payload = firestorePayload(hidden)
-assert(!('visibilityOverride' in payload), 'Sync writes do not include the manual override')
-const roundTrip = parseStoredPost({ ...payload, visibilityOverride: 'hide' })
+assert(!('visibilityOverride' in payload), 'Sync writes do not include the manual visibility override')
+assert(!('metadataOverride' in payload), 'Sync writes do not include the manual metadata override')
+const roundTrip = parseStoredPost({
+  ...payload,
+  visibilityOverride: 'hide',
+  metadataOverride: { title: 'Ručni naslov', alt: '', description: 12, occasion: null },
+})
 assert(roundTrip?.visibilityOverride === 'hide' && roundTrip.imageUrl === hidden.imageUrl, 'Stored metadata keeps a manual hide flag')
+assert(roundTrip?.metadataOverride?.title === 'Ručni naslov', 'Stored metadata keeps a manual title')
+assert(roundTrip?.metadataOverride?.alt === null && roundTrip.metadataOverride.description === null, 'Blank or invalid override fields are ignored')
+assert(parseStoredPost(payload)?.metadataOverride === null, 'Older gallery documents stay readable without an override')
 
 assert(normalizeAccountId('accounts/100') === '100', 'Account ids may arrive with the accounts/ prefix')
 assert(buildListPostsUrl('100', 'locations/200', 'next').includes('/v4/accounts/100/locations/200/localPosts'), 'List URL is the local posts read endpoint')
@@ -433,18 +630,30 @@ assert(sameStore.saves() === 0 && sameStore.uploads.length === 0, 'An unchanged 
 
 const editedRemote = remotePost('edit', { summary: 'Novi buket ruža', updateTime: '2026-11-05T00:00:00.000Z' })
 const editedPrevious = storedFrom(remotePost('edit', { summary: 'Stari buket' }), 'hide')
+editedPrevious.metadataOverride = { title: 'Ručni naslov', alt: 'Ručni alt', description: null, occasion: null }
 const editedStore = memoryStore([editedPrevious])
 const editedFetch = mockGoogle({ posts: [editedRemote] })
 await runSync(editedFetch.fetchImpl, editedStore.store)
 const edited = editedStore.posts.get(editedRemote.resourceName)
 assert(edited?.summary === 'Novi buket ruža', 'An edited post updates its caption')
-assert(edited?.visibilityOverride === 'hide', 'Editing a post keeps the manual override')
-assert(editedStore.uploads.length === 1, 'A changed update timestamp refreshes the stored image')
+assert(edited?.visibilityOverride === 'hide', 'Editing a post keeps the manual visibility override')
+assert(edited?.metadataOverride?.title === 'Ručni naslov' && edited.metadataOverride.alt === 'Ručni alt', 'Editing a post keeps the manual metadata override')
+assert(edited?.imageUrl === editedPrevious.imageUrl && edited.imageSyncError === null, 'A summary edit keeps the stored image')
+assert(editedStore.uploads.length === 0, 'A summary-only edit does not upload the image again')
+assert(editedFetch.calls.every((call) => !call.url.includes('googleusercontent.com')), 'A summary-only edit does not download the image')
 
 const preservedPrevious = storedFrom(remotePost('keep', { summary: 'Stari buket' }))
 const preservedStore = memoryStore([preservedPrevious])
+const preservedRemote = remotePost('keep', {
+  summary: 'Novi buket',
+  updateTime: '2026-11-06T00:00:00.000Z',
+  photo: {
+    mediaResourceName: `${resourceName('keep')}/media/2`,
+    googleUrl: 'https://lh3.googleusercontent.com/bouquet-keep-new',
+  },
+})
 const preservedFetch = mockGoogle({
-  posts: [remotePost('keep', { summary: 'Novi buket', updateTime: '2026-11-06T00:00:00.000Z' })],
+  posts: [preservedRemote],
   imageStatus: 404,
 })
 const preservedSummary = await runSync(preservedFetch.fetchImpl, preservedStore.store)
@@ -456,10 +665,7 @@ assert(preservedSummary.imagesPreserved === 1, 'The sync reports that an existin
 
 const retryPrevious = preservedStore.posts.get(resourceName('keep'))
 if (!retryPrevious) fail('Preserved post exists')
-const retryPlan = planSync(
-  [remotePost('keep', { summary: 'Novi buket', updateTime: '2026-11-06T00:00:00.000Z' })],
-  [retryPrevious],
-)
+const retryPlan = planSync([preservedRemote], [retryPrevious])
 assert(retryPlan.upserts[0]?.downloadImage === true, 'A preserved image is retried on the next sync')
 
 const listed = remotePost('listed', { summary: 'Buket' })
@@ -513,7 +719,14 @@ assert(htmlStore.posts.get(resourceName('html'))?.imageUrl === null, 'A non-imag
 const redirectStore = memoryStore([storedFrom(remotePost('redirect', { summary: 'Buket' }))])
 await runSync(
   mockGoogle({
-    posts: [remotePost('redirect', { summary: 'Buket', updateTime: '2026-11-07T00:00:00.000Z' })],
+    posts: [remotePost('redirect', {
+      summary: 'Buket',
+      updateTime: '2026-11-07T00:00:00.000Z',
+      photo: {
+        mediaResourceName: `${resourceName('redirect')}/media/2`,
+        googleUrl: 'https://lh3.googleusercontent.com/bouquet-redirect-new',
+      },
+    })],
     imageLocation: 'https://evil.example/stolen.jpg',
   }).fetchImpl,
   redirectStore.store,
@@ -564,6 +777,7 @@ function read(rel: string) {
 
 const sourceFiles = [
   'lib/gbpGallery/public.ts',
+  'lib/gbpGallery/metadata.ts',
   'lib/gbpGallery/model.ts',
   'lib/gbpGallery/google.ts',
   'lib/gbpGallery/sync.ts',
@@ -599,7 +813,7 @@ assert(http.includes("redirect: 'manual'"), 'Google fetches do not follow redire
 const storage = read('lib/gbpGallery/storage.ts')
 assert(!storage.includes('publicRead') && !storage.includes('makePublic') && !storage.includes('predefinedAcl'), 'Uploads are not world-writable ACLs')
 const firestore = read('lib/gbpGallery/firestore.ts')
-assert(firestore.includes('merge: true') && firestore.includes('visibilityOverride'), 'Firestore writes merge and leave the manual override alone')
+assert(firestore.includes('merge: true') && firestore.includes('visibilityOverride') && firestore.includes('metadataOverride'), 'Firestore writes merge and leave manual overrides alone')
 const homepage = read('app/page.tsx')
 assert(homepage.includes('GallerySection') && homepage.includes('loadHomepagePhotos'), 'Homepage keeps the static gallery as the fallback')
 const section = read('app/components/RecentBouquetsSection.tsx')
@@ -609,16 +823,49 @@ assert(
   'Homepage section subtitle is set',
 )
 const grid = read('app/components/BouquetPhotoGrid.tsx')
-assert(grid.includes('Naruči sličan buket') && grid.includes('href="/#order"'), 'Lightbox links to the existing order section')
+assert(!grid.includes('Naruči sličan buket') && !grid.includes('href="/#order"'), 'The gallery lightbox does not offer to order the selected photo')
+assert(grid.includes('Zatvori') && grid.includes('role="dialog"'), 'The lightbox can still be opened and closed')
+assert(read('app/components/Header.tsx').includes('Naruči buket') && read('app/components/Header.tsx').includes('href="/#order"'), 'Order buttons outside the gallery stay in place')
 assert(!grid.includes('firebase') && !grid.includes('gbpGallery/sync'), 'The lightbox does not import server sync code')
 assert(grid.includes('Učitaj još'), 'The gallery reveals another page of photos in the browser')
 assert(!grid.includes('fetch('), 'Load more does not request more photos')
-assert(grid.includes('loading="lazy"'), 'Gallery photos lazy load')
+assert(grid.includes("'lazy'") && grid.includes("'eager'"), 'Later photos lazy load and the first gallery page loads with its captions')
+assert(grid.indexOf('<figcaption') < grid.indexOf('Učitaj još'), 'Captions render with the first photos, before Učitaj još')
+assert(grid.includes('line-clamp-2') && grid.includes('min-h-24'), 'Caption blocks stay on two lines so the cards remain balanced')
 assert(grid.includes('sizes={sizes}'), 'Gallery photos use responsive sizes')
 const galerija = read('app/galerija/page.tsx')
 assert(galerija.includes('initialCount={GALLERY_PAGE_INITIAL}'), 'The gallery page starts with the six newest photos')
 assert(galerija.includes('pageSize={GALLERY_PAGE_INITIAL}'), 'Učitaj još reveals the next six photos')
 assert(!read('app/page.tsx').includes('initialCount'), 'The homepage still shows its photos at once')
+assert(!read('app/page.tsx').includes('showCaptions'), 'The homepage does not add gallery captions')
+assert(!read('app/dostava-cvijeca-rijeka/page.tsx').includes('showCaptions'), 'Rijeka does not add gallery captions')
+assert(!read('app/cvjecarna-krk/page.tsx').includes('showCaptions'), 'Krk does not add gallery captions')
+assert(galerija.includes('showCaptions'), 'The gallery page shows bouquet titles')
+assert(galerija.includes('galleryJsonLd = photos ? galleryImageGalleryJsonLd(photos) : null'), 'ImageGallery JSON-LD is built only for synced photos')
+assert(galerija.includes('galleryJsonLd ? <JsonLd data={galleryJsonLd} /> : null'), 'The static gallery does not render ImageGallery JSON-LD')
+for (const page of ['app/page.tsx', 'app/dostava-cvijeca-rijeka/page.tsx', 'app/cvjecarna-krk/page.tsx']) {
+  assert(!read(page).includes('galleryImageGalleryJsonLd') && !read(page).includes('ImageGallery'), `${page} does not add gallery structured data`)
+}
+assert(grid.includes('photo.description') && grid.includes('showCaptions'), 'Visible descriptions are optional caption text')
+assert(!grid.includes('Buket cvijeća iz ponude Luroni cvijeće'), 'The gallery grid does not hard-code one description under every photo')
+const metadataSource = read('lib/gbpGallery/metadata.ts')
+assert(!metadataSource.includes('fetch(') && !/openai|anthropic|generativelanguage/i.test(metadataSource), 'Metadata generation does not call a paid AI API')
+assert(!metadataSource.includes('collection('), 'Metadata generation does not create a collection')
+const emptyJsonLd = galleryImageGalleryJsonLd([])
+assert(emptyJsonLd === null, 'ImageGallery JSON-LD is omitted when there are no synced photos')
+const jsonLdPhotos = selectPublicPhotos([
+  storedFrom(remotePost('jsonrose', { summary: 'Buket ruža za rođendan. Složili smo ga od svježih crvenih ruža.' })),
+  storedFrom(remotePost('jsonblank', { summary: '' })),
+], 5)
+const jsonLd = galleryImageGalleryJsonLd(jsonLdPhotos)
+assert(jsonLd?.['@type'] === 'ImageGallery' && jsonLd['@context'] === 'https://schema.org', 'Synced photos publish one ImageGallery')
+assert(jsonLd?.publisher['@id'] === 'https://www.luroni-cvijece.com', 'ImageGallery points at the existing florist id')
+assert(Array.isArray(jsonLd?.image) && jsonLd.image.length === 2, 'ImageGallery lists the synced photos')
+assert(jsonLd?.image.every((image) => image['@type'] === 'ImageObject' && image.contentUrl.startsWith('https://firebasestorage.googleapis.com/')), 'Image objects use the stored Firebase URLs')
+const blankJsonImage = jsonLd?.image.find((image) => image.name === NEUTRAL_GALLERY_TITLE)
+assert(blankJsonImage && !('description' in blankJsonImage), 'A generic photo does not repeat a description in JSON-LD')
+const jsonLdText = JSON.stringify(jsonLd)
+assert(!jsonLdText.includes('€') && !jsonLdText.includes('Offer') && !jsonLdText.includes('PostalAddress') && !jsonLdText.includes('FAQPage'), 'ImageGallery adds no prices, places, or duplicate page schema')
 const rijeka = read('app/dostava-cvijeca-rijeka/page.tsx')
 assert(
   rijeka.indexOf('<BouquetTypesSection') < rijeka.indexOf('<RecentBouquetsSection') &&

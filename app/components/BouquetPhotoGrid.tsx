@@ -2,19 +2,20 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
-import Link from 'next/link'
 import type { PublicGalleryPhoto } from '@/lib/gbpGallery/public'
 
 export function BouquetPhotoGrid({
   photos,
   initialCount,
   pageSize,
+  showCaptions = false,
   gridClassName = 'grid grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4 md:gap-5',
   sizes = '(max-width: 640px) 46vw, (max-width: 1024px) 33vw, 22rem',
 }: {
   photos: PublicGalleryPhoto[]
   initialCount?: number
   pageSize?: number
+  showCaptions?: boolean
   gridClassName?: string
   sizes?: string
 }) {
@@ -49,8 +50,8 @@ export function BouquetPhotoGrid({
   return (
     <>
       <ul className={gridClassName}>
-        {visiblePhotos.map((photo) => (
-          <li key={photo.id}>
+        {visiblePhotos.map((photo, index) => {
+          const imageButton = (
             <button
               type="button"
               onClick={(event) => {
@@ -70,11 +71,32 @@ export function BouquetPhotoGrid({
                 fill
                 className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.06]"
                 sizes={sizes}
-                loading="lazy"
+                loading={showCaptions && index < (initialCount ?? 0) ? 'eager' : 'lazy'}
               />
             </button>
-          </li>
-        ))}
+          )
+          return (
+            <li key={photo.id} className="h-full">
+              {showCaptions ? (
+                <figure className="flex h-full flex-col">
+                  {imageButton}
+                  <figcaption className="flex min-h-24 flex-col px-0.5 pt-3">
+                    <h3 className="line-clamp-2 font-display text-[1.02rem] font-semibold leading-snug text-ink sm:text-[1.08rem]">
+                      {photo.title}
+                    </h3>
+                    {photo.description ? (
+                      <p className="mt-1.5 line-clamp-2 text-sm leading-snug text-muted">
+                        {photo.description}
+                      </p>
+                    ) : null}
+                  </figcaption>
+                </figure>
+              ) : (
+                imageButton
+              )}
+            </li>
+          )
+        })}
       </ul>
 
       {canLoadMore && (
@@ -117,16 +139,23 @@ export function BouquetPhotoGrid({
                 loading="eager"
               />
             </div>
-            <p id="bouquet-lightbox-title" className="mt-4 text-center text-sm text-white/90">
-              {active.alt}
-            </p>
-            <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:justify-center">
-              <Link
-                href="/#order"
-                className="inline-flex items-center justify-center rounded-full bg-forest px-6 py-3 text-sm font-medium text-white hover:bg-forest-dark transition-colors"
-              >
-                Naruči sličan buket
-              </Link>
+            {showCaptions ? (
+              <>
+                <p id="bouquet-lightbox-title" className="mt-4 text-center text-base font-medium text-white break-words">
+                  {active.title}
+                </p>
+                {active.description ? (
+                  <p className="mt-2 text-center text-sm leading-relaxed text-white/80 break-words">
+                    {active.description}
+                  </p>
+                ) : null}
+              </>
+            ) : (
+              <p id="bouquet-lightbox-title" className="mt-4 text-center text-sm text-white/90">
+                {active.alt}
+              </p>
+            )}
+            <div className="mt-4 flex justify-center">
               <button
                 type="button"
                 onClick={() => setActive(null)}
