@@ -12,10 +12,15 @@ import { NN_PRICE_COMPLIANCE_ENABLED } from '@/lib/nnPriceCompliance'
 
 export const ANCHOR_PRICE_DATE = '2026-09-10'
 export const ANCHOR_PRICE_LABEL = 'Cijena na dan 10.9.2026.'
-/** Original NN 101/2026 start date — display is gated by NN_PRICE_COMPLIANCE_ENABLED, not this date. */
+/** Original NN 101/2026 start date. Display is gated by the feature flag, not by either date. */
 export const COMPLIANCE_EFFECTIVE_DATE = '2026-10-01'
+/** Date in NN 110/2026 and NN 59/2026. The flag stays off past this date until approval. */
+export const COMPLIANCE_APPLICABLE_DATE = '2026-11-17'
 
 export const BRAND_NAME = 'Luroni Cvijeće'
+
+/** Assembled per order from seasonal flowers. Not a legal stock status. */
+export const FRESH_BOUQUET_SUPPLY = 'made-to-order' as const
 
 export const STANDARD_BOUQUETS = {
   S: {
@@ -49,7 +54,10 @@ export const CUSTOM_BOUQUET = {
   currentMinEur:  80,
   currentMaxEur:  200,
   currentStepEur: 10,
-  // Same selectable range existed on 2026-09-10 — do not collapse to a single €70 anchor.
+  // On 2026-09-10 the selectable budgets were 70–200 in steps of 10.
+  // The €70 step was withdrawn on 2026-09-29. Every budget still sold
+  // (80, 90, … 200) had that same price on 2026-09-10. Do not replace
+  // those per-step prices with the retired €70 minimum.
   anchorMinEur:   70,
   anchorMaxEur:   200,
   anchorStepEur:  10,
@@ -86,12 +94,13 @@ export function anchorRangeLine(min: number, max: number): string {
 }
 
 export function orderFormUnselectedAnchorLine(): string {
+  const custom = currentCustomAnchorRange()
   return (
     `Cijene na dan 10.9.2026.: ` +
     `S ${STANDARD_BOUQUETS.S.anchorEur} € · ` +
     `M ${STANDARD_BOUQUETS.M.anchorEur} € · ` +
     `L ${STANDARD_BOUQUETS.L.anchorEur} € · ` +
-    `po želji ${CUSTOM_BOUQUET.anchorMinEur}–${CUSTOM_BOUQUET.anchorMaxEur} €`
+    `po želji ${custom.min}–${custom.max} €`
   )
 }
 
@@ -111,6 +120,23 @@ export function customAnchorAmounts(): number[] {
     CUSTOM_BOUQUET.anchorMaxEur,
     CUSTOM_BOUQUET.anchorStepEur,
   )
+}
+
+/** 10 September price of a budget that is still sold. Null for the retired €70 step. */
+export function referenceEuroForCustomBudget(amount: number): number | null {
+  const anchors = new Set(customAnchorAmounts())
+  return customSelectableAmounts().includes(amount) && anchors.has(amount) ? amount : null
+}
+
+/** Reference range of the budgets a customer can still choose. Excludes retired €70. */
+export function currentCustomAnchorRange(): { min: number; max: number } {
+  const offered = customSelectableAmounts().filter(amount => referenceEuroForCustomBudget(amount) != null)
+  const min = offered[0]
+  const max = offered[offered.length - 1]
+  if (min == null || max == null) {
+    throw new Error('No custom budget still has a 2026-09-10 reference price')
+  }
+  return { min, max }
 }
 
 export function customVariantCode(amount: number): string {

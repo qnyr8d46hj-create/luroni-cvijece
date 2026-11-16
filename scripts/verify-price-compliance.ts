@@ -1,18 +1,38 @@
 import { readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { createElement } from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
+import { AnchorPriceNote } from '../app/components/AnchorPriceNote'
 import {
+  COMPLIANCE_APPLICABLE_DATE,
   CUSTOM_BOUQUET,
+  FRESH_BOUQUET_SUPPLY,
   STANDARD_BOUQUETS,
   anchorPriceLine,
   anchorRangeLine,
+  currentCustomAnchorRange,
+  customAnchorAmounts,
   customSelectableAmounts,
   isAnchorPriceDisplayActive,
+  orderFormUnselectedAnchorLine,
+  referenceEuroForCustomBudget,
 } from '../lib/productPrices'
 import { NN_PRICE_COMPLIANCE_ENABLED } from '../lib/nnPriceCompliance'
+import { CONFIRMED_PRICE_LIST_OUTLET } from '../lib/priceListOutlet'
+import {
+  latestHobbyCronUtc,
+  nextStorageNumber,
+  priceListPublicationBlockers,
+  retainExistingSnapshot,
+  retentionCutoffDate,
+  scheduledCronMeetsDeadline,
+  zagrebClockMinutes,
+} from '../lib/priceListPublication'
 import { isValidCustomBudget, parseOrderSelectSearch } from '../lib/orderSelect'
 import {
   PRICE_LIST_COLUMNS,
+  buildPriceListFilename,
   buildPriceListRows,
   serializePriceListCsv,
 } from '../lib/priceListCsv'
@@ -54,8 +74,21 @@ assert(
 )
 assert(
   anchorRangeLine(70, 200) === 'Cijena na dan 10.9.2026.: 70–200 €',
-  'Custom customer-facing anchor copy',
+  'Anchor range formatter keeps the historical 70–200 span',
 )
+const offeredAnchors = currentCustomAnchorRange()
+assert(offeredAnchors.min === 80 && offeredAnchors.max === 200, 'Current custom reference range excludes retired €70')
+assert(
+  orderFormUnselectedAnchorLine() === 'Cijene na dan 10.9.2026.: S 35 € · M 45 € · L 60 € · po želji 80–200 €',
+  'Unselected form lists verified 10 September prices of bouquets still sold',
+)
+assert(customAnchorAmounts().includes(70), '€70 remains the historical custom minimum')
+for (const amount of customSelectableAmounts()) {
+  assert(referenceEuroForCustomBudget(amount) === amount, `Custom €${amount} reference price is its own 10 September price`)
+}
+assert(referenceEuroForCustomBudget(70) == null, 'Retired €70 is not a reference price of a bouquet still sold')
+assert(COMPLIANCE_APPLICABLE_DATE === '2026-11-17', 'Applicable date stays 17 November 2026')
+assert(isAnchorPriceDisplayActive(new Date('2026-11-17T08:00:00.000Z')) === false, '17 November does not turn the display on')
 
 const mutatedCurrent = { currentEur: 99, anchorEur: s.anchorEur }
 assert(mutatedCurrent.anchorEur === 35, 'Changing current price must not mutate 2026-09-10 anchor')
@@ -86,6 +119,8 @@ const sRow = rows.find(row => row.sifra_proizvoda === 'LUR-BUK-S')
 if (!sRow) fail('Missing Buket S CSV row')
 assert(sRow.maloprodajna_cijena === '45.00' && sRow.sidrena_cijena === '35.00', 'Buket S CSV current vs historical anchor')
 assert(sRow.barkod === '' && sRow.jedinica_mjere === '', 'Inapplicable fields stay empty')
+assert(rows.every(row => row.dostupnost === ''), 'Availability stays blank while its legal meaning is unconfirmed')
+assert(FRESH_BOUQUET_SUPPLY === 'made-to-order', 'Fresh bouquets stay made-to-order, not shelf stock')
 
 const mRow = rows.find(row => row.sifra_proizvoda === 'LUR-BUK-M')
 if (!mRow) fail('Missing Buket M CSV row')
@@ -118,8 +153,59 @@ assert(
 )
 assert(
   NN_PRICE_COMPLIANCE_ENABLED === false,
-  'NN price compliance is currently expected to be disabled (deadline extended to 2026-11-17)',
+  'NN price compliance stays disabled until activation is approved',
 )
+
+const anchorHtml = renderToStaticMarkup(
+  createElement(AnchorPriceNote, null, 'Cijena na dan 10.9.2026.: 35 €'),
+)
+assert(anchorHtml === '', 'Disabled compliance renders no reference price into HTML')
+const anchorSource = readFileSync(resolve(root, 'app/components/AnchorPriceNote.tsx'), 'utf8')
+assert(anchorSource.includes('if (!isAnchorPriceDisplayActive()) return null'), 'Reference price is decided during render')
+assert(!anchorSource.includes('useSyncExternalStore'), 'Reference price must not wait for client hydration')
+assert(!anchorSource.includes('() => false'), 'Server render must not hard-code the reference price as hidden')
+
+assert(CONFIRMED_PRICE_LIST_OUTLET === null, 'No regulatory outlet is configured')
+const blockers = priceListPublicationBlockers()
+for (const code of ['outlet-address', 'outlet-form', 'outlet-identifier', 'availability'] as const) {
+  assert(blockers.includes(code), `Publication blocker missing: ${code}`)
+}
+for (const relativePath of [
+  'lib/priceListCsv.ts',
+  'lib/priceListArchive.ts',
+  'app/cjenik/aktualni.csv/route.ts',
+  'app/api/cron/publish-price-list/route.ts',
+]) {
+  const source = readFileSync(resolve(root, relativePath), 'utf8')
+  assert(!source.includes('LURONI-WEB-01'), `${relativePath} must not contain an invented outlet code`)
+  assert(!source.includes('Gornja'), `${relativePath} must not treat the registered office as the outlet`)
+  assert(!source.includes('Morettiev'), `${relativePath} must not treat the warehouse as the outlet`)
+  assert(!source.includes("dostupnost:             'dostupno'"), `${relativePath} must not mark every bouquet in stock`)
+}
+
+const fixtureName = buildPriceListFilename(
+  { form: 'test-outlet', address: 'Test ulica 1', identifier: 'TEST-01' },
+  3,
+  new Date('2026-11-17T05:00:00.000Z'),
+)
+assert(
+  fixtureName.startsWith('cjenik_test-outlet_Test-ulica-1_TEST-01_3_'),
+  'Filename uses the supplied outlet and storage number',
+)
+assert(fixtureName.endsWith('.csv'), 'Filename is a CSV')
+assert(nextStorageNumber(null) === 1, 'First storage number is 1')
+assert(nextStorageNumber(4) === 5, 'Storage numbers increase')
+const kept = retainExistingSnapshot({ filename: 'kept.csv' }, { filename: 'new.csv' })
+assert(kept.action === 'keep' && kept.snapshot.filename === 'kept.csv', 'An existing daily snapshot is not overwritten')
+assert(retainExistingSnapshot(null, { filename: 'new.csv' }).action === 'create', 'A missing day creates one snapshot')
+assert(retentionCutoffDate(new Date('2026-11-17T12:00:00.000Z')) === '2026-10-18', 'Retention is 30 Zagreb calendar days')
+
+assert(scheduledCronMeetsDeadline(), '05:00 UTC cron finishes before 08:00 Europe/Zagreb on Hobby in winter and summer')
+assert(!scheduledCronMeetsDeadline(7), 'A 07:00 UTC cron can miss 08:00 Europe/Zagreb')
+const winterLatest = zagrebClockMinutes(latestHobbyCronUtc(5, 2026, 10, 17))
+const summerLatest = zagrebClockMinutes(latestHobbyCronUtc(5, 2026, 6, 17))
+assert(winterLatest === 6 * 60 + 59, '17 Nov 2026 Hobby window ends at 06:59 Europe/Zagreb')
+assert(summerLatest === 7 * 60 + 59, '17 Jul 2026 Hobby window ends at 07:59 Europe/Zagreb')
 
 const checkout = readFileSync(resolve(root, 'lib/freshCheckout.ts'), 'utf8')
 assert(checkout.includes('S: 4500'), 'Stripe S amount is 45 EUR')
@@ -162,8 +248,16 @@ if (NN_PRICE_COMPLIANCE_ENABLED) {
     ),
     'Enabled compliance requires the daily price-list cron in vercel.json',
   )
+  assert(
+    vercel.crons?.some((job) => job.path === '/api/cron/sync-gbp-gallery'),
+    'Enabling the price-list cron must keep the gallery cron',
+  )
 } else {
   assert(Array.isArray(vercel.crons), 'vercel.json crons must be an array')
+  assert(
+    vercel.crons?.some((job) => job.path === '/api/cron/sync-gbp-gallery'),
+    'The gallery cron stays registered while price compliance is disabled',
+  )
   assert(
     !vercel.crons?.some((job) => job.path === '/api/cron/publish-price-list'),
     'Disabled compliance must not register the price-list Vercel cron',

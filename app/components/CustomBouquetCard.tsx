@@ -6,6 +6,7 @@ import { AnchorPriceNote } from './AnchorPriceNote'
 import {
   CUSTOM_BOUQUET,
   anchorRangeLine,
+  currentCustomAnchorRange,
   formatEuroRange,
 } from '@/lib/productPrices'
 import { ORDER_BOUQUET_CUSTOM, orderSelectHref } from '@/lib/orderSelect'
@@ -88,7 +89,7 @@ export function CustomBouquetCard({
           </div>
           {NN_PRICE_COMPLIANCE_ENABLED && (
             <AnchorPriceNote>
-              {anchorRangeLine(CUSTOM_BOUQUET.anchorMinEur, CUSTOM_BOUQUET.anchorMaxEur)}
+              {anchorRangeLine(currentCustomAnchorRange().min, currentCustomAnchorRange().max)}
             </AnchorPriceNote>
           )}
 

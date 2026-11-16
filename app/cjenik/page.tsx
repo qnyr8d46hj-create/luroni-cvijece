@@ -4,10 +4,12 @@ import { Header } from '@/app/components/Header'
 import { Footer } from '@/app/components/Footer'
 import { listPriceListSnapshots } from '@/lib/priceListArchive'
 import { NN_PRICE_COMPLIANCE_ENABLED } from '@/lib/nnPriceCompliance'
+import { isPriceListPublishable } from '@/lib/priceListPublication'
 import {
   ANCHOR_PRICE_LABEL,
   CUSTOM_BOUQUET,
   STANDARD_BOUQUETS,
+  currentCustomAnchorRange,
   formatEuro,
   formatEuroRange,
 } from '@/lib/productPrices'
@@ -56,7 +58,7 @@ const humanRows = [
     name:   CUSTOM_BOUQUET.name,
     code:   CUSTOM_BOUQUET.codePrefix,
     price:  formatEuroRange(CUSTOM_BOUQUET.currentMinEur, CUSTOM_BOUQUET.currentMaxEur),
-    anchor: formatEuroRange(CUSTOM_BOUQUET.anchorMinEur, CUSTOM_BOUQUET.anchorMaxEur),
+    anchor: formatEuroRange(currentCustomAnchorRange().min, currentCustomAnchorRange().max),
   },
 ]
 
@@ -117,7 +119,7 @@ export default async function CjenikPage() {
                       <td className="py-3 pr-4 text-muted font-mono text-[0.8125rem]">{row.code}</td>
                       <td className="py-3 pr-4 font-semibold text-forest">{row.price}</td>
                       <td className="py-3 pr-4 text-muted">{row.anchor}</td>
-                      <td className="py-3 text-muted">Dostupno</td>
+                      <td className="py-3 text-muted">Po narudžbi</td>
                     </tr>
                   ))}
                 </tbody>
@@ -126,7 +128,11 @@ export default async function CjenikPage() {
             <p className="mt-4 text-sm text-muted leading-[1.65]">
               Buket po želji naručuje se u koracima od {CUSTOM_BOUQUET.currentStepEur}&nbsp;€
               ({CUSTOM_BOUQUET.currentMinEur}–{CUSTOM_BOUQUET.currentMaxEur}&nbsp;€).
-              Dostava je besplatna i nije zasebna stavka.
+              Svaki od tih iznosa vrijedio je i 10.9.2026. Iznos od {CUSTOM_BOUQUET.anchorMinEur}&nbsp;€
+              bio je u ponudi toga dana, povučen je 29.9.2026. i više se ne prodaje.
+              Dostava je besplatna i nije zasebna stavka. Buketi se izrađuju po narudžbi;
+              polje dostupnosti u strojno čitljivoj datoteci ostaje prazno dok se ne potvrdi
+              znači li „dostupno” fizičku zalihu.
             </p>
           </section>
 
@@ -138,21 +144,31 @@ export default async function CjenikPage() {
               Strojno čitljivi cjenik
             </h2>
             <p className="text-[0.9375rem] text-muted leading-[1.75] mb-5">
-              Sukladno NN 101/2026, važeći cjenik dostupan je i u strojno čitljivom CSV
-              formatu. Objavljeni cjenici dostupni su 30 dana.
+              Važeći cjenik treba biti dostupan i u strojno čitljivom CSV ili XML formatu.
+              Objavljene datoteke ostaju dostupne 30 dana.
             </p>
-            <a
-              href="/cjenik/aktualni.csv"
-              className="inline-flex items-center justify-center px-7 py-3.5 rounded-full bg-forest text-white font-medium text-[0.9375rem] transition-all hover:bg-forest-dark hover:-translate-y-px hover:shadow-md"
-            >
-              Preuzmi aktualni CSV
-            </a>
-            <p className="mt-3 text-sm text-faint">
-              Stabilni URL:{' '}
-              <a href="/cjenik/aktualni.csv" className="text-forest underline-offset-2 hover:underline">
-                https://www.luroni-cvijece.com/cjenik/aktualni.csv
-              </a>
-            </p>
+            {isPriceListPublishable() ? (
+              <>
+                <a
+                  href="/cjenik/aktualni.csv"
+                  className="inline-flex items-center justify-center px-7 py-3.5 rounded-full bg-forest text-white font-medium text-[0.9375rem] transition-all hover:bg-forest-dark hover:-translate-y-px hover:shadow-md"
+                >
+                  Preuzmi aktualni CSV
+                </a>
+                <p className="mt-3 text-sm text-faint">
+                  Stabilni URL:{' '}
+                  <a href="/cjenik/aktualni.csv" className="text-forest underline-offset-2 hover:underline">
+                    https://www.luroni-cvijece.com/cjenik/aktualni.csv
+                  </a>
+                </p>
+              </>
+            ) : (
+              <p className="text-[0.9375rem] text-muted leading-[1.75]">
+                Strojno čitljiva datoteka nije objavljena. Prije objave treba potvrditi adresu
+                prodajnog objekta, oblik objekta u nazivu datoteke, oznaku objekta i značenje
+                raspoloživosti za bukete koji se izrađuju po narudžbi.
+              </p>
+            )}
           </section>
 
           <section className="mt-12 sm:mt-16" aria-labelledby="arhiva-cjenik">
