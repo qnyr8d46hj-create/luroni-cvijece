@@ -19,10 +19,20 @@ import {
   referenceEuroForCustomBudget,
 } from '../lib/productPrices'
 import { NN_PRICE_COMPLIANCE_ENABLED } from '../lib/nnPriceCompliance'
-import { CONFIRMED_PRICE_LIST_OUTLET } from '../lib/priceListOutlet'
+import { ARTIFICIAL_ARRANGEMENTS_PUBLIC } from '../lib/artificialArrangementsPublic'
+import { ARTIFICIAL_BOUQUETS_COLLECTION } from '../lib/artificialBouquetPaths'
+import {
+  ARTIFICIAL_PRICE_LIST_DECISION,
+  CONFIRMED_OUTLET_FORM,
+  CONFIRMED_OUTLET_IDENTIFIER,
+  CONFIRMED_PRICE_LIST_OUTLET,
+  CONFIRMED_WEBSHOP_ADDRESS,
+  CONFIRMED_WEBSHOP_LEGAL_NAME,
+} from '../lib/priceListOutlet'
 import {
   latestHobbyCronUtc,
   nextStorageNumber,
+  outletAddressSlug,
   priceListPublicationBlockers,
   retainExistingSnapshot,
   retentionCutoffDate,
@@ -140,6 +150,8 @@ assert(custom80.maloprodajna_cijena === '80.00' && custom80.sidrena_cijena === '
 const custom200 = rows.find(row => row.sifra_proizvoda === 'LUR-BUK-CUSTOM-200')
 if (!custom200) fail('Missing custom 200 CSV row')
 assert(custom200.maloprodajna_cijena === '200.00' && custom200.sidrena_cijena === '200.00', 'Custom 200 CSV')
+assert(rows.every(row => !row.sifra_proizvoda.startsWith('UM-')), 'Public CSV excludes artificial arrangement SKUs')
+assert(!serializePriceListCsv(rows).toLowerCase().includes('umjetn'), 'Public CSV does not name artificial arrangements')
 
 const csv = serializePriceListCsv(rows)
 assert(csv.charCodeAt(0) === 0xfeff, 'CSV must start with UTF-8 BOM')
@@ -165,11 +177,31 @@ assert(anchorSource.includes('if (!isAnchorPriceDisplayActive()) return null'), 
 assert(!anchorSource.includes('useSyncExternalStore'), 'Reference price must not wait for client hydration')
 assert(!anchorSource.includes('() => false'), 'Server render must not hard-code the reference price as hidden')
 
-assert(CONFIRMED_PRICE_LIST_OUTLET === null, 'No regulatory outlet is configured')
+assert(CONFIRMED_WEBSHOP_LEGAL_NAME === 'Luroni Gaja d.o.o.', 'Confirmed legal name')
+assert(CONFIRMED_WEBSHOP_ADDRESS === 'Gornja Švarča 19, 47000 Karlovac', 'Confirmed webshop address')
+assert(
+  outletAddressSlug(CONFIRMED_WEBSHOP_ADDRESS) === 'Gornja-Svarca-19-47000-Karlovac',
+  'Filename address is the confirmed Karlovac street address',
+)
+assert(CONFIRMED_OUTLET_FORM === null, 'Outlet type word is not invented')
+assert(CONFIRMED_OUTLET_IDENTIFIER === null, 'Outlet label is not invented')
+assert(CONFIRMED_PRICE_LIST_OUTLET === null, 'Filename outlet stays incomplete without a chosen label')
+assert(ARTIFICIAL_ARRANGEMENTS_PUBLIC === false, 'Artificial arrangements are not offered online')
+assert(ARTIFICIAL_PRICE_LIST_DECISION === 'excluded-not-offered', 'Artificial arrangements stay out of the public price list')
 const blockers = priceListPublicationBlockers()
-for (const code of ['outlet-address', 'outlet-form', 'outlet-identifier', 'availability'] as const) {
+assert(!blockers.includes('outlet-address'), 'Confirmed address is no longer a publication blocker')
+for (const code of ['outlet-form', 'outlet-identifier', 'availability'] as const) {
   assert(blockers.includes(code), `Publication blocker missing: ${code}`)
 }
+assert(!blockers.includes('artificial-arrangements'), 'Hidden artificial arrangements do not block the fresh price list')
+const artificialOffered = priceListPublicationBlockers(null, false, {
+  offeredOnline: true,
+  decision: 'excluded-not-offered',
+})
+assert(
+  artificialOffered.includes('artificial-arrangements'),
+  'Offering artificial arrangements online blocks publication until the price list is reassessed',
+)
 for (const relativePath of [
   'lib/priceListCsv.ts',
   'lib/priceListArchive.ts',
@@ -181,6 +213,17 @@ for (const relativePath of [
   assert(!source.includes('Gornja'), `${relativePath} must not treat the registered office as the outlet`)
   assert(!source.includes('Morettiev'), `${relativePath} must not treat the warehouse as the outlet`)
   assert(!source.includes("dostupnost:             'dostupno'"), `${relativePath} must not mark every bouquet in stock`)
+}
+for (const relativePath of [
+  'lib/priceListCsv.ts',
+  'lib/priceListArchive.ts',
+  'app/api/cron/publish-price-list/route.ts',
+]) {
+  const source = readFileSync(resolve(root, relativePath), 'utf8')
+  assert(
+    !source.includes(ARTIFICIAL_BOUQUETS_COLLECTION),
+    `${relativePath} must not read or delete artificial arrangement records`,
+  )
 }
 
 const fixtureName = buildPriceListFilename(

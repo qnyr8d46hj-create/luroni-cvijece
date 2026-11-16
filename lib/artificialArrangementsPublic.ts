@@ -7,6 +7,8 @@
 // 3. Redeploy. Leave ARTIFICIAL_CHECKOUT_ENABLED as currently configured.
 // 4. Confirm the homepage teaser, footer link, catalog page and sitemap URL are visible.
 // 5. Confirm POST /api/create-artificial-order only succeeds if ARTIFICIAL_CHECKOUT_ENABLED=true.
+// 6. Reassess ARTIFICIAL_PRICE_LIST_DECISION in lib/priceListOutlet.ts before
+//    any public price list can include these products. Do not delete Firestore records.
 
 export const ARTIFICIAL_ARRANGEMENTS_PUBLIC = false
 

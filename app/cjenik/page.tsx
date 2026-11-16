@@ -6,6 +6,11 @@ import { listPriceListSnapshots } from '@/lib/priceListArchive'
 import { NN_PRICE_COMPLIANCE_ENABLED } from '@/lib/nnPriceCompliance'
 import { isPriceListPublishable } from '@/lib/priceListPublication'
 import {
+  CONFIRMED_WEBSHOP_ADDRESS,
+  CONFIRMED_WEBSHOP_COUNTRY,
+  CONFIRMED_WEBSHOP_LEGAL_NAME,
+} from '@/lib/priceListOutlet'
+import {
   ANCHOR_PRICE_LABEL,
   CUSTOM_BOUQUET,
   STANDARD_BOUQUETS,
@@ -88,7 +93,9 @@ export default async function CjenikPage() {
             </h1>
             <p className="text-[1.0625rem] text-muted leading-[1.65] max-w-2xl">
               Važeće maloprodajne cijene buketa s uključenom dostavom. Cijene su u eurima (EUR)
-              i uključuju PDV.
+              i uključuju PDV. Prodajni objekt je {CONFIRMED_WEBSHOP_LEGAL_NAME},{' '}
+              {CONFIRMED_WEBSHOP_ADDRESS}, {CONFIRMED_WEBSHOP_COUNTRY}. Umjetni cvjetni
+              aranžmani nisu u ponudi na web-stranici i nisu u ovom cjeniku.
             </p>
           </div>
         </div>

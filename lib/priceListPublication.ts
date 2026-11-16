@@ -1,9 +1,14 @@
 import { zagrebCalendarDate } from '@/lib/productPrices'
 import {
+  ARTIFICIAL_PRICE_LIST_DECISION,
   AVAILABILITY_LEGAL_VALUE_CONFIRMED,
   CONFIRMED_PRICE_LIST_OUTLET,
+  CONFIRMED_WEBSHOP_ADDRESS,
+  artificialArrangementsBlockPublication,
+  type ArtificialPriceListDecision,
   type ConfirmedPriceListOutlet,
 } from '@/lib/priceListOutlet'
+import { ARTIFICIAL_ARRANGEMENTS_PUBLIC } from '@/lib/artificialArrangementsPublic'
 
 export const PRICE_LIST_RETENTION_DAYS = 30
 export const PRICE_LIST_SEQUENCE_ID = 'sequence'
@@ -17,6 +22,7 @@ export type PriceListBlockerCode =
   | 'outlet-form'
   | 'outlet-identifier'
   | 'availability'
+  | 'artificial-arrangements'
 
 export class PriceListPublicationBlocked extends Error {
   readonly codes: readonly PriceListBlockerCode[]
@@ -42,12 +48,23 @@ export function requireFilenameToken(value: string, label: string): string {
 export function priceListPublicationBlockers(
   outlet: ConfirmedPriceListOutlet | null = CONFIRMED_PRICE_LIST_OUTLET,
   availabilityConfirmed = AVAILABILITY_LEGAL_VALUE_CONFIRMED,
+  artificial: {
+    offeredOnline: boolean
+    decision: ArtificialPriceListDecision
+  } = {
+    offeredOnline: ARTIFICIAL_ARRANGEMENTS_PUBLIC,
+    decision: ARTIFICIAL_PRICE_LIST_DECISION,
+  },
 ): PriceListBlockerCode[] {
   const blockers: PriceListBlockerCode[] = []
-  if (!outlet || !outlet.address.trim()) blockers.push('outlet-address')
+  const address = (outlet?.address ?? CONFIRMED_WEBSHOP_ADDRESS).trim()
+  if (!address) blockers.push('outlet-address')
   if (!outlet || !filledToken(outlet.form)) blockers.push('outlet-form')
   if (!outlet || !filledToken(outlet.identifier)) blockers.push('outlet-identifier')
   if (!availabilityConfirmed) blockers.push('availability')
+  if (artificialArrangementsBlockPublication(artificial.offeredOnline, artificial.decision)) {
+    blockers.push('artificial-arrangements')
+  }
   return blockers
 }
 

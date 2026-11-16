@@ -14,8 +14,10 @@
 //   and decisions repealing the NN 101/2026 measures. Those texts were not
 //   in Narodne novine on 2026-11-16. The October drafts are not the schema.
 //
-// Publication stays blocked until lib/priceListOutlet.ts has a confirmed
-// outlet and the availability word is confirmed. Do not invent either.
+// The webshop address is confirmed: Luroni Gaja d.o.o., Gornja Švarča 19,
+// 47000 Karlovac. Publication stays blocked until the business chooses the
+// outlet-type word and the outlet label. That label is not a registered
+// number. The availability word is also still unconfirmed. Do not invent them.
 // Do not add the price-list cron, and do not remove the gallery cron, until
 // those blockers are clear and CRON_SECRET is set in Vercel Production.
 // vercel.json cannot read this flag.

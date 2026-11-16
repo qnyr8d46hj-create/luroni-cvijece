@@ -1,4 +1,7 @@
-import type { ConfirmedPriceListOutlet } from './priceListOutlet'
+import {
+  publicPriceListIncludesArtificialArrangements,
+  type ConfirmedPriceListOutlet,
+} from './priceListOutlet'
 import { outletAddressSlug, requireFilenameToken } from './priceListPublication'
 import {
   BRAND_NAME,
@@ -39,6 +42,12 @@ function csvField(value: string): string {
 }
 
 export function buildPriceListRows(): PriceListRow[] {
+  if (publicPriceListIncludesArtificialArrangements()) {
+    throw new Error(
+      'Artificial arrangements were marked for the public price list, but no confirmed rows exist yet',
+    )
+  }
+
   const rows: PriceListRow[] = []
 
   for (const bouquet of Object.values(STANDARD_BOUQUETS)) {
