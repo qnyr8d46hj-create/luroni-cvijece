@@ -20,9 +20,10 @@ export const PRICE_LIST_COLUMNS = [
   'jedinica_mjere',
   'jedinicna_cijena',
   'maloprodajna_cijena',
-  // "ne" answers the published question of whether a special sale applies.
-  // None does, so there is no special-sale name. The column wording is not prescribed.
+  // Published NN 101/2026 asks whether a special sale applies and, if so, its name.
+  // Column names are not prescribed. No bouquet is on special sale.
   'poseban_oblik_prodaje',
+  'naziv_posebnog_oblika',
   // NN 101/2026 says "sidrena cijena". The October draft says "bazna cijena"
   // and does not prescribe the header. Keep this header until the published
   // pravilnik names a column.
@@ -62,6 +63,7 @@ export function buildPriceListRows(): PriceListRow[] {
       jedinicna_cijena:       '',
       maloprodajna_cijena:    money(bouquet.currentEur),
       poseban_oblik_prodaje:  'ne',
+      naziv_posebnog_oblika:  '',
       sidrena_cijena:         money(bouquet.anchorEur),
       barkod:                 '',
       dostupnost:             ORDERABLE_BOUQUET_AVAILABILITY,
@@ -80,6 +82,7 @@ export function buildPriceListRows(): PriceListRow[] {
       jedinicna_cijena:       '',
       maloprodajna_cijena:    money(amount),
       poseban_oblik_prodaje:  'ne',
+      naziv_posebnog_oblika:  '',
       sidrena_cijena:         anchorAmounts.has(amount) ? money(amount) : '',
       barkod:                 '',
       dostupnost:             ORDERABLE_BOUQUET_AVAILABILITY,

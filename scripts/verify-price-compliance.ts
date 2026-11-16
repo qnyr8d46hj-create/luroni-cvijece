@@ -132,8 +132,12 @@ if (!sRow) fail('Missing Buket S CSV row')
 assert(sRow.maloprodajna_cijena === '45.00' && sRow.sidrena_cijena === '35.00', 'Buket S CSV current vs historical anchor')
 assert(sRow.barkod === '' && sRow.jedinica_mjere === '', 'Inapplicable fields stay empty')
 assert(
-  rows.every(row => row.dostupnost === 'dostupno' && row.poseban_oblik_prodaje === 'ne'),
-  'Orderable bouquets use dostupno and are not on special sale',
+  rows.every(row =>
+    row.dostupnost === 'dostupno' &&
+    row.poseban_oblik_prodaje === 'ne' &&
+    row.naziv_posebnog_oblika === '',
+  ),
+  'Orderable bouquets use dostupno, with no special sale and an empty special-sale name',
 )
 assert(FRESH_BOUQUET_SUPPLY === 'made-to-order', 'Fresh bouquets stay made-to-order, not shelf stock')
 
@@ -161,6 +165,10 @@ assert(!serializePriceListCsv(rows).toLowerCase().includes('umjetn'), 'Public CS
 const csv = serializePriceListCsv(rows)
 assert(csv.charCodeAt(0) === 0xfeff, 'CSV must start with UTF-8 BOM')
 assert(csv.includes('naziv;sifra_proizvoda;marka'), 'CSV header is semicolon-delimited')
+assert(
+  csv.includes('poseban_oblik_prodaje;naziv_posebnog_oblika;'),
+  'Special-sale name is a separate CSV column',
+)
 assert(!csv.includes('70–200'), 'CSV must not put a range in maloprodajna cijena')
 assert(!csv.includes('80–200'), 'CSV must not put the current custom range in maloprodajna cijena')
 
