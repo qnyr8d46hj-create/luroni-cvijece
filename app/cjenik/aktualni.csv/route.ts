@@ -32,6 +32,6 @@ export async function GET() {
     })
   } catch (err) {
     console.error('[cjenik/aktualni.csv] failed:', err)
-    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    return NextResponse.json({ error: 'Price list unavailable' }, { status: 500 })
   }
 }

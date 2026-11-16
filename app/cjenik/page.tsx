@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { Header } from '@/app/components/Header'
 import { Footer } from '@/app/components/Footer'
-import { listPriceListSnapshots } from '@/lib/priceListArchive'
 import { NN_PRICE_COMPLIANCE_ENABLED } from '@/lib/nnPriceCompliance'
 import { isPriceListPublishable } from '@/lib/priceListPublication'
 import {
@@ -70,9 +69,10 @@ const humanRows = [
 export default async function CjenikPage() {
   if (!NN_PRICE_COMPLIANCE_ENABLED) notFound()
 
-  let archives: Awaited<ReturnType<typeof listPriceListSnapshots>> = []
+  let archives: { filename: string }[] = []
   let archiveError = false
   try {
+    const { listPriceListSnapshots } = await import('@/lib/priceListArchive')
     archives = await listPriceListSnapshots()
   } catch (err) {
     console.error('[cjenik] archive listing failed:', err)
