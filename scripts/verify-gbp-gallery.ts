@@ -891,7 +891,7 @@ for (const claim of [
 }
 const vercel = read('vercel.json')
 assert(vercel.includes('/api/cron/sync-gbp-gallery') && vercel.includes('15 5 * * *'), 'Daily gallery cron is registered')
-assert(!vercel.includes('publish-price-list'), 'The disabled price-list cron stays unregistered')
+assert(vercel.includes('publish-price-list') && vercel.includes('0 5 * * *'), 'The price-list cron is registered beside the gallery cron')
 const reader = read('lib/gbpGallery/read.ts')
 assert(reader.includes('homepageUsesSyncedGallery'), 'Homepage publication uses the six-photo threshold')
 assert(reader.includes('unstable_cache'), 'Gallery reads are cached on the server')

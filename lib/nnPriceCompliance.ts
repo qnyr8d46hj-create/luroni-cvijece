@@ -1,36 +1,30 @@
-// Kept off until activation is explicitly approved.
-// Do not turn this on because the calendar reached 2026-11-17.
+// Production sets NN_PRICE_COMPLIANCE_ENABLED=true. Other environments leave
+// it unset, so this stays false. Do not turn it on from the calendar date.
+// The Vercel cron list cannot read this flag.
 //
-// Checked on 2026-11-16 (Europe/Zagreb):
-// - NN 59/2026 puts "bazna cijena" in the Consumer Protection Act.
-//   Those articles apply from 2026-11-17.
-// - NN 101/2026 decisions 1212 and 1213 require the regular price from
-//   2026-09-10, shown beside the current price, plus a public CSV or XML
-//   price list, a product update by 08:00 Europe/Zagreb, a service-price
-//   update by 08:00 on the day it changes, a 30-day archive, and machine
-//   retrieval. Flowers are not in the 2025-05-02 food and household group.
-// - NN 110/2026 only replaces 1 October 2026 with 17 November 2026.
-// - On 2026-11-14 the Government adopted the two implementing pravilnici
-//   and decisions repealing the NN 101/2026 measures. Rechecked later on
-//   2026-11-16: the latest issue with documents is NN 131/2026 of 13 November,
-//   and it does not contain them. The index for 132/2026 lists no documents.
-//   They have no gazette number and no published effective date. The October
-//   drafts are not the schema. Secondary summaries of that draft omit
-//   "dostupno, nedostupno"; the published decision still requires it.
+// Checked on the evening of 2026-11-16 (Europe/Zagreb) against
+// https://narodne-novine.nn.hr/eli/sluzbeni/2026/132/pdf
+// NN 132/2026, published 16 November 2026, takes effect 17 November 2026:
+// - 1579 repeals the additional-price decision (NN 101/2026 and 110/2026)
+// - 1580 repeals the price-list decision (NN 101/2026 and 110/2026)
+// - 1583 Pravilnik o isticanju bazne cijene proizvoda
+// - 1584 Pravilnik o načinu objave cjenika proizvoda
+// Flowers are "ostala roba": the base price is the 10 September 2026 price.
+// The CSV follows 1584 article 3(2). It has no dostupno/nedostupno column.
+// A changed file is due by 11:00 Europe/Zagreb on the day it changes.
+// The replaced file stays available for 15 days from replacement.
+// The filename includes the OIB, the webshop outlet, "roba", the storage
+// number, and a Zagreb timestamp GGGGMMDD_SSMM.
 //
-// Outlet identity: Internetska trgovina, P-01, Gornja Švarča 19,
-// 47000 Karlovac. Active bouquets use "dostupno" as the business choice.
-// That word is not confirmed compliance: the 18 September 2026 clarification
-// ties it to physical stock. One daily file is intentional. Prices are
-// fixed during the day, so no same-day republish is implemented.
-// The final pravilnici were not in Narodne novine on 2026-11-16.
-// Do not add the price-list cron, and do not remove the gallery cron, until
-// those blockers are clear and CRON_SECRET is set in Vercel Production.
-// vercel.json cannot read this flag.
+// Not treated as legally settled:
+// - whether a made-to-order bouquet is physical stock under any rule that
+//   still uses dostupno; this file does not state a stock status
+// - the token "ne", and putting it in the column after the retail price
+// - any gazette text published after NN 132/2026
 //
-// Schedule to add beside the existing gallery job, once publication is allowed:
-// { "path": "/api/cron/publish-price-list", "schedule": "0 5 * * *" }
+// Cron, beside the gallery job: { "path": "/api/cron/publish-price-list", "schedule": "0 5 * * *" }
 // Vercel cron is UTC. On Hobby the 05:00 hour can run until 05:59 UTC,
-// which is 06:59 Europe/Zagreb in winter and 07:59 in summer, before 08:00.
+// which is 06:59 Europe/Zagreb in winter and 07:59 in summer, before 11:00.
 
-export const NN_PRICE_COMPLIANCE_ENABLED = false
+export const NN_PRICE_COMPLIANCE_ENABLED =
+  process.env.NN_PRICE_COMPLIANCE_ENABLED === 'true'

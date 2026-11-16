@@ -27,7 +27,7 @@ export function generateMetadata(): Metadata {
   if (!NN_PRICE_COMPLIANCE_ENABLED) notFound()
   return {
     title:       'Cjenik | Luroni Cvijeće',
-    description: 'Važeći cjenik buketa Luroni Cvijeće, uključujući strojno čitljivi CSV prema NN 101/2026.',
+    description: 'Važeći cjenik buketa Luroni Cvijeće, uključujući strojno čitljivi CSV prema NN 132/2026.',
     alternates:  { canonical: PAGE_URL },
     openGraph: {
       type:        'website',
@@ -35,7 +35,7 @@ export function generateMetadata(): Metadata {
       url:         PAGE_URL,
       siteName:    'Luroni Cvijeće',
       title:       'Cjenik | Luroni Cvijeće',
-      description: 'Važeći cjenik buketa Luroni Cvijeće, uključujući strojno čitljivi CSV prema NN 101/2026.',
+      description: 'Važeći cjenik buketa Luroni Cvijeće, uključujući strojno čitljivi CSV prema NN 132/2026.',
     },
   }
 }
@@ -115,8 +115,7 @@ export default async function CjenikPage() {
                     <th className="py-3 pr-4 font-semibold">Naziv</th>
                     <th className="py-3 pr-4 font-semibold">Šifra</th>
                     <th className="py-3 pr-4 font-semibold">Maloprodajna cijena</th>
-                    <th className="py-3 pr-4 font-semibold">{ANCHOR_PRICE_LABEL}</th>
-                    <th className="py-3 font-semibold">Dostupnost</th>
+                    <th className="py-3 font-semibold">{ANCHOR_PRICE_LABEL}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -125,22 +124,23 @@ export default async function CjenikPage() {
                       <td className="py-3 pr-4 font-medium">{row.name}</td>
                       <td className="py-3 pr-4 text-muted font-mono text-[0.8125rem]">{row.code}</td>
                       <td className="py-3 pr-4 font-semibold text-forest">{row.price}</td>
-                      <td className="py-3 pr-4 text-muted">{row.anchor}</td>
-                      <td className="py-3 text-muted">Po narudžbi</td>
+                      <td className="py-3 text-muted">{row.anchor}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
             <p className="mt-4 text-sm text-muted leading-[1.65]">
+              Bazna cijena je maloprodajna cijena od 10.9.2026. za ovu robu (NN 132/2026-1583).
               Buket po želji naručuje se u koracima od {CUSTOM_BOUQUET.currentStepEur}&nbsp;€
               ({CUSTOM_BOUQUET.currentMinEur}–{CUSTOM_BOUQUET.currentMaxEur}&nbsp;€).
               Svaki od tih iznosa vrijedio je i 10.9.2026. Iznos od {CUSTOM_BOUQUET.anchorMinEur}&nbsp;€
               bio je u ponudi toga dana, povučen je 29.9.2026. i više se ne prodaje.
-              Dostava je besplatna i nije zasebna stavka. Buketi se izrađuju svježe
-              nakon narudžbe i u strojnom cjeniku nose vrijednost „dostupno”. To je
-              poslovni odabir. Pojašnjenje Ministarstva gospodarstva od 18.9.2026.
-              vezuje tu riječ uz fizičku zalihu, pa ona još nije potvrđena sukladnost.
+              Dostava je besplatna i nije zasebna stavka. Nema posebnog oblika prodaje.
+              U CSV-u je to zapisano kao „ne”; NN 132/2026-1584 ne propisuje tu riječ.
+              CSV nema stupac dostupnosti jer ga taj pravilnik ne nabraja. Buketi se
+              izrađuju nakon narudžbe. Time nije odgovoreno treba li takav buket po
+              nekom drugom pravilu smatrati zalihom.
             </p>
           </section>
 
@@ -152,8 +152,10 @@ export default async function CjenikPage() {
               Strojno čitljivi cjenik
             </h2>
             <p className="text-[0.9375rem] text-muted leading-[1.75] mb-5">
-              Važeći cjenik treba biti dostupan i u strojno čitljivom CSV ili XML formatu.
-              Objavljene datoteke ostaju dostupne 30 dana.
+              Sukladno Pravilniku o načinu objave cjenika proizvoda (NN 132/2026-1584),
+              važeći cjenik dostupan je u CSV-u na stalnoj adresi. Datoteka se mijenja
+              kad se cijene promijene, najkasnije do 11:00 (Europe/Zagreb) toga dana.
+              Zamijenjena datoteka ostaje u arhivi 15 dana od zamjene.
             </p>
             {isPriceListPublishable() ? (
               <>
@@ -173,8 +175,7 @@ export default async function CjenikPage() {
             ) : (
               <p className="text-[0.9375rem] text-muted leading-[1.75]">
                 Strojno čitljiva datoteka nije objavljena. Prije objave treba potvrditi adresu
-                prodajnog objekta, oblik objekta u nazivu datoteke, oznaku objekta i značenje
-                raspoloživosti za bukete koji se izrađuju po narudžbi.
+                prodajnog objekta, oblik objekta, oznaku objekta i OIB u nazivu datoteke.
               </p>
             )}
           </section>
@@ -184,26 +185,26 @@ export default async function CjenikPage() {
               id="arhiva-cjenik"
               className="font-display text-[1.5rem] sm:text-[1.625rem] font-semibold text-ink mb-4 pb-3 border-b border-divider leading-snug"
             >
-              Arhiva (30 dana)
+              Arhiva (15 dana)
             </h2>
             {archiveError ? (
               <p className="text-[0.9375rem] text-muted leading-[1.75]">
-                Arhiva dnevnih datoteka trenutno nije dostupna. Aktualni CSV i dalje možete preuzeti gore.
+                Arhiva zamijenjenih datoteka trenutno nije dostupna. Aktualni CSV i dalje možete preuzeti gore.
               </p>
             ) : archives.length === 0 ? (
               <p className="text-[0.9375rem] text-muted leading-[1.75]">
-                Dnevne datoteke pojavljuju se nakon prve objave za tekući radni dan
-                (najkasnije do 8:00, Europe/Zagreb).
+                Arhiva se pojavljuje kad važeću datoteku zamijeni nova. Zamijenjena
+                datoteka ostaje dostupna 15 dana od zamjene.
               </p>
             ) : (
               <ul className="space-y-2">
                 {archives.map(snapshot => (
-                  <li key={snapshot.date}>
+                  <li key={snapshot.filename}>
                     <a
                       href={`/cjenik/arhiva/${encodeURIComponent(snapshot.filename)}`}
                       className="text-sm text-forest underline-offset-2 hover:underline break-all"
                     >
-                      {snapshot.date} — {snapshot.filename}
+                      {snapshot.filename}
                     </a>
                   </li>
                 ))}

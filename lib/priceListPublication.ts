@@ -9,10 +9,12 @@ import {
 } from '@/lib/priceListOutlet'
 import { ARTIFICIAL_ARRANGEMENTS_PUBLIC } from '@/lib/artificialArrangementsPublic'
 
-export const PRICE_LIST_RETENTION_DAYS = 30
+export const PRICE_LIST_RETENTION_DAYS = 15
 export const PRICE_LIST_SEQUENCE_ID = 'sequence'
+export const PRICE_LIST_CURRENT_ID = 'current'
 export const PRICE_LIST_CRON_UTC_HOUR = 5
-export const PRICE_LIST_DEADLINE_MINUTES = 8 * 60
+/** NN 132/2026-1584 article 3(5): a changed file is due by 11:00 Europe/Zagreb. */
+export const PRICE_LIST_DEADLINE_MINUTES = 11 * 60
 
 const FILENAME_TOKEN = /^[A-Za-z0-9-]+$/
 
@@ -20,6 +22,7 @@ export type PriceListBlockerCode =
   | 'outlet-address'
   | 'outlet-form'
   | 'outlet-identifier'
+  | 'outlet-oib'
   | 'artificial-arrangements'
 
 export class PriceListPublicationBlocked extends Error {
@@ -68,6 +71,7 @@ export function priceListPublicationBlockers(
   if (!address) blockers.push('outlet-address')
   if (!outlet || !filenameToken(outlet.form)) blockers.push('outlet-form')
   if (!outlet || !filledToken(outlet.identifier)) blockers.push('outlet-identifier')
+  if (!outlet || !/^\d{11}$/.test(outlet.oib)) blockers.push('outlet-oib')
   if (artificialArrangementsBlockPublication(artificial.offeredOnline, artificial.decision)) {
     blockers.push('artificial-arrangements')
   }
@@ -119,9 +123,19 @@ export function retentionCutoffDate(now = new Date()): string {
   return calendarDatePlusDays(zagrebCalendarDate(now), -PRICE_LIST_RETENTION_DAYS)
 }
 
-export function retainExistingSnapshot<T>(existing: T | null, created: T): { action: 'keep' | 'create'; snapshot: T } {
-  if (existing) return { action: 'keep', snapshot: existing }
-  return { action: 'create', snapshot: created }
+/** A replaced file stays available on the replacement date and for 15 Zagreb calendar days after it. */
+export function replacedSnapshotIsRetained(replacedAtIso: string, now = new Date()): boolean {
+  return zagrebCalendarDate(new Date(replacedAtIso)) >= retentionCutoffDate(now)
+}
+
+export function priceListCsvBody(csv: string): string {
+  return csv.replace(/^\uFEFF/, '')
+}
+
+/** Keep the stored file when the price-list body is unchanged. Replace it when the body differs or nothing is stored yet. */
+export function decidePriceListPublication(existingCsv: string | null, nextCsv: string): 'keep' | 'replace' {
+  if (existingCsv == null) return 'replace'
+  return priceListCsvBody(existingCsv) === priceListCsvBody(nextCsv) ? 'keep' : 'replace'
 }
 
 export function latestHobbyCronUtc(hourUtc: number, year: number, monthIndex: number, day: number): Date {
@@ -140,7 +154,7 @@ export function zagrebClockMinutes(date: Date): number {
   return Number(parts.hour) * 60 + Number(parts.minute)
 }
 
-/** Hobby may run a daily cron anywhere in the UTC hour. Both winter and summer must finish before 08:00 Europe/Zagreb. */
+/** Hobby may run a daily cron anywhere in the UTC hour. Both winter and summer must finish before 11:00 Europe/Zagreb. */
 export function scheduledCronMeetsDeadline(hourUtc = PRICE_LIST_CRON_UTC_HOUR): boolean {
   const winter = zagrebClockMinutes(latestHobbyCronUtc(hourUtc, 2026, 10, 17))
   const summer = zagrebClockMinutes(latestHobbyCronUtc(hourUtc, 2026, 6, 17))

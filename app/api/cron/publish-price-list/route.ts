@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { pruneOldPriceLists, publishTodaysPriceList } from '@/lib/priceListArchive'
+import { pruneOldPriceLists, publishCurrentPriceList } from '@/lib/priceListArchive'
 import { NN_PRICE_COMPLIANCE_ENABLED } from '@/lib/nnPriceCompliance'
 import { priceListPublicationBlockers } from '@/lib/priceListPublication'
 
@@ -21,10 +21,10 @@ export async function GET(req: NextRequest) {
 
   if (!NN_PRICE_COMPLIANCE_ENABLED) {
     return NextResponse.json({
-      ok:       true,
-      skipped:  true,
+      ok:        true,
+      skipped:   true,
       published: false,
-      reason:   'NN_PRICE_COMPLIANCE_ENABLED is false',
+      reason:    'NN_PRICE_COMPLIANCE_ENABLED is false',
     })
   }
 
@@ -38,15 +38,16 @@ export async function GET(req: NextRequest) {
     }, { status: 409 })
   }
 
-  // Not registered in vercel.json. Restore "0 5 * * *" only after blockers clear.
   try {
-    const snapshot = await publishTodaysPriceList()
-    const pruned   = await pruneOldPriceLists()
+    const result = await publishCurrentPriceList()
+    const pruned = await pruneOldPriceLists()
     return NextResponse.json({
       ok:        true,
-      published: true,
-      date:      snapshot.date,
-      filename:  snapshot.filename,
+      published: result.action === 'replace',
+      unchanged: result.action === 'keep',
+      date:      result.snapshot.date,
+      filename:  result.snapshot.filename,
+      version:   result.snapshot.version,
       pruned,
     })
   } catch (err) {

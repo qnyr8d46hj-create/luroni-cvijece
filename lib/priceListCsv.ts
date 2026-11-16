@@ -1,5 +1,6 @@
 import {
-  ORDERABLE_BOUQUET_AVAILABILITY,
+  NO_SPECIAL_SALE_MARKER,
+  PRICE_LIST_FILE_KIND,
   publicPriceListIncludesArtificialArrangements,
   type ConfirmedPriceListOutlet,
 } from './priceListOutlet'
@@ -13,25 +14,23 @@ import {
   customVariantCode,
 } from './productPrices'
 
+// NN 132/2026-1584 article 3(2), in that order. Column names are not prescribed.
+// Empty cells are fields that do not apply to these bouquets (no unit-price
+// obligation, no barcode). "ne" is not a prescribed token: see
+// SPECIAL_SALE_ENCODING_UNRESOLVED. The separate special-sale name column and
+// the dostupnost column from the repealed NN 101/2026 decision are omitted.
 export const PRICE_LIST_COLUMNS = [
   'naziv',
   'sifra_proizvoda',
   'marka',
+  'neto_kolicina',
   'jedinica_mjere',
-  'jedinicna_cijena',
   'maloprodajna_cijena',
-  // NN 101/2026-1213 asks, with the retail price, whether a special sale
-  // applies and, if so, its name. Column names are not prescribed. No bouquet
-  // is on special sale, so the answer is "ne" and the name cell is empty.
-  // The unpublished pravilnik has not confirmed this split.
   'poseban_oblik_prodaje',
-  'naziv_posebnog_oblika',
-  // NN 101/2026 says "sidrena cijena". The October draft says "bazna cijena"
-  // and does not prescribe the header. Keep this header until the published
-  // pravilnik names a column.
-  'sidrena_cijena',
+  'jedinicna_cijena',
   'barkod',
-  'dostupnost',
+  'ean_barkod',
+  'bazna_cijena',
 ] as const
 
 export type PriceListColumn = (typeof PRICE_LIST_COLUMNS)[number]
@@ -58,17 +57,17 @@ export function buildPriceListRows(): PriceListRow[] {
 
   for (const bouquet of Object.values(STANDARD_BOUQUETS)) {
     rows.push({
-      naziv:                  bouquet.name,
-      sifra_proizvoda:        bouquet.code,
-      marka:                  BRAND_NAME,
-      jedinica_mjere:         '',
-      jedinicna_cijena:       '',
-      maloprodajna_cijena:    money(bouquet.currentEur),
-      poseban_oblik_prodaje:  'ne',
-      naziv_posebnog_oblika:  '',
-      sidrena_cijena:         money(bouquet.anchorEur),
-      barkod:                 '',
-      dostupnost:             ORDERABLE_BOUQUET_AVAILABILITY,
+      naziv:                 bouquet.name,
+      sifra_proizvoda:       bouquet.code,
+      marka:                 BRAND_NAME,
+      neto_kolicina:         '',
+      jedinica_mjere:        '',
+      maloprodajna_cijena:   money(bouquet.currentEur),
+      poseban_oblik_prodaje: NO_SPECIAL_SALE_MARKER,
+      jedinicna_cijena:      '',
+      barkod:                '',
+      ean_barkod:            '',
+      bazna_cijena:          money(bouquet.anchorEur),
     })
   }
 
@@ -77,17 +76,17 @@ export function buildPriceListRows(): PriceListRow[] {
 
   for (const amount of currentAmounts) {
     rows.push({
-      naziv:                  `${CUSTOM_BOUQUET.name} – ${amount} €`,
-      sifra_proizvoda:        customVariantCode(amount),
-      marka:                  BRAND_NAME,
-      jedinica_mjere:         '',
-      jedinicna_cijena:       '',
-      maloprodajna_cijena:    money(amount),
-      poseban_oblik_prodaje:  'ne',
-      naziv_posebnog_oblika:  '',
-      sidrena_cijena:         anchorAmounts.has(amount) ? money(amount) : '',
-      barkod:                 '',
-      dostupnost:             ORDERABLE_BOUQUET_AVAILABILITY,
+      naziv:                 `${CUSTOM_BOUQUET.name} – ${amount} €`,
+      sifra_proizvoda:       customVariantCode(amount),
+      marka:                 BRAND_NAME,
+      neto_kolicina:         '',
+      jedinica_mjere:        '',
+      maloprodajna_cijena:   money(amount),
+      poseban_oblik_prodaje: NO_SPECIAL_SALE_MARKER,
+      jedinicna_cijena:      '',
+      barkod:                '',
+      ean_barkod:            '',
+      bazna_cijena:          anchorAmounts.has(amount) ? money(amount) : '',
     })
   }
 
@@ -102,23 +101,21 @@ export function serializePriceListCsv(rows = buildPriceListRows()): string {
   return `\uFEFF${header}\r\n${body}\r\n`
 }
 
+/** NN 132/2026-1584 article 6(3): GGGGMMDD_SSMM in Europe/Zagreb. No seconds and no offset. */
 export function zagrebTimestampForFilename(now = new Date()): string {
   const parts = Object.fromEntries(
     new Intl.DateTimeFormat('en-GB', {
-      timeZone:     'Europe/Zagreb',
-      year:         'numeric',
-      month:        '2-digit',
-      day:          '2-digit',
-      hour:         '2-digit',
-      minute:       '2-digit',
-      second:       '2-digit',
-      hourCycle:    'h23',
-      timeZoneName: 'longOffset',
+      timeZone:  'Europe/Zagreb',
+      year:      'numeric',
+      month:     '2-digit',
+      day:       '2-digit',
+      hour:      '2-digit',
+      minute:    '2-digit',
+      hourCycle: 'h23',
     }).formatToParts(now).map(part => [part.type, part.value]),
   ) as Record<string, string>
 
-  const offset = (parts.timeZoneName ?? 'GMT+00:00').replace('GMT', '').replace(':', '')
-  return `${parts.year}${parts.month}${parts.day}T${parts.hour}${parts.minute}${parts.second}${offset}`
+  return `${parts.year}${parts.month}${parts.day}_${parts.hour}${parts.minute}`
 }
 
 export function buildPriceListFilename(
@@ -129,8 +126,11 @@ export function buildPriceListFilename(
   if (!Number.isInteger(storageNumber) || storageNumber < 1) {
     throw new Error('Storage number must be a positive integer')
   }
+  const oib = requireFilenameToken(outlet.oib, 'OIB')
+  if (!/^\d{11}$/.test(oib)) throw new Error('OIB must be 11 digits')
   const form = requireFilenameToken(outletAddressSlug(outlet.form), 'Outlet form')
   const identifier = requireFilenameToken(outlet.identifier, 'Outlet identifier')
   const addressSlug = outletAddressSlug(outlet.address)
-  return `cjenik_${form}_${addressSlug}_${identifier}_${storageNumber}_${zagrebTimestampForFilename(now)}.csv`
+  const kind = requireFilenameToken(PRICE_LIST_FILE_KIND, 'Price list kind')
+  return `${oib}_${form}_${addressSlug}_${identifier}_${kind}_${storageNumber}_${zagrebTimestampForFilename(now)}.csv`
 }

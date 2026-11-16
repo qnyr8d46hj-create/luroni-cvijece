@@ -29,14 +29,19 @@ import {
   CONFIRMED_PRICE_LIST_OUTLET,
   CONFIRMED_WEBSHOP_ADDRESS,
   CONFIRMED_WEBSHOP_LEGAL_NAME,
+  CONFIRMED_WEBSHOP_OIB,
+  NO_SPECIAL_SALE_MARKER,
   ORDERABLE_BOUQUET_AVAILABILITY,
+  PRICE_LIST_FILE_KIND,
+  SPECIAL_SALE_ENCODING_UNRESOLVED,
 } from '../lib/priceListOutlet'
 import {
+  decidePriceListPublication,
   latestHobbyCronUtc,
   nextStorageNumber,
   outletAddressSlug,
   priceListPublicationBlockers,
-  retainExistingSnapshot,
+  replacedSnapshotIsRetained,
   retentionCutoffDate,
   scheduledCronMeetsDeadline,
   zagrebClockMinutes,
@@ -129,25 +134,22 @@ assert(PRICE_LIST_COLUMNS.every(col => col in rows[0]), 'All required CSV column
 
 const sRow = rows.find(row => row.sifra_proizvoda === 'LUR-BUK-S')
 if (!sRow) fail('Missing Buket S CSV row')
-assert(sRow.maloprodajna_cijena === '45.00' && sRow.sidrena_cijena === '35.00', 'Buket S CSV current vs historical anchor')
-assert(sRow.barkod === '' && sRow.jedinica_mjere === '', 'Inapplicable fields stay empty')
+assert(sRow.maloprodajna_cijena === '45.00' && sRow.bazna_cijena === '35.00', 'Buket S CSV current vs 10 September base price')
+assert(sRow.barkod === '' && sRow.ean_barkod === '' && sRow.jedinica_mjere === '' && sRow.neto_kolicina === '', 'Inapplicable fields stay empty')
+assert(!('dostupnost' in sRow) && !('naziv_posebnog_oblika' in sRow) && !('sidrena_cijena' in sRow), 'Repealed columns stay out of the row')
 assert(
-  rows.every(row =>
-    row.dostupnost === 'dostupno' &&
-    row.poseban_oblik_prodaje === 'ne' &&
-    row.naziv_posebnog_oblika === '',
-  ),
-  'Orderable bouquets use dostupno, with no special sale and an empty special-sale name',
+  rows.every(row => row.poseban_oblik_prodaje === 'ne'),
+  'No bouquet is on special sale, recorded with the unresolved token ne',
 )
 assert(FRESH_BOUQUET_SUPPLY === 'made-to-order', 'Fresh bouquets stay made-to-order, not shelf stock')
 
 const mRow = rows.find(row => row.sifra_proizvoda === 'LUR-BUK-M')
 if (!mRow) fail('Missing Buket M CSV row')
-assert(mRow.maloprodajna_cijena === '55.00' && mRow.sidrena_cijena === '45.00', 'Buket M CSV current vs historical anchor')
+assert(mRow.maloprodajna_cijena === '55.00' && mRow.bazna_cijena === '45.00', 'Buket M CSV current vs 10 September base price')
 
 const lRow = rows.find(row => row.sifra_proizvoda === 'LUR-BUK-L')
 if (!lRow) fail('Missing Buket L CSV row')
-assert(lRow.maloprodajna_cijena === '70.00' && lRow.sidrena_cijena === '60.00', 'Buket L CSV current vs historical anchor')
+assert(lRow.maloprodajna_cijena === '70.00' && lRow.bazna_cijena === '60.00', 'Buket L CSV current vs 10 September base price')
 
 assert(
   !rows.some(row => row.sifra_proizvoda === 'LUR-BUK-CUSTOM-070'),
@@ -155,20 +157,20 @@ assert(
 )
 const custom80 = rows.find(row => row.sifra_proizvoda === 'LUR-BUK-CUSTOM-080')
 if (!custom80) fail('Missing custom 80 CSV row')
-assert(custom80.maloprodajna_cijena === '80.00' && custom80.sidrena_cijena === '80.00', 'Custom 80 CSV')
+assert(custom80.maloprodajna_cijena === '80.00' && custom80.bazna_cijena === '80.00', 'Custom 80 CSV')
 const custom200 = rows.find(row => row.sifra_proizvoda === 'LUR-BUK-CUSTOM-200')
 if (!custom200) fail('Missing custom 200 CSV row')
-assert(custom200.maloprodajna_cijena === '200.00' && custom200.sidrena_cijena === '200.00', 'Custom 200 CSV')
+assert(custom200.maloprodajna_cijena === '200.00' && custom200.bazna_cijena === '200.00', 'Custom 200 CSV')
 assert(rows.every(row => !row.sifra_proizvoda.startsWith('UM-')), 'Public CSV excludes artificial arrangement SKUs')
 assert(!serializePriceListCsv(rows).toLowerCase().includes('umjetn'), 'Public CSV does not name artificial arrangements')
 
 const csv = serializePriceListCsv(rows)
 assert(csv.charCodeAt(0) === 0xfeff, 'CSV must start with UTF-8 BOM')
-assert(csv.includes('naziv;sifra_proizvoda;marka'), 'CSV header is semicolon-delimited')
 assert(
-  csv.includes('poseban_oblik_prodaje;naziv_posebnog_oblika;'),
-  'Special-sale name is a separate CSV column',
+  csv.includes('naziv;sifra_proizvoda;marka;neto_kolicina;jedinica_mjere;maloprodajna_cijena;poseban_oblik_prodaje;jedinicna_cijena;barkod;ean_barkod;bazna_cijena'),
+  'CSV header follows NN 132/2026-1584 article 3(2)',
 )
+assert(!csv.includes('dostupnost') && !csv.includes('naziv_posebnog_oblika') && !csv.includes('sidrena_cijena'), 'Repealed columns are absent')
 assert(!csv.includes('70–200'), 'CSV must not put a range in maloprodajna cijena')
 assert(!csv.includes('80–200'), 'CSV must not put the current custom range in maloprodajna cijena')
 
@@ -178,7 +180,12 @@ assert(
 )
 assert(
   NN_PRICE_COMPLIANCE_ENABLED === false,
-  'NN price compliance stays disabled until activation is approved',
+  'NN price compliance stays off unless NN_PRICE_COMPLIANCE_ENABLED=true',
+)
+const flagSource = readFileSync(resolve(root, 'lib/nnPriceCompliance.ts'), 'utf8')
+assert(
+  flagSource.includes("process.env.NN_PRICE_COMPLIANCE_ENABLED === 'true'"),
+  'Production flag is the Vercel environment variable',
 )
 
 const anchorHtml = renderToStaticMarkup(
@@ -198,6 +205,10 @@ assert(
 )
 assert(CONFIRMED_OUTLET_FORM === 'Internetska trgovina', 'Outlet type is the chosen webshop wording')
 assert(CONFIRMED_OUTLET_IDENTIFIER === 'P-01', 'Outlet label is the chosen P-01, not a register number')
+assert(CONFIRMED_WEBSHOP_OIB === '89564174048', 'Filename OIB is the published company OIB')
+assert(PRICE_LIST_FILE_KIND === 'roba', 'The public file is a goods price list')
+assert(NO_SPECIAL_SALE_MARKER === 'ne', 'No-special-sale marker stays ne')
+assert(SPECIAL_SALE_ENCODING_UNRESOLVED === true, 'The token ne is not treated as prescribed wording')
 assert(CONFIRMED_PRICE_LIST_OUTLET.form === CONFIRMED_OUTLET_FORM, 'Filename outlet uses the chosen type')
 assert(CONFIRMED_PRICE_LIST_OUTLET.identifier === 'P-01', 'Filename outlet uses P-01')
 assert(ORDERABLE_BOUQUET_AVAILABILITY === 'dostupno', 'Business availability value is dostupno')
@@ -211,13 +222,13 @@ const chosenName = buildPriceListFilename(
   new Date('2026-11-17T05:00:00.000Z'),
 )
 assert(
-  chosenName.startsWith('cjenik_Internetska-trgovina_Gornja-Svarca-19-47000-Karlovac_P-01_1_'),
-  'Filename uses Internetska trgovina, the Karlovac address, and P-01',
+  chosenName === '89564174048_Internetska-trgovina_Gornja-Svarca-19-47000-Karlovac_P-01_roba_1_20261117_0600.csv',
+  'Filename uses the OIB, webshop outlet, goods mark, storage number, and Zagreb minute timestamp',
 )
 assert(ARTIFICIAL_ARRANGEMENTS_PUBLIC === false, 'Artificial arrangements are not offered online')
 assert(ARTIFICIAL_PRICE_LIST_DECISION === 'excluded-not-offered', 'Artificial arrangements stay out of the public price list')
 const blockers = priceListPublicationBlockers()
-for (const code of ['outlet-address', 'outlet-form', 'outlet-identifier', 'artificial-arrangements'] as const) {
+for (const code of ['outlet-address', 'outlet-form', 'outlet-identifier', 'outlet-oib', 'artificial-arrangements'] as const) {
   assert(!blockers.includes(code), `Unexpected publication blocker: ${code}`)
 }
 assert(blockers.length === 0, 'Chosen outlet data no longer blocks the daily file')
@@ -254,24 +265,32 @@ for (const relativePath of [
 }
 
 const fixtureName = buildPriceListFilename(
-  { form: 'test-outlet', address: 'Test ulica 1', identifier: 'TEST-01' },
+  { form: 'test-outlet', address: 'Test ulica 1', identifier: 'TEST-01', oib: '12345678901' },
   3,
   new Date('2026-11-17T05:00:00.000Z'),
 )
 assert(
-  fixtureName.startsWith('cjenik_test-outlet_Test-ulica-1_TEST-01_3_'),
-  'Filename uses the supplied outlet and storage number',
+  fixtureName === '12345678901_test-outlet_Test-ulica-1_TEST-01_roba_3_20261117_0600.csv',
+  'Filename uses the supplied outlet, OIB, and storage number',
 )
-assert(fixtureName.endsWith('.csv'), 'Filename is a CSV')
 assert(nextStorageNumber(null) === 1, 'First storage number is 1')
 assert(nextStorageNumber(4) === 5, 'Storage numbers increase')
-const kept = retainExistingSnapshot({ filename: 'kept.csv' }, { filename: 'new.csv' })
-assert(kept.action === 'keep' && kept.snapshot.filename === 'kept.csv', 'An existing daily snapshot is not overwritten')
-assert(retainExistingSnapshot(null, { filename: 'new.csv' }).action === 'create', 'A missing day creates one snapshot')
-assert(retentionCutoffDate(new Date('2026-11-17T12:00:00.000Z')) === '2026-10-18', 'Retention is 30 Zagreb calendar days')
+assert(decidePriceListPublication(null, 'a') === 'replace', 'A missing file is published')
+assert(decidePriceListPublication('\uFEFFsame', '\uFEFFsame') === 'keep', 'An unchanged price list is not replaced')
+assert(decidePriceListPublication('old', 'new') === 'replace', 'A changed price list is replaced')
+assert(retentionCutoffDate(new Date('2026-11-17T12:00:00.000Z')) === '2026-11-02', 'Retention cutoff is 15 Zagreb calendar days')
+assert(
+  replacedSnapshotIsRetained('2026-11-17T06:00:00.000Z', new Date('2026-12-02T12:00:00.000Z')),
+  'A file replaced on 17 November is still available on 2 December',
+)
+assert(
+  !replacedSnapshotIsRetained('2026-11-17T06:00:00.000Z', new Date('2026-12-03T12:00:00.000Z')),
+  'A file replaced on 17 November is no longer available on 3 December',
+)
 
-assert(scheduledCronMeetsDeadline(), '05:00 UTC cron finishes before 08:00 Europe/Zagreb on Hobby in winter and summer')
-assert(!scheduledCronMeetsDeadline(7), 'A 07:00 UTC cron can miss 08:00 Europe/Zagreb')
+assert(scheduledCronMeetsDeadline(), '05:00 UTC cron finishes before 11:00 Europe/Zagreb on Hobby in winter and summer')
+assert(scheduledCronMeetsDeadline(7), 'A 07:00 UTC cron still finishes before 11:00 Europe/Zagreb')
+assert(!scheduledCronMeetsDeadline(10), 'A 10:00 UTC cron can miss 11:00 Europe/Zagreb')
 const winterLatest = zagrebClockMinutes(latestHobbyCronUtc(5, 2026, 10, 17))
 const summerLatest = zagrebClockMinutes(latestHobbyCronUtc(5, 2026, 6, 17))
 assert(winterLatest === 6 * 60 + 59, '17 Nov 2026 Hobby window ends at 06:59 Europe/Zagreb')
@@ -311,28 +330,17 @@ assert(
 const vercel = JSON.parse(readFileSync(resolve(root, 'vercel.json'), 'utf8')) as {
   crons?: { path: string; schedule: string }[]
 }
-if (NN_PRICE_COMPLIANCE_ENABLED) {
-  assert(
-    vercel.crons?.some(
-      (job) => job.path === '/api/cron/publish-price-list' && job.schedule === '0 5 * * *',
-    ),
-    'Enabled compliance requires the daily price-list cron in vercel.json',
-  )
-  assert(
-    vercel.crons?.some((job) => job.path === '/api/cron/sync-gbp-gallery'),
-    'Enabling the price-list cron must keep the gallery cron',
-  )
-} else {
-  assert(Array.isArray(vercel.crons), 'vercel.json crons must be an array')
-  assert(
-    vercel.crons?.some((job) => job.path === '/api/cron/sync-gbp-gallery'),
-    'The gallery cron stays registered while price compliance is disabled',
-  )
-  assert(
-    !vercel.crons?.some((job) => job.path === '/api/cron/publish-price-list'),
-    'Disabled compliance must not register the price-list Vercel cron',
-  )
-}
+assert(Array.isArray(vercel.crons), 'vercel.json crons must be an array')
+assert(
+  vercel.crons?.some((job) => job.path === '/api/cron/sync-gbp-gallery' && job.schedule === '15 5 * * *'),
+  'The gallery cron stays registered and unchanged',
+)
+assert(
+  vercel.crons?.some(
+    (job) => job.path === '/api/cron/publish-price-list' && job.schedule === '0 5 * * *',
+  ),
+  'The price-list cron is registered beside the gallery cron',
+)
 
 console.log(
   NN_PRICE_COMPLIANCE_ENABLED
