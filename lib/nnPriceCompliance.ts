@@ -14,10 +14,12 @@
 //   and decisions repealing the NN 101/2026 measures. Those texts were not
 //   in Narodne novine on 2026-11-16. The October drafts are not the schema.
 //
-// Outlet identity is now set: Internetska trgovina, P-01,
-// Gornja Švarča 19, 47000 Karlovac. Publication stays blocked because
-// "dostupno" is not yet legally acceptable for bouquets made after the
-// order, and the final pravilnici were not in Narodne novine on 2026-11-16.
+// Outlet identity: Internetska trgovina, P-01, Gornja Švarča 19,
+// 47000 Karlovac. Active bouquets use "dostupno" as the business choice.
+// That word is not confirmed compliance: the 18 September 2026 clarification
+// ties it to physical stock. One daily file is intentional. Prices are
+// fixed during the day, so no same-day republish is implemented.
+// The final pravilnici were not in Narodne novine on 2026-11-16.
 // Do not add the price-list cron, and do not remove the gallery cron, until
 // those blockers are clear and CRON_SECRET is set in Vercel Production.
 // vercel.json cannot read this flag.

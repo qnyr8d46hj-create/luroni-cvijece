@@ -1,5 +1,5 @@
 import {
-  freshBouquetAvailabilityValue,
+  ORDERABLE_BOUQUET_AVAILABILITY,
   publicPriceListIncludesArtificialArrangements,
   type ConfirmedPriceListOutlet,
 } from './priceListOutlet'
@@ -20,6 +20,8 @@ export const PRICE_LIST_COLUMNS = [
   'jedinica_mjere',
   'jedinicna_cijena',
   'maloprodajna_cijena',
+  // "ne" answers the published question of whether a special sale applies.
+  // None does, so there is no special-sale name. The column wording is not prescribed.
   'poseban_oblik_prodaje',
   // NN 101/2026 says "sidrena cijena". The October draft says "bazna cijena"
   // and does not prescribe the header. Keep this header until the published
@@ -59,10 +61,10 @@ export function buildPriceListRows(): PriceListRow[] {
       jedinica_mjere:         '',
       jedinicna_cijena:       '',
       maloprodajna_cijena:    money(bouquet.currentEur),
-      poseban_oblik_prodaje:  '',
+      poseban_oblik_prodaje:  'ne',
       sidrena_cijena:         money(bouquet.anchorEur),
       barkod:                 '',
-      dostupnost:             freshBouquetAvailabilityValue(),
+      dostupnost:             ORDERABLE_BOUQUET_AVAILABILITY,
     })
   }
 
@@ -77,10 +79,10 @@ export function buildPriceListRows(): PriceListRow[] {
       jedinica_mjere:         '',
       jedinicna_cijena:       '',
       maloprodajna_cijena:    money(amount),
-      poseban_oblik_prodaje:  '',
+      poseban_oblik_prodaje:  'ne',
       sidrena_cijena:         anchorAmounts.has(amount) ? money(amount) : '',
       barkod:                 '',
-      dostupnost:             freshBouquetAvailabilityValue(),
+      dostupnost:             ORDERABLE_BOUQUET_AVAILABILITY,
     })
   }
 

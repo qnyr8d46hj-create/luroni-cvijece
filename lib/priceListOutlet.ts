@@ -34,24 +34,16 @@ export const CONFIRMED_PRICE_LIST_OUTLET: ConfirmedPriceListOutlet = {
 }
 
 /**
- * Proposed machine value for bouquets a customer can order.
- * Not written into the public file while AVAILABILITY_LEGAL_VALUE_CONFIRMED
- * is false.
+ * Business choice for bouquets a customer can order. They are prepared
+ * after the order. This is not a finding that the legal rule is met.
  *
- * The 18 September 2026 clarification says a product is "dostupno" only when
- * it is physically in stock and on sale at that outlet. These bouquets are
- * made after the order, so that word is not yet acceptable. "nedostupno"
- * would say they cannot be bought, which is also wrong. The unpublished
- * pravilnik has not resolved this.
+ * Ministry clarification of 18 September 2026 says "dostupno" means the
+ * product is physically in stock at the outlet. That reading is unresolved
+ * for made-to-order bouquets. AVAILABILITY_STOCK_RULE_UNRESOLVED stays true
+ * so this value is not treated as confirmed compliance.
  */
-export const PROPOSED_ORDERABLE_AVAILABILITY = 'dostupno' as const
-export const AVAILABILITY_LEGAL_VALUE_CONFIRMED = false
-
-export function freshBouquetAvailabilityValue(
-  confirmed = AVAILABILITY_LEGAL_VALUE_CONFIRMED,
-): '' | typeof PROPOSED_ORDERABLE_AVAILABILITY {
-  return confirmed ? PROPOSED_ORDERABLE_AVAILABILITY : ''
-}
+export const ORDERABLE_BOUQUET_AVAILABILITY = 'dostupno' as const
+export const AVAILABILITY_STOCK_RULE_UNRESOLVED = true
 
 /**
  * Artificial arrangements are not offered on the webshop, so they stay out

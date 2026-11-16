@@ -22,7 +22,11 @@ export type PriceListSnapshot = {
   version:       number
 }
 
-/** One immutable CSV snapshot per Europe/Zagreb calendar day. Repeat calls return the existing document. */
+/**
+ * One CSV snapshot per Europe/Zagreb calendar day. Repeat calls keep the
+ * existing document. Bouquet prices stay fixed during the day, so a later
+ * same-day file is intentionally not generated.
+ */
 export async function publishTodaysPriceList(now = new Date()): Promise<PriceListSnapshot> {
   const outlet = requirePriceListPublication()
   const date = zagrebCalendarDate(now)

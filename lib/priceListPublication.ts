@@ -1,7 +1,6 @@
 import { zagrebCalendarDate } from '@/lib/productPrices'
 import {
   ARTIFICIAL_PRICE_LIST_DECISION,
-  AVAILABILITY_LEGAL_VALUE_CONFIRMED,
   CONFIRMED_PRICE_LIST_OUTLET,
   CONFIRMED_WEBSHOP_ADDRESS,
   artificialArrangementsBlockPublication,
@@ -21,7 +20,6 @@ export type PriceListBlockerCode =
   | 'outlet-address'
   | 'outlet-form'
   | 'outlet-identifier'
-  | 'availability'
   | 'artificial-arrangements'
 
 export class PriceListPublicationBlocked extends Error {
@@ -57,7 +55,6 @@ export function requireFilenameToken(value: string, label: string): string {
 
 export function priceListPublicationBlockers(
   outlet: ConfirmedPriceListOutlet | null = CONFIRMED_PRICE_LIST_OUTLET,
-  availabilityConfirmed = AVAILABILITY_LEGAL_VALUE_CONFIRMED,
   artificial: {
     offeredOnline: boolean
     decision: ArtificialPriceListDecision
@@ -71,7 +68,6 @@ export function priceListPublicationBlockers(
   if (!address) blockers.push('outlet-address')
   if (!outlet || !filenameToken(outlet.form)) blockers.push('outlet-form')
   if (!outlet || !filledToken(outlet.identifier)) blockers.push('outlet-identifier')
-  if (!availabilityConfirmed) blockers.push('availability')
   if (artificialArrangementsBlockPublication(artificial.offeredOnline, artificial.decision)) {
     blockers.push('artificial-arrangements')
   }

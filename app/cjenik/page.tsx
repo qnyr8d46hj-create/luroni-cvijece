@@ -137,10 +137,10 @@ export default async function CjenikPage() {
               ({CUSTOM_BOUQUET.currentMinEur}–{CUSTOM_BOUQUET.currentMaxEur}&nbsp;€).
               Svaki od tih iznosa vrijedio je i 10.9.2026. Iznos od {CUSTOM_BOUQUET.anchorMinEur}&nbsp;€
               bio je u ponudi toga dana, povučen je 29.9.2026. i više se ne prodaje.
-              Dostava je besplatna i nije zasebna stavka. Buketi se izrađuju po narudžbi,
-              nakon zaprimljene narudžbe. Predložena strojna vrijednost je „dostupno”, ali
-              ona još nije upisana: pojašnjenje Ministarstva gospodarstva od 18.9.2026.
-              vezuje tu riječ uz fizičku zalihu u objektu.
+              Dostava je besplatna i nije zasebna stavka. Buketi se izrađuju svježe
+              nakon narudžbe i u strojnom cjeniku nose vrijednost „dostupno”. To je
+              poslovni odabir. Pojašnjenje Ministarstva gospodarstva od 18.9.2026.
+              vezuje tu riječ uz fizičku zalihu, pa ona još nije potvrđena sukladnost.
             </p>
           </section>
 

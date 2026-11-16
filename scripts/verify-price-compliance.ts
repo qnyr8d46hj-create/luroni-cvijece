@@ -23,14 +23,13 @@ import { ARTIFICIAL_ARRANGEMENTS_PUBLIC } from '../lib/artificialArrangementsPub
 import { ARTIFICIAL_BOUQUETS_COLLECTION } from '../lib/artificialBouquetPaths'
 import {
   ARTIFICIAL_PRICE_LIST_DECISION,
-  AVAILABILITY_LEGAL_VALUE_CONFIRMED,
+  AVAILABILITY_STOCK_RULE_UNRESOLVED,
   CONFIRMED_OUTLET_FORM,
   CONFIRMED_OUTLET_IDENTIFIER,
   CONFIRMED_PRICE_LIST_OUTLET,
   CONFIRMED_WEBSHOP_ADDRESS,
   CONFIRMED_WEBSHOP_LEGAL_NAME,
-  PROPOSED_ORDERABLE_AVAILABILITY,
-  freshBouquetAvailabilityValue,
+  ORDERABLE_BOUQUET_AVAILABILITY,
 } from '../lib/priceListOutlet'
 import {
   latestHobbyCronUtc,
@@ -132,7 +131,10 @@ const sRow = rows.find(row => row.sifra_proizvoda === 'LUR-BUK-S')
 if (!sRow) fail('Missing Buket S CSV row')
 assert(sRow.maloprodajna_cijena === '45.00' && sRow.sidrena_cijena === '35.00', 'Buket S CSV current vs historical anchor')
 assert(sRow.barkod === '' && sRow.jedinica_mjere === '', 'Inapplicable fields stay empty')
-assert(rows.every(row => row.dostupnost === ''), 'Availability stays blank while its legal meaning is unconfirmed')
+assert(
+  rows.every(row => row.dostupnost === 'dostupno' && row.poseban_oblik_prodaje === 'ne'),
+  'Orderable bouquets use dostupno and are not on special sale',
+)
 assert(FRESH_BOUQUET_SUPPLY === 'made-to-order', 'Fresh bouquets stay made-to-order, not shelf stock')
 
 const mRow = rows.find(row => row.sifra_proizvoda === 'LUR-BUK-M')
@@ -190,11 +192,11 @@ assert(CONFIRMED_OUTLET_FORM === 'Internetska trgovina', 'Outlet type is the cho
 assert(CONFIRMED_OUTLET_IDENTIFIER === 'P-01', 'Outlet label is the chosen P-01, not a register number')
 assert(CONFIRMED_PRICE_LIST_OUTLET.form === CONFIRMED_OUTLET_FORM, 'Filename outlet uses the chosen type')
 assert(CONFIRMED_PRICE_LIST_OUTLET.identifier === 'P-01', 'Filename outlet uses P-01')
-assert(PROPOSED_ORDERABLE_AVAILABILITY === 'dostupno', 'Proposed availability for orderable bouquets is dostupno')
-assert(AVAILABILITY_LEGAL_VALUE_CONFIRMED === false, 'dostupno is not legally confirmed for made-to-order bouquets')
-assert(freshBouquetAvailabilityValue(false) === '', 'Unconfirmed availability is not written')
-assert(freshBouquetAvailabilityValue(true) === 'dostupno', 'Confirmed availability would write the proposed value')
-assert(rows.every(row => row.dostupnost === ''), 'Public rows do not claim physical stock')
+assert(ORDERABLE_BOUQUET_AVAILABILITY === 'dostupno', 'Business availability value is dostupno')
+assert(
+  AVAILABILITY_STOCK_RULE_UNRESOLVED === true,
+  'dostupno is not treated as confirmed compliance with the physical-stock rule',
+)
 const chosenName = buildPriceListFilename(
   CONFIRMED_PRICE_LIST_OUTLET,
   1,
@@ -210,9 +212,8 @@ const blockers = priceListPublicationBlockers()
 for (const code of ['outlet-address', 'outlet-form', 'outlet-identifier', 'artificial-arrangements'] as const) {
   assert(!blockers.includes(code), `Unexpected publication blocker: ${code}`)
 }
-assert(blockers.includes('availability'), 'Made-to-order availability still blocks publication')
-assert(blockers.length === 1, 'Availability is the only remaining publication blocker')
-const artificialOffered = priceListPublicationBlockers(null, false, {
+assert(blockers.length === 0, 'Chosen outlet data no longer blocks the daily file')
+const artificialOffered = priceListPublicationBlockers(null, {
   offeredOnline: true,
   decision: 'excluded-not-offered',
 })
