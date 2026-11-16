@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/sync-gbp-gallery",
       "schedule": "15 5 * * *"
+    },
+    {
+      "path": "/api/cron/publish-price-list",
+      "schedule": "0 5 * * *"
     }
   ]
 }

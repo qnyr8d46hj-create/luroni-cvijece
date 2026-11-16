@@ -12,11 +12,10 @@ import {
 } from '@/lib/orderAvailability'
 import { AnchorPriceNote } from './AnchorPriceNote'
 import {
-  CUSTOM_BOUQUET,
   STANDARD_BOUQUETS,
   anchorPriceLine,
-  anchorRangeLine,
   orderFormUnselectedAnchorLine,
+  referenceEuroForCustomBudget,
 } from '@/lib/productPrices'
 import { parseOrderSelectSearch } from '@/lib/orderSelect'
 import { NN_PRICE_COMPLIANCE_ENABLED } from '@/lib/nnPriceCompliance'
@@ -209,6 +208,7 @@ export function OrderForm() {
   }
 
   const isCustom = selectedBouquet === 'Buket po želji'
+  const customReference = referenceEuroForCustomBudget(customBudget)
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -496,7 +496,9 @@ export function OrderForm() {
                 : selectedBouquet === 'L'
                   ? anchorPriceLine(STANDARD_BOUQUETS.L.anchorEur)
                   : selectedBouquet === 'Buket po želji'
-                    ? anchorRangeLine(CUSTOM_BOUQUET.anchorMinEur, CUSTOM_BOUQUET.anchorMaxEur)
+                    ? (customReference == null
+                        ? orderFormUnselectedAnchorLine()
+                        : anchorPriceLine(customReference))
                     : orderFormUnselectedAnchorLine()}
           </AnchorPriceNote>
         )}

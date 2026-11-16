@@ -7,6 +7,7 @@ import {
   STANDARD_BOUQUETS,
   anchorPriceLine,
   anchorRangeLine,
+  currentCustomAnchorRange,
 } from '@/lib/productPrices'
 
 export const metadata: Metadata = {
@@ -128,7 +129,7 @@ export default function DostavaIPlacanjePage() {
           <li>
             <strong className="font-medium text-ink">Buket po želji</strong> – {CUSTOM_BOUQUET.currentMinEur}–{CUSTOM_BOUQUET.currentMaxEur} EUR, korak {CUSTOM_BOUQUET.currentStepEur} EUR (s PDV-om, dostava uključena)
             {NN_PRICE_COMPLIANCE_ENABLED && (
-              <AnchorPriceNote>{anchorRangeLine(CUSTOM_BOUQUET.anchorMinEur, CUSTOM_BOUQUET.anchorMaxEur)}</AnchorPriceNote>
+              <AnchorPriceNote>{anchorRangeLine(currentCustomAnchorRange().min, currentCustomAnchorRange().max)}</AnchorPriceNote>
             )}
           </li>
         </LegalUl>

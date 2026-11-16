@@ -2,12 +2,18 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { Header } from '@/app/components/Header'
 import { Footer } from '@/app/components/Footer'
-import { listPriceListSnapshots } from '@/lib/priceListArchive'
 import { NN_PRICE_COMPLIANCE_ENABLED } from '@/lib/nnPriceCompliance'
+import { isPriceListPublishable } from '@/lib/priceListPublication'
+import {
+  CONFIRMED_WEBSHOP_ADDRESS,
+  CONFIRMED_WEBSHOP_COUNTRY,
+  CONFIRMED_WEBSHOP_LEGAL_NAME,
+} from '@/lib/priceListOutlet'
 import {
   ANCHOR_PRICE_LABEL,
   CUSTOM_BOUQUET,
   STANDARD_BOUQUETS,
+  currentCustomAnchorRange,
   formatEuro,
   formatEuroRange,
 } from '@/lib/productPrices'
@@ -20,7 +26,7 @@ export function generateMetadata(): Metadata {
   if (!NN_PRICE_COMPLIANCE_ENABLED) notFound()
   return {
     title:       'Cjenik | Luroni Cvijeće',
-    description: 'Važeći cjenik buketa Luroni Cvijeće, uključujući strojno čitljivi CSV prema NN 101/2026.',
+    description: 'Važeći cjenik buketa Luroni Cvijeće, uključujući strojno čitljivi CSV prema NN 132/2026.',
     alternates:  { canonical: PAGE_URL },
     openGraph: {
       type:        'website',
@@ -28,7 +34,7 @@ export function generateMetadata(): Metadata {
       url:         PAGE_URL,
       siteName:    'Luroni Cvijeće',
       title:       'Cjenik | Luroni Cvijeće',
-      description: 'Važeći cjenik buketa Luroni Cvijeće, uključujući strojno čitljivi CSV prema NN 101/2026.',
+      description: 'Važeći cjenik buketa Luroni Cvijeće, uključujući strojno čitljivi CSV prema NN 132/2026.',
     },
   }
 }
@@ -56,16 +62,17 @@ const humanRows = [
     name:   CUSTOM_BOUQUET.name,
     code:   CUSTOM_BOUQUET.codePrefix,
     price:  formatEuroRange(CUSTOM_BOUQUET.currentMinEur, CUSTOM_BOUQUET.currentMaxEur),
-    anchor: formatEuroRange(CUSTOM_BOUQUET.anchorMinEur, CUSTOM_BOUQUET.anchorMaxEur),
+    anchor: formatEuroRange(currentCustomAnchorRange().min, currentCustomAnchorRange().max),
   },
 ]
 
 export default async function CjenikPage() {
   if (!NN_PRICE_COMPLIANCE_ENABLED) notFound()
 
-  let archives: Awaited<ReturnType<typeof listPriceListSnapshots>> = []
+  let archives: { filename: string }[] = []
   let archiveError = false
   try {
+    const { listPriceListSnapshots } = await import('@/lib/priceListArchive')
     archives = await listPriceListSnapshots()
   } catch (err) {
     console.error('[cjenik] archive listing failed:', err)
@@ -86,7 +93,9 @@ export default async function CjenikPage() {
             </h1>
             <p className="text-[1.0625rem] text-muted leading-[1.65] max-w-2xl">
               Važeće maloprodajne cijene buketa s uključenom dostavom. Cijene su u eurima (EUR)
-              i uključuju PDV.
+              i uključuju PDV. Prodajni objekt je {CONFIRMED_WEBSHOP_LEGAL_NAME},{' '}
+              {CONFIRMED_WEBSHOP_ADDRESS}, {CONFIRMED_WEBSHOP_COUNTRY}. Umjetni cvjetni
+              aranžmani nisu u ponudi na web-stranici i nisu u ovom cjeniku.
             </p>
           </div>
         </div>
@@ -106,8 +115,7 @@ export default async function CjenikPage() {
                     <th className="py-3 pr-4 font-semibold">Naziv</th>
                     <th className="py-3 pr-4 font-semibold">Šifra</th>
                     <th className="py-3 pr-4 font-semibold">Maloprodajna cijena</th>
-                    <th className="py-3 pr-4 font-semibold">{ANCHOR_PRICE_LABEL}</th>
-                    <th className="py-3 font-semibold">Dostupnost</th>
+                    <th className="py-3 font-semibold">{ANCHOR_PRICE_LABEL}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -116,17 +124,23 @@ export default async function CjenikPage() {
                       <td className="py-3 pr-4 font-medium">{row.name}</td>
                       <td className="py-3 pr-4 text-muted font-mono text-[0.8125rem]">{row.code}</td>
                       <td className="py-3 pr-4 font-semibold text-forest">{row.price}</td>
-                      <td className="py-3 pr-4 text-muted">{row.anchor}</td>
-                      <td className="py-3 text-muted">Dostupno</td>
+                      <td className="py-3 text-muted">{row.anchor}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
             <p className="mt-4 text-sm text-muted leading-[1.65]">
+              Bazna cijena je maloprodajna cijena od 10.9.2026. za ovu robu (NN 132/2026-1583).
               Buket po želji naručuje se u koracima od {CUSTOM_BOUQUET.currentStepEur}&nbsp;€
               ({CUSTOM_BOUQUET.currentMinEur}–{CUSTOM_BOUQUET.currentMaxEur}&nbsp;€).
-              Dostava je besplatna i nije zasebna stavka.
+              Svaki od tih iznosa vrijedio je i 10.9.2026. Iznos od {CUSTOM_BOUQUET.anchorMinEur}&nbsp;€
+              bio je u ponudi toga dana, povučen je 29.9.2026. i više se ne prodaje.
+              Dostava je besplatna i nije zasebna stavka. Nema posebnog oblika prodaje.
+              U CSV-u je to zapisano kao „ne”; NN 132/2026-1584 ne propisuje tu riječ.
+              CSV nema stupac dostupnosti jer ga taj pravilnik ne nabraja. Buketi se
+              izrađuju nakon narudžbe. Time nije odgovoreno treba li takav buket po
+              nekom drugom pravilu smatrati zalihom.
             </p>
           </section>
 
@@ -138,21 +152,32 @@ export default async function CjenikPage() {
               Strojno čitljivi cjenik
             </h2>
             <p className="text-[0.9375rem] text-muted leading-[1.75] mb-5">
-              Sukladno NN 101/2026, važeći cjenik dostupan je i u strojno čitljivom CSV
-              formatu. Objavljeni cjenici dostupni su 30 dana.
+              Sukladno Pravilniku o načinu objave cjenika proizvoda (NN 132/2026-1584),
+              važeći cjenik dostupan je u CSV-u na stalnoj adresi. Datoteka se mijenja
+              kad se cijene promijene, najkasnije do 11:00 (Europe/Zagreb) toga dana.
+              Zamijenjena datoteka ostaje u arhivi 15 dana od zamjene.
             </p>
-            <a
-              href="/cjenik/aktualni.csv"
-              className="inline-flex items-center justify-center px-7 py-3.5 rounded-full bg-forest text-white font-medium text-[0.9375rem] transition-all hover:bg-forest-dark hover:-translate-y-px hover:shadow-md"
-            >
-              Preuzmi aktualni CSV
-            </a>
-            <p className="mt-3 text-sm text-faint">
-              Stabilni URL:{' '}
-              <a href="/cjenik/aktualni.csv" className="text-forest underline-offset-2 hover:underline">
-                https://www.luroni-cvijece.com/cjenik/aktualni.csv
-              </a>
-            </p>
+            {isPriceListPublishable() ? (
+              <>
+                <a
+                  href="/cjenik/aktualni.csv"
+                  className="inline-flex items-center justify-center px-7 py-3.5 rounded-full bg-forest text-white font-medium text-[0.9375rem] transition-all hover:bg-forest-dark hover:-translate-y-px hover:shadow-md"
+                >
+                  Preuzmi aktualni CSV
+                </a>
+                <p className="mt-3 text-sm text-faint">
+                  Stabilni URL:{' '}
+                  <a href="/cjenik/aktualni.csv" className="text-forest underline-offset-2 hover:underline">
+                    https://www.luroni-cvijece.com/cjenik/aktualni.csv
+                  </a>
+                </p>
+              </>
+            ) : (
+              <p className="text-[0.9375rem] text-muted leading-[1.75]">
+                Strojno čitljiva datoteka nije objavljena. Prije objave treba potvrditi adresu
+                prodajnog objekta, oblik objekta, oznaku objekta i OIB u nazivu datoteke.
+              </p>
+            )}
           </section>
 
           <section className="mt-12 sm:mt-16" aria-labelledby="arhiva-cjenik">
@@ -160,26 +185,26 @@ export default async function CjenikPage() {
               id="arhiva-cjenik"
               className="font-display text-[1.5rem] sm:text-[1.625rem] font-semibold text-ink mb-4 pb-3 border-b border-divider leading-snug"
             >
-              Arhiva (30 dana)
+              Arhiva (15 dana)
             </h2>
             {archiveError ? (
               <p className="text-[0.9375rem] text-muted leading-[1.75]">
-                Arhiva dnevnih datoteka trenutno nije dostupna. Aktualni CSV i dalje možete preuzeti gore.
+                Arhiva zamijenjenih datoteka trenutno nije dostupna. Aktualni CSV i dalje možete preuzeti gore.
               </p>
             ) : archives.length === 0 ? (
               <p className="text-[0.9375rem] text-muted leading-[1.75]">
-                Dnevne datoteke pojavljuju se nakon prve objave za tekući radni dan
-                (najkasnije do 8:00, Europe/Zagreb).
+                Arhiva se pojavljuje kad važeću datoteku zamijeni nova. Zamijenjena
+                datoteka ostaje dostupna 15 dana od zamjene.
               </p>
             ) : (
               <ul className="space-y-2">
                 {archives.map(snapshot => (
-                  <li key={snapshot.date}>
+                  <li key={snapshot.filename}>
                     <a
                       href={`/cjenik/arhiva/${encodeURIComponent(snapshot.filename)}`}
                       className="text-sm text-forest underline-offset-2 hover:underline break-all"
                     >
-                      {snapshot.date} — {snapshot.filename}
+                      {snapshot.filename}
                     </a>
                   </li>
                 ))}
