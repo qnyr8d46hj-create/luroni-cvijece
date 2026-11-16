@@ -38,6 +38,16 @@ function filledToken(value: string | undefined): boolean {
   return typeof value === 'string' && FILENAME_TOKEN.test(value)
 }
 
+function filenameToken(value: string | undefined): string | null {
+  if (!value?.trim()) return null
+  try {
+    const token = outletAddressSlug(value)
+    return FILENAME_TOKEN.test(token) ? token : null
+  } catch {
+    return null
+  }
+}
+
 export function requireFilenameToken(value: string, label: string): string {
   if (!FILENAME_TOKEN.test(value)) {
     throw new Error(`${label} must use letters, digits, and hyphens only`)
@@ -59,7 +69,7 @@ export function priceListPublicationBlockers(
   const blockers: PriceListBlockerCode[] = []
   const address = (outlet?.address ?? CONFIRMED_WEBSHOP_ADDRESS).trim()
   if (!address) blockers.push('outlet-address')
-  if (!outlet || !filledToken(outlet.form)) blockers.push('outlet-form')
+  if (!outlet || !filenameToken(outlet.form)) blockers.push('outlet-form')
   if (!outlet || !filledToken(outlet.identifier)) blockers.push('outlet-identifier')
   if (!availabilityConfirmed) blockers.push('availability')
   if (artificialArrangementsBlockPublication(artificial.offeredOnline, artificial.decision)) {

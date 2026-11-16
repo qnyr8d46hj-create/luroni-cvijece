@@ -1,4 +1,5 @@
 import {
+  freshBouquetAvailabilityValue,
   publicPriceListIncludesArtificialArrangements,
   type ConfirmedPriceListOutlet,
 } from './priceListOutlet'
@@ -61,8 +62,7 @@ export function buildPriceListRows(): PriceListRow[] {
       poseban_oblik_prodaje:  '',
       sidrena_cijena:         money(bouquet.anchorEur),
       barkod:                 '',
-      // Blank until dostupno/nedostupno is confirmed for made-to-order bouquets.
-      dostupnost:             '',
+      dostupnost:             freshBouquetAvailabilityValue(),
     })
   }
 
@@ -80,7 +80,7 @@ export function buildPriceListRows(): PriceListRow[] {
       poseban_oblik_prodaje:  '',
       sidrena_cijena:         anchorAmounts.has(amount) ? money(amount) : '',
       barkod:                 '',
-      dostupnost:             '',
+      dostupnost:             freshBouquetAvailabilityValue(),
     })
   }
 
@@ -122,7 +122,7 @@ export function buildPriceListFilename(
   if (!Number.isInteger(storageNumber) || storageNumber < 1) {
     throw new Error('Storage number must be a positive integer')
   }
-  const form = requireFilenameToken(outlet.form, 'Outlet form')
+  const form = requireFilenameToken(outletAddressSlug(outlet.form), 'Outlet form')
   const identifier = requireFilenameToken(outlet.identifier, 'Outlet identifier')
   const addressSlug = outletAddressSlug(outlet.address)
   return `cjenik_${form}_${addressSlug}_${identifier}_${storageNumber}_${zagrebTimestampForFilename(now)}.csv`

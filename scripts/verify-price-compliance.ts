@@ -23,11 +23,14 @@ import { ARTIFICIAL_ARRANGEMENTS_PUBLIC } from '../lib/artificialArrangementsPub
 import { ARTIFICIAL_BOUQUETS_COLLECTION } from '../lib/artificialBouquetPaths'
 import {
   ARTIFICIAL_PRICE_LIST_DECISION,
+  AVAILABILITY_LEGAL_VALUE_CONFIRMED,
   CONFIRMED_OUTLET_FORM,
   CONFIRMED_OUTLET_IDENTIFIER,
   CONFIRMED_PRICE_LIST_OUTLET,
   CONFIRMED_WEBSHOP_ADDRESS,
   CONFIRMED_WEBSHOP_LEGAL_NAME,
+  PROPOSED_ORDERABLE_AVAILABILITY,
+  freshBouquetAvailabilityValue,
 } from '../lib/priceListOutlet'
 import {
   latestHobbyCronUtc,
@@ -183,17 +186,32 @@ assert(
   outletAddressSlug(CONFIRMED_WEBSHOP_ADDRESS) === 'Gornja-Svarca-19-47000-Karlovac',
   'Filename address is the confirmed Karlovac street address',
 )
-assert(CONFIRMED_OUTLET_FORM === null, 'Outlet type word is not invented')
-assert(CONFIRMED_OUTLET_IDENTIFIER === null, 'Outlet label is not invented')
-assert(CONFIRMED_PRICE_LIST_OUTLET === null, 'Filename outlet stays incomplete without a chosen label')
+assert(CONFIRMED_OUTLET_FORM === 'Internetska trgovina', 'Outlet type is the chosen webshop wording')
+assert(CONFIRMED_OUTLET_IDENTIFIER === 'P-01', 'Outlet label is the chosen P-01, not a register number')
+assert(CONFIRMED_PRICE_LIST_OUTLET.form === CONFIRMED_OUTLET_FORM, 'Filename outlet uses the chosen type')
+assert(CONFIRMED_PRICE_LIST_OUTLET.identifier === 'P-01', 'Filename outlet uses P-01')
+assert(PROPOSED_ORDERABLE_AVAILABILITY === 'dostupno', 'Proposed availability for orderable bouquets is dostupno')
+assert(AVAILABILITY_LEGAL_VALUE_CONFIRMED === false, 'dostupno is not legally confirmed for made-to-order bouquets')
+assert(freshBouquetAvailabilityValue(false) === '', 'Unconfirmed availability is not written')
+assert(freshBouquetAvailabilityValue(true) === 'dostupno', 'Confirmed availability would write the proposed value')
+assert(rows.every(row => row.dostupnost === ''), 'Public rows do not claim physical stock')
+const chosenName = buildPriceListFilename(
+  CONFIRMED_PRICE_LIST_OUTLET,
+  1,
+  new Date('2026-11-17T05:00:00.000Z'),
+)
+assert(
+  chosenName.startsWith('cjenik_Internetska-trgovina_Gornja-Svarca-19-47000-Karlovac_P-01_1_'),
+  'Filename uses Internetska trgovina, the Karlovac address, and P-01',
+)
 assert(ARTIFICIAL_ARRANGEMENTS_PUBLIC === false, 'Artificial arrangements are not offered online')
 assert(ARTIFICIAL_PRICE_LIST_DECISION === 'excluded-not-offered', 'Artificial arrangements stay out of the public price list')
 const blockers = priceListPublicationBlockers()
-assert(!blockers.includes('outlet-address'), 'Confirmed address is no longer a publication blocker')
-for (const code of ['outlet-form', 'outlet-identifier', 'availability'] as const) {
-  assert(blockers.includes(code), `Publication blocker missing: ${code}`)
+for (const code of ['outlet-address', 'outlet-form', 'outlet-identifier', 'artificial-arrangements'] as const) {
+  assert(!blockers.includes(code), `Unexpected publication blocker: ${code}`)
 }
-assert(!blockers.includes('artificial-arrangements'), 'Hidden artificial arrangements do not block the fresh price list')
+assert(blockers.includes('availability'), 'Made-to-order availability still blocks publication')
+assert(blockers.length === 1, 'Availability is the only remaining publication blocker')
 const artificialOffered = priceListPublicationBlockers(null, false, {
   offeredOnline: true,
   decision: 'excluded-not-offered',
