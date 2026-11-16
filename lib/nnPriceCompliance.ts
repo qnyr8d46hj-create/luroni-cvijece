@@ -11,8 +11,12 @@
 //   retrieval. Flowers are not in the 2025-05-02 food and household group.
 // - NN 110/2026 only replaces 1 October 2026 with 17 November 2026.
 // - On 2026-11-14 the Government adopted the two implementing pravilnici
-//   and decisions repealing the NN 101/2026 measures. Those texts were not
-//   in Narodne novine on 2026-11-16. The October drafts are not the schema.
+//   and decisions repealing the NN 101/2026 measures. Rechecked later on
+//   2026-11-16: the latest issue with documents is NN 131/2026 of 13 November,
+//   and it does not contain them. The index for 132/2026 lists no documents.
+//   They have no gazette number and no published effective date. The October
+//   drafts are not the schema. Secondary summaries of that draft omit
+//   "dostupno, nedostupno"; the published decision still requires it.
 //
 // Outlet identity: Internetska trgovina, P-01, Gornja Švarča 19,
 // 47000 Karlovac. Active bouquets use "dostupno" as the business choice.

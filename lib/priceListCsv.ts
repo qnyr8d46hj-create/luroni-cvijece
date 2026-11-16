@@ -20,8 +20,10 @@ export const PRICE_LIST_COLUMNS = [
   'jedinica_mjere',
   'jedinicna_cijena',
   'maloprodajna_cijena',
-  // Published NN 101/2026 asks whether a special sale applies and, if so, its name.
-  // Column names are not prescribed. No bouquet is on special sale.
+  // NN 101/2026-1213 asks, with the retail price, whether a special sale
+  // applies and, if so, its name. Column names are not prescribed. No bouquet
+  // is on special sale, so the answer is "ne" and the name cell is empty.
+  // The unpublished pravilnik has not confirmed this split.
   'poseban_oblik_prodaje',
   'naziv_posebnog_oblika',
   // NN 101/2026 says "sidrena cijena". The October draft says "bazna cijena"
