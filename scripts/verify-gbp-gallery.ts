@@ -46,6 +46,8 @@ import {
   galleryMetadata,
   NEUTRAL_GALLERY_TITLE,
 } from '../lib/gbpGallery/metadata'
+import { APPROVED_GALLERY_TITLES } from '../lib/gbpGallery/approvedTitles'
+import { assessTitleDocument, CONFIRM_PHRASE, titleFieldUpdate, writeConfirmed } from './apply-gallery-title-overrides'
 
 globalThis.fetch = async () => {
   throw new Error('Gallery tests must not call the network')
@@ -899,6 +901,47 @@ assert(reader.includes('revalidate: GALLERY_READ_REVALIDATE_SECONDS'), 'The gall
 assert(reader.includes('readVisibleGalleryPhotos(GALLERY_PAGE_LIMIT)'), 'Homepage, gallery, and landing pages share one photo read')
 assert(reader.includes('photos.slice(0, limit)'), 'Callers reuse the cached read instead of querying again')
 assert(!reader.includes('GBP_SYNC_ENABLED'), 'Display reads do not toggle synchronization')
+
+const approvedId = '2719924025939426649'
+const missingTitleDoc = assessTitleDocument(approvedId, null)
+assert(!missingTitleDoc.exists && !missingTitleDoc.safe, 'A missing gallery document is not safe to update')
+const matchedTitleDoc = assessTitleDocument(approvedId, {
+  resourceName: resourceName(approvedId),
+  summary: 'Buket ruža i eukaliptusa.',
+  metadataOverride: { alt: 'Ručni alt', description: null },
+})
+assert(matchedTitleDoc.safe && matchedTitleDoc.postIdMatches, 'A matching gallery post is safe to update')
+assert(matchedTitleDoc.approvedTitle === 'Romantični buket', 'The dry-run shows the approved title')
+assert(matchedTitleDoc.storedTitle === null, 'A missing stored title is shown as empty')
+assert(matchedTitleDoc.generatedTitle !== matchedTitleDoc.approvedTitle, 'The dry-run shows the generated title beside the approved title')
+assert(
+  matchedTitleDoc.otherOverrideFields.includes('alt') && matchedTitleDoc.otherOverrideFields.includes('description'),
+  'The dry-run keeps the other override field names visible',
+)
+assert(matchedTitleDoc.overrideShape === 'map', 'An existing override map is updated by its title field')
+const wrongTitleDoc = assessTitleDocument(approvedId, { resourceName: resourceName('different-post'), summary: '' })
+assert(!wrongTitleDoc.safe && !wrongTitleDoc.postIdMatches, 'A document for a different Google post is not updated')
+const invalidOverride = assessTitleDocument(approvedId, {
+  resourceName: resourceName(approvedId),
+  metadataOverride: 'title',
+})
+assert(!invalidOverride.safe && invalidOverride.overrideShape === 'invalid', 'A non-map override is not overwritten')
+const titleUpdate = titleFieldUpdate('Romantični buket')
+assert(
+  Object.keys(titleUpdate).join(',') === 'metadataOverride.title' && titleUpdate['metadataOverride.title'] === 'Romantični buket',
+  'The write payload sets only metadataOverride.title',
+)
+assert(writeConfirmed([]) === false && writeConfirmed(['--confirm']) === false, 'A write requires the confirmation phrase')
+assert(writeConfirmed(['--confirm', CONFIRM_PHRASE]), 'The exact confirmation phrase allows the write')
+assert(Object.keys(APPROVED_GALLERY_TITLES).length === 10, 'The title script covers the ten approved posts')
+const titleScript = read('scripts/apply-gallery-title-overrides.ts')
+assert(titleScript.includes('Dry-run only'), 'The title script defaults to a dry-run')
+assert(!titleScript.includes('syncGbpGallery') && !titleScript.includes('visibilityOverride'), 'The title script does not sync or change visibility')
+assert(!titleScript.includes('vercel env'), 'The title script does not read Vercel environment variables')
+for (const line of titleScript.split('\n')) {
+  if (!line.includes('console.')) continue
+  assert(!/accessToken|refreshToken|clientSecret|privateKey|FIREBASE_PRIVATE/.test(line), 'The title script does not log a credential')
+}
 
 console.log('GBP gallery synchronization checks passed.')
 }
