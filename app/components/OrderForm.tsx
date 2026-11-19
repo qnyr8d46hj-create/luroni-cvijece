@@ -14,11 +14,10 @@ import { AnchorPriceNote } from './AnchorPriceNote'
 import {
   STANDARD_BOUQUETS,
   anchorPriceLine,
+  customBudgetReferenceLine,
   orderFormUnselectedAnchorLine,
-  referenceEuroForCustomBudget,
 } from '@/lib/productPrices'
 import { parseOrderSelectSearch } from '@/lib/orderSelect'
-import { NN_PRICE_COMPLIANCE_ENABLED } from '@/lib/nnPriceCompliance'
 import { DELIVERY_CITIES } from '@/lib/deliveryLocations'
 import {
   validateAddress,
@@ -66,10 +65,11 @@ function validate(name: string, value: string): string {
 
 /* ── Stepper used inside the form for Buket po želji ─────────── */
 function BudgetStepper({
-  value, onChange,
+  value, onChange, referenceLine,
 }: {
   value: number
   onChange: (next: number) => void
+  referenceLine: string | null
 }) {
   const canDec = value > CUSTOM_PRICE_MIN
   const canInc = value < CUSTOM_PRICE_MAX
@@ -108,6 +108,9 @@ function BudgetStepper({
           +
         </button>
       </div>
+      {referenceLine && (
+        <AnchorPriceNote enabled>{referenceLine}</AnchorPriceNote>
+      )}
       <p className="text-[0.6875rem] text-faint mt-1.5">
         {CUSTOM_PRICE_MIN}–{CUSTOM_PRICE_MAX}&nbsp;€, korak {CUSTOM_PRICE_STEP}&nbsp;€
       </p>
@@ -127,7 +130,11 @@ function getServerOrderSearch() {
 }
 
 /* ── Main form ────────────────────────────────────────────── */
-export function OrderForm() {
+export function OrderForm({
+  priceComplianceEnabled,
+}: {
+  priceComplianceEnabled: boolean
+}) {
   const [errors, setErrors]           = useState<Record<string, string>>({})
   const [paymentErr, setPaymentErr]   = useState('')
   const [loading, setLoading]         = useState(false)
@@ -208,7 +215,9 @@ export function OrderForm() {
   }
 
   const isCustom = selectedBouquet === 'Buket po želji'
-  const customReference = referenceEuroForCustomBudget(customBudget)
+  const customReferenceLine = priceComplianceEnabled
+    ? customBudgetReferenceLine(customBudget)
+    : null
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -487,19 +496,15 @@ export function OrderForm() {
           <option value="L">Buket L — 70 €</option>
           <option value="Buket po želji">Buket po želji — od 80 €</option>
         </select>
-        {NN_PRICE_COMPLIANCE_ENABLED && (
-          <AnchorPriceNote>
+        {selectedBouquet !== 'Buket po želji' && (
+          <AnchorPriceNote enabled={priceComplianceEnabled}>
             {selectedBouquet === 'S'
               ? anchorPriceLine(STANDARD_BOUQUETS.S.anchorEur)
               : selectedBouquet === 'M'
                 ? anchorPriceLine(STANDARD_BOUQUETS.M.anchorEur)
                 : selectedBouquet === 'L'
                   ? anchorPriceLine(STANDARD_BOUQUETS.L.anchorEur)
-                  : selectedBouquet === 'Buket po želji'
-                    ? (customReference == null
-                        ? orderFormUnselectedAnchorLine()
-                        : anchorPriceLine(customReference))
-                    : orderFormUnselectedAnchorLine()}
+                  : orderFormUnselectedAnchorLine()}
           </AnchorPriceNote>
         )}
         <p className="text-xs text-muted leading-[1.55] mt-2">
@@ -514,6 +519,7 @@ export function OrderForm() {
             <BudgetStepper
               value={customBudget}
               onChange={setCustomBudget}
+              referenceLine={customReferenceLine}
             />
           </div>
         )}

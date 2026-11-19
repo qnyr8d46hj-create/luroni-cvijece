@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { AnchorPriceNote } from '../app/components/AnchorPriceNote'
+import { CustomBouquetCard } from '../app/components/CustomBouquetCard'
 import {
   COMPLIANCE_APPLICABLE_DATE,
   CUSTOM_BOUQUET,
@@ -13,6 +14,7 @@ import {
   anchorRangeLine,
   currentCustomAnchorRange,
   customAnchorAmounts,
+  customBudgetReferenceLine,
   customSelectableAmounts,
   isAnchorPriceDisplayActive,
   orderFormUnselectedAnchorLine,
@@ -104,6 +106,11 @@ for (const amount of customSelectableAmounts()) {
   assert(referenceEuroForCustomBudget(amount) === amount, `Custom €${amount} reference price is its own 10 September price`)
 }
 assert(referenceEuroForCustomBudget(70) == null, 'Retired €70 is not a reference price of a bouquet still sold')
+assert(customBudgetReferenceLine(80) === 'Cijena na dan 10.9.2026.: 80 €', 'Selected €80 reference line')
+assert(customBudgetReferenceLine(120) === 'Cijena na dan 10.9.2026.: 120 €', 'Selected €120 reference line')
+assert(customBudgetReferenceLine(200) === 'Cijena na dan 10.9.2026.: 200 €', 'Selected €200 reference line')
+assert(customBudgetReferenceLine(70) == null, 'Retired €70 has no customer-facing reference line')
+assert(customBudgetReferenceLine(75) == null, 'Off-step amounts have no reference line')
 assert(COMPLIANCE_APPLICABLE_DATE === '2026-11-17', 'Applicable date stays 17 November 2026')
 assert(isAnchorPriceDisplayActive(new Date('2026-11-17T08:00:00.000Z')) === false, '17 November does not turn the display on')
 
@@ -192,8 +199,38 @@ const anchorHtml = renderToStaticMarkup(
   createElement(AnchorPriceNote, null, 'Cijena na dan 10.9.2026.: 35 €'),
 )
 assert(anchorHtml === '', 'Disabled compliance renders no reference price into HTML')
+const forcedAnchorHtml = renderToStaticMarkup(
+  createElement(AnchorPriceNote, { enabled: true }, 'Cijena na dan 10.9.2026.: 120 €'),
+)
+assert(
+  forcedAnchorHtml.includes('Cijena na dan 10.9.2026.: 120 €'),
+  'A server-passed flag renders the reference price without the client env var',
+)
+const blockedAnchorHtml = renderToStaticMarkup(
+  createElement(AnchorPriceNote, { enabled: false }, 'Cijena na dan 10.9.2026.: 120 €'),
+)
+assert(blockedAnchorHtml === '', 'An explicit disabled flag renders no reference price')
+const enabledCardHtml = renderToStaticMarkup(
+  createElement(CustomBouquetCard, { priceComplianceEnabled: true }),
+)
+assert(
+  enabledCardHtml.includes('Cijena na dan 10.9.2026.: 80 €'),
+  'Enabled custom card shows the verified €80 reference under the default budget',
+)
+assert(!enabledCardHtml.includes('70–200'), 'Enabled custom card does not restore the retired €70 span')
+assert(!enabledCardHtml.includes('>70'), 'Enabled custom card does not offer €70')
+const disabledCardHtml = renderToStaticMarkup(
+  createElement(CustomBouquetCard, { priceComplianceEnabled: false }),
+)
+assert(
+  !disabledCardHtml.includes('Cijena na dan 10.9.2026.'),
+  'Disabled custom card renders no reference price',
+)
 const anchorSource = readFileSync(resolve(root, 'app/components/AnchorPriceNote.tsx'), 'utf8')
-assert(anchorSource.includes('if (!isAnchorPriceDisplayActive()) return null'), 'Reference price is decided during render')
+assert(
+  anchorSource.includes('if (!(enabled ?? isAnchorPriceDisplayActive())) return null'),
+  'Reference price is decided during render',
+)
 assert(!anchorSource.includes('useSyncExternalStore'), 'Reference price must not wait for client hydration')
 assert(!anchorSource.includes('() => false'), 'Server render must not hard-code the reference price as hidden')
 
@@ -314,6 +351,34 @@ assert(ga.includes('S: 45, M: 55, L: 70'), 'GA4 fallback amounts match current c
 
 const customCard = readFileSync(resolve(root, 'app/components/CustomBouquetCard.tsx'), 'utf8')
 assert(customCard.includes('CUSTOM_PRICE_MIN  = 80'), 'Homepage custom card min is 80')
+assert(customCard.includes('priceComplianceEnabled'), 'Custom card receives the server compliance flag')
+assert(customCard.includes('customBudgetReferenceLine(price)'), 'Custom card reference follows the selected budget')
+assert(!customCard.includes('NN_PRICE_COMPLIANCE_ENABLED'), 'Custom card does not read the flag from the client bundle')
+assert(!customCard.includes('anchorRangeLine'), 'Custom card does not present the 80–200 span as one reference price')
+assert(!customCard.includes('CUSTOM_PRICE_MIN  = 70'), 'Custom card does not restore the retired €70 step')
+
+const bouquetSection = readFileSync(resolve(root, 'app/components/BouquetTypesSection.tsx'), 'utf8')
+assert(
+  bouquetSection.includes('priceComplianceEnabled={NN_PRICE_COMPLIANCE_ENABLED}'),
+  'Server bouquet section passes NN_PRICE_COMPLIANCE_ENABLED into the custom card',
+)
+const orderSection = readFileSync(resolve(root, 'app/components/OrderSection.tsx'), 'utf8')
+assert(
+  orderSection.includes('priceComplianceEnabled={NN_PRICE_COMPLIANCE_ENABLED}'),
+  'Server order section passes NN_PRICE_COMPLIANCE_ENABLED into the order form',
+)
+assert(!orderSection.includes("'use client'"), 'Order section stays a server component')
+assert(orderForm.includes('priceComplianceEnabled'), 'Order form receives the server compliance flag')
+assert(
+  orderForm.includes('customBudgetReferenceLine(customBudget)'),
+  'Order form reference follows the selected custom budget',
+)
+assert(
+  orderForm.includes('referenceLine={customReferenceLine}'),
+  'Order form shows the reference beside the selected custom price',
+)
+assert(!orderForm.includes("from '@/lib/nnPriceCompliance'"), 'Order form does not read the flag from the client bundle')
+assert(!orderForm.includes('CUSTOM_PRICE_MIN  = 70'), 'Order form does not restore the retired €70 step')
 
 assert(!checkout.includes('S: 3500'), 'Old Stripe S €35 mapping must be gone')
 assert(!checkout.includes('CUSTOM_BUDGET_MIN  = 70'), 'Old Stripe custom €70 min must be gone')

@@ -1,4 +1,5 @@
 import { OrderForm } from '@/app/components/OrderForm'
+import { NN_PRICE_COMPLIANCE_ENABLED } from '@/lib/nnPriceCompliance'
 
 const STEPS = [
   'Odaberite veličinu buketa',
@@ -46,7 +47,7 @@ export function OrderSection() {
 
           {/* Right — form card */}
           <div className="bg-white border-[1.5px] border-divider rounded-3xl p-5 sm:p-8 shadow-lg lg:sticky lg:top-24">
-            <OrderForm />
+            <OrderForm priceComplianceEnabled={NN_PRICE_COMPLIANCE_ENABLED} />
           </div>
 
         </div>

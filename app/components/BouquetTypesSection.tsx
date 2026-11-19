@@ -102,7 +102,10 @@ export function BouquetTypesSection({
 
         {showCustom && (
           <div className="mb-7">
-            <CustomBouquetCard orderHref={orderHref} />
+            <CustomBouquetCard
+              orderHref={orderHref}
+              priceComplianceEnabled={NN_PRICE_COMPLIANCE_ENABLED}
+            />
           </div>
         )}
 

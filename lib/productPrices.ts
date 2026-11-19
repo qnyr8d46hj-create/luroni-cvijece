@@ -128,6 +128,12 @@ export function referenceEuroForCustomBudget(amount: number): number | null {
   return customSelectableAmounts().includes(amount) && anchors.has(amount) ? amount : null
 }
 
+/** Customer-facing reference line for one selected budget. Null when that step has no verified 10 September price. */
+export function customBudgetReferenceLine(amount: number): string | null {
+  const reference = referenceEuroForCustomBudget(amount)
+  return reference == null ? null : anchorPriceLine(reference)
+}
+
 /** Reference range of the budgets a customer can still choose. Excludes retired €70. */
 export function currentCustomAnchorRange(): { min: number; max: number } {
   const offered = customSelectableAmounts().filter(amount => referenceEuroForCustomBudget(amount) != null)
