@@ -5,12 +5,11 @@ import Image from 'next/image'
 import { AnchorPriceNote } from './AnchorPriceNote'
 import {
   CUSTOM_BOUQUET,
-  anchorRangeLine,
-  currentCustomAnchorRange,
+  anchorPriceLine,
   formatEuroRange,
+  referenceEuroForCustomBudget,
 } from '@/lib/productPrices'
 import { ORDER_BOUQUET_CUSTOM, orderSelectHref } from '@/lib/orderSelect'
-import { NN_PRICE_COMPLIANCE_ENABLED } from '@/lib/nnPriceCompliance'
 
 // ── Price range — edit these three values to change the range.
 // Keep in sync with CUSTOM_BUDGET_* in app/api/create-checkout-session/route.ts
@@ -24,10 +23,13 @@ const CARD_IMAGE = '/images/featured-bouquets/buket-l.jpg'
 
 export function CustomBouquetCard({
   orderHref = '#order',
+  priceComplianceEnabled,
 }: {
   orderHref?: string
-} = {}) {
+  priceComplianceEnabled: boolean
+}) {
   const [price, setPrice] = useState(CUSTOM_PRICE_MIN)
+  const referencePrice = referenceEuroForCustomBudget(price)
 
   const canDec = price > CUSTOM_PRICE_MIN
   const canInc = price < CUSTOM_PRICE_MAX
@@ -87,11 +89,6 @@ export function CustomBouquetCard({
               {formatEuroRange(CUSTOM_BOUQUET.currentMinEur, CUSTOM_BOUQUET.currentMaxEur)}
             </span>
           </div>
-          {NN_PRICE_COMPLIANCE_ENABLED && (
-            <AnchorPriceNote>
-              {anchorRangeLine(currentCustomAnchorRange().min, currentCustomAnchorRange().max)}
-            </AnchorPriceNote>
-          )}
 
           <p className="text-sm sm:text-[0.9375rem] text-muted leading-[1.68] mb-3 mt-3">
             Odaberite budžet, a mi ćemo složiti jedinstven buket prema prigodi, vašim željama i
@@ -145,6 +142,11 @@ export function CustomBouquetCard({
                 +
               </button>
             </div>
+            {priceComplianceEnabled && referencePrice != null && (
+              <AnchorPriceNote active>
+                {anchorPriceLine(referencePrice)}
+              </AnchorPriceNote>
+            )}
             <p className="text-[0.6875rem] text-faint mt-1.5">
               {CUSTOM_PRICE_MIN}–{CUSTOM_PRICE_MAX}&nbsp;€, korak {CUSTOM_PRICE_STEP}&nbsp;€
             </p>

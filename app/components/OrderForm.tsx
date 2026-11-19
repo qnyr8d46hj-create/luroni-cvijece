@@ -18,7 +18,6 @@ import {
   referenceEuroForCustomBudget,
 } from '@/lib/productPrices'
 import { parseOrderSelectSearch } from '@/lib/orderSelect'
-import { NN_PRICE_COMPLIANCE_ENABLED } from '@/lib/nnPriceCompliance'
 import { DELIVERY_CITIES } from '@/lib/deliveryLocations'
 import {
   validateAddress,
@@ -127,7 +126,11 @@ function getServerOrderSearch() {
 }
 
 /* ── Main form ────────────────────────────────────────────── */
-export function OrderForm() {
+export function OrderForm({
+  priceComplianceEnabled,
+}: {
+  priceComplianceEnabled: boolean
+}) {
   const [errors, setErrors]           = useState<Record<string, string>>({})
   const [paymentErr, setPaymentErr]   = useState('')
   const [loading, setLoading]         = useState(false)
@@ -487,19 +490,15 @@ export function OrderForm() {
           <option value="L">Buket L — 70 €</option>
           <option value="Buket po želji">Buket po želji — od 80 €</option>
         </select>
-        {NN_PRICE_COMPLIANCE_ENABLED && (
-          <AnchorPriceNote>
+        {priceComplianceEnabled && !isCustom && (
+          <AnchorPriceNote active>
             {selectedBouquet === 'S'
               ? anchorPriceLine(STANDARD_BOUQUETS.S.anchorEur)
               : selectedBouquet === 'M'
                 ? anchorPriceLine(STANDARD_BOUQUETS.M.anchorEur)
                 : selectedBouquet === 'L'
                   ? anchorPriceLine(STANDARD_BOUQUETS.L.anchorEur)
-                  : selectedBouquet === 'Buket po želji'
-                    ? (customReference == null
-                        ? orderFormUnselectedAnchorLine()
-                        : anchorPriceLine(customReference))
-                    : orderFormUnselectedAnchorLine()}
+                  : orderFormUnselectedAnchorLine()}
           </AnchorPriceNote>
         )}
         <p className="text-xs text-muted leading-[1.55] mt-2">
@@ -515,6 +514,11 @@ export function OrderForm() {
               value={customBudget}
               onChange={setCustomBudget}
             />
+            {priceComplianceEnabled && customReference != null && (
+              <AnchorPriceNote active>
+                {anchorPriceLine(customReference)}
+              </AnchorPriceNote>
+            )}
           </div>
         )}
       </Field>
